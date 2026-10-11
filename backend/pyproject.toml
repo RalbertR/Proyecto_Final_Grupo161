@@ -1,5 +1,8 @@
 [tool.pytest]
 testpaths = ["tests"]
 
+[tool.coverage.report]
+skip_empty = true
+
 [tool.ruff]
 src = ["."]
