@@ -51,3 +51,25 @@ La justificación de cada tecnología está en la sección 5 del documento de di
 - [Documento de diseño y módulos](docs/Diseno%20y%20modulos%20-%20Proyecto%20Final%20-%20Grupo%20161.md)
 - [Diagrama entidad-relación](docs/diagrama_entidad_relacion.png)
 - [Script de creación de la base de datos](database/migraciones/001_esquema.sql)
+
+## Desarrollo local
+
+Hace falta Docker y Python 3.13 o superior.
+
+1. Copiar `.env.example` como `.env` y completar las contraseñas. Si el puerto 3306 está ocupado, cambiar `MYSQL_PUERTO` y el puerto de `DATABASE_URL`.
+2. Levantar MySQL con `docker compose up -d`. La primera vez crea la base con los scripts de `database/migraciones`.
+3. Crear el entorno virtual del backend, instalar las dependencias y levantar la API:
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+fastapi dev app/main.py
+```
+
+En Linux o macOS el entorno se activa con `source .venv/bin/activate`.
+
+4. Abrir `http://localhost:8000/api/salud`, que tiene que responder `{"estado":"ok"}`. La documentación de la API está en `http://localhost:8000/docs`.
+
+Los scripts solo se ejecutan cuando el volumen de MySQL está vacío. Para recrear la base desde cero hay que correr `docker compose down -v` y después `docker compose up -d`.
