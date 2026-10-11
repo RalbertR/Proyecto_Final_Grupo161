@@ -1,0 +1,5 @@
+[tool.pytest]
+testpaths = ["tests"]
+
+[tool.ruff]
+src = ["."]
