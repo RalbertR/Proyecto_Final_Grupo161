@@ -73,3 +73,16 @@ En Linux o macOS el entorno se activa con `source .venv/bin/activate`.
 4. Abrir `http://localhost:8000/api/salud`, que tiene que responder `{"estado":"ok"}`. La documentación de la API está en `http://localhost:8000/docs`.
 
 Los scripts solo se ejecutan cuando el volumen de MySQL está vacío. Para recrear la base desde cero hay que correr `docker compose down -v` y después `docker compose up -d`.
+
+5. Activar pre-commit una sola vez, desde la raíz del repositorio y con el entorno virtual activo, para que Black y Ruff revisen el código en cada commit:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Para revisar todo el repositorio sin hacer un commit: `pre-commit run --all-files`.
+
+## Licencia
+
+[MIT](LICENSE).
