@@ -83,6 +83,28 @@ pre-commit install
 
 Para revisar todo el repositorio sin hacer un commit: `pre-commit run --all-files`.
 
+## Datos de prueba
+
+El script `database/semillas/cargar_datos_prueba.py` carga una organización ficticia para desarrollar y para la demo. Tiene la Dirección Logística, la Unidad Regional Norte con las Operacionales A y B, y la Unidad Regional Sur con la Operacional C. Cada unidad tiene sus ubicaciones, sus oficiales y bienes de los cuatro tipos en depósito y en dotación, 252 en total. En la Operacional A hay un arma dada de baja y una entrega de dos armas a B pendiente de recepción.
+
+1. Completar `CONTRASENA_DEMO` en el `.env`. Es la contraseña de todos los usuarios de demo.
+2. Con la base de desarrollo creada y el entorno virtual activo, correr desde la raíz del repositorio:
+
+```bash
+python database/semillas/cargar_datos_prueba.py
+```
+
+El script solo carga si la base está vacía. Si ya tiene datos, avisa y no modifica nada. Para cargarlos de nuevo hay que recrear la base como se explica en el desarrollo local. Siempre se cargan los mismos datos, así los ejemplos de la demo no cambian.
+
+| Usuario | Unidad |
+|---|---|
+| `logistico.direccion` | Dirección Logística |
+| `logistico.regional_norte` | Unidad Regional Norte |
+| `logistico.regional_sur` | Unidad Regional Sur |
+| `aux.unidad_a` | Unidad Operacional A |
+| `aux.unidad_b` | Unidad Operacional B |
+| `aux.unidad_c` | Unidad Operacional C |
+
 ## Licencia
 
 [MIT](LICENSE).
