@@ -12,5 +12,25 @@ services:
       - mysql_datos:/var/lib/mysql
       - ./database/migraciones:/docker-entrypoint-initdb.d:ro
 
+  mysql_pruebas:
+    image: mysql:8.4
+    profiles: [pruebas]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: logistica_policial
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "127.0.0.1:${MYSQL_PUERTO_PRUEBAS:-3308}:3306"
+    tmpfs:
+      - /var/lib/mysql
+    volumes:
+      - ./database/migraciones:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+
 volumes:
   mysql_datos:
