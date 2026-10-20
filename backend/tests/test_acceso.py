@@ -5,6 +5,8 @@ import jwt
 import pytest
 from sqlmodel import text
 
+from app.acceso.schema import UsuarioPublic
+from app.acceso.service import unidades_visibles
 from app.core.config import CLAVE_JWT
 from app.core.database import engine
 
@@ -176,3 +178,25 @@ def test_me_de_un_usuario_desactivado_despues_del_login_responde_401(
 
     assert respuesta.status_code == 401
     assert respuesta.json() == {"detail": "Sesión no válida o vencida"}
+
+
+@pytest.mark.parametrize(
+    "nombre_usuario, unidades_esperadas",
+    [
+        ("logistico.direccion", [1, 2, 3, 4, 5, 6]),
+        ("logistico.regional_norte", [2, 4, 5]),
+        ("logistico.regional_sur", [3, 6]),
+        ("aux.unidad_a", [4]),
+    ],
+    ids=["direccion", "regional_norte", "regional_sur", "operacional"],
+)
+def test_cada_nivel_ve_las_unidades_de_su_alcance(
+    client, session, organizacion, nombre_usuario, unidades_esperadas
+):
+    usuario = UsuarioPublic.model_validate(
+        iniciar_sesion(client, nombre_usuario).json()["usuario"]
+    )
+
+    unidades = unidades_visibles(session, usuario)
+
+    assert [unidad.id for unidad in unidades] == unidades_esperadas

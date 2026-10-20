@@ -7,6 +7,8 @@ from app.core.seguridad import (
     leer_token,
     verificar_contrasena,
 )
+from app.organizacion.model import Nivel
+from app.organizacion.schema import UnidadPublic
 
 from . import repository
 from .schema import SesionPublic, UsuarioPublic
@@ -40,3 +42,14 @@ def usuario_del_token(session: Session, token: str | None) -> UsuarioPublic:
     if usuario is None or not usuario.activo:
         raise no_autenticado("Sesión no válida o vencida")
     return UsuarioPublic.model_validate(usuario)
+
+
+def unidades_visibles(session: Session, usuario: UsuarioPublic) -> list[UnidadPublic]:
+    propia = usuario.unidad
+    if propia.nivel == Nivel.OPERACIONAL:
+        return [propia]
+    if propia.nivel == Nivel.REGIONAL:
+        unidades = repository.listar_unidad_y_dependientes(session, propia.id)
+    else:
+        unidades = repository.listar_unidades(session)
+    return [UnidadPublic.model_validate(unidad) for unidad in unidades]
