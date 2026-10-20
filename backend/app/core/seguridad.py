@@ -23,3 +23,16 @@ def crear_token(usuario_id: int) -> str:
     return jwt.encode(
         {"sub": str(usuario_id), "exp": vencimiento}, CLAVE_JWT, algorithm=ALGORITMO
     )
+
+
+def leer_token(token: str) -> int | None:
+    try:
+        datos = jwt.decode(
+            token,
+            CLAVE_JWT,
+            algorithms=[ALGORITMO],
+            options={"require": ["exp", "sub"]},
+        )
+    except jwt.InvalidTokenError:
+        return None
+    return int(datos["sub"])

@@ -114,3 +114,65 @@ def test_login_rechazado_responde_401_con_el_mismo_mensaje(
 
     assert respuesta.status_code == 401
     assert respuesta.json() == {"detail": "Usuario o contraseña incorrectos"}
+
+
+def firmar(datos, clave=CLAVE_JWT):
+    return jwt.encode(datos, clave, algorithm="HS256")
+
+
+def con_token(token):
+    return {"Authorization": f"Bearer {token}"}
+
+
+DENTRO_DE_UNA_HORA = datetime.now(UTC) + timedelta(hours=1)
+
+PEDIDOS_SIN_SESION_VALIDA = {
+    "sin_token": {},
+    "vencido": con_token(
+        firmar({"sub": "4", "exp": datetime.now(UTC) - timedelta(minutes=1)})
+    ),
+    "sin_vencimiento": con_token(firmar({"sub": "4"})),
+    "otra_clave": con_token(
+        firmar({"sub": "4", "exp": DENTRO_DE_UNA_HORA}, clave="x" * 32)
+    ),
+    "usuario_inexistente": con_token(firmar({"sub": "99", "exp": DENTRO_DE_UNA_HORA})),
+    "no_es_un_token": con_token("no.es.un.token"),
+}
+
+
+def test_me_con_token_valido_devuelve_los_datos_del_usuario(client, organizacion):
+    token = iniciar_sesion(client, "logistico.regional_norte").json()["access_token"]
+
+    respuesta = client.get("/api/auth/me", headers=con_token(token))
+
+    assert respuesta.status_code == 200
+    assert respuesta.json() == {
+        "id": 2,
+        "nombre_usuario": "logistico.regional_norte",
+        "unidad": {"id": 2, "nombre": "Unidad Regional Norte", "nivel": "REGIONAL"},
+    }
+
+
+@pytest.mark.parametrize(
+    "encabezados",
+    PEDIDOS_SIN_SESION_VALIDA.values(),
+    ids=PEDIDOS_SIN_SESION_VALIDA.keys(),
+)
+def test_me_sin_una_sesion_valida_responde_401(client, organizacion, encabezados):
+    respuesta = client.get("/api/auth/me", headers=encabezados)
+
+    assert respuesta.status_code == 401
+    assert respuesta.json() == {"detail": "Sesión no válida o vencida"}
+
+
+def test_me_de_un_usuario_desactivado_despues_del_login_responde_401(
+    client, organizacion
+):
+    token = iniciar_sesion(client, "aux.unidad_a").json()["access_token"]
+    with engine.begin() as conexion:
+        conexion.execute(text("UPDATE usuario SET activo = FALSE WHERE id = 4"))
+
+    respuesta = client.get("/api/auth/me", headers=con_token(token))
+
+    assert respuesta.status_code == 401
+    assert respuesta.json() == {"detail": "Sesión no válida o vencida"}
