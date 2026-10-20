@@ -83,6 +83,27 @@ pre-commit install
 
 Para revisar todo el repositorio sin hacer un commit: `pre-commit run --all-files`.
 
+## Pruebas
+
+Las pruebas usan una base MySQL propia, separada de la de desarrollo, porque antes de cada prueba se vacían todas las tablas. Se crea con los mismos scripts de `database/migraciones` y guarda los datos en memoria. La conexión se toma de `DATABASE_URL_PRUEBAS` y, si el puerto 3308 está ocupado, hay que cambiar `MYSQL_PUERTO_PRUEBAS` y el puerto de esa URL.
+
+1. Levantar la base de prueba. El comando espera a que la base termine de crearse:
+
+```bash
+docker compose up -d --wait mysql_pruebas
+```
+
+2. Desde `backend` y con el entorno virtual activo, instalar las dependencias de desarrollo y correr las pruebas con la cobertura:
+
+```bash
+pip install -r requirements-dev.txt
+pytest --cov=app --cov-report=term-missing
+```
+
+La salida de este comando es la que se pega en cada PR.
+
+La base de prueba se crea de nuevo cada vez que arranca el contenedor. Cuando se agrega un script a `database/migraciones`, alcanza con `docker compose up -d --wait --force-recreate mysql_pruebas`. Para apagarla se usa `docker compose stop mysql_pruebas`, porque un `docker compose down` no la incluye.
+
 ## Licencia
 
 [MIT](LICENSE).
