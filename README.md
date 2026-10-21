@@ -12,7 +12,9 @@ La organización y todos los datos del proyecto son ficticios.
 
 ## Estado del proyecto
 
-Estamos en la etapa de análisis y diseño. El repositorio tiene la documentación, el script de la base de datos y la estructura de carpetas, todavía sin código. La codificación empieza cuando el tutor apruebe la segunda entrega.
+Terminamos el análisis y el diseño y estamos en la codificación. Ya están la base del backend, el esquema de la base de datos, los datos de prueba, las pruebas automatizadas y la integración continua.
+
+El desarrollo se organiza en sprints. Cada historia de usuario y cada tarea técnica es un issue de GitHub con sus criterios y su estimación. Se trabaja en una rama propia y entra a main por un PR, con los linters y las pruebas corriendo en GitHub Actions.
 
 ## Tecnologías
 
@@ -22,22 +24,26 @@ Estamos en la etapa de análisis y diseño. El repositorio tiene la documentaci�
 | Backend | Python con FastAPI, Pydantic y SQLModel |
 | Estructura de la base | Scripts SQL versionados en /database |
 | Autenticación | JWT |
-| Frontend | React con Tailwind |
+| Frontend | React con TypeScript y Tailwind |
+| Pruebas | pytest |
 
 La justificación de cada tecnología está en la sección 5 del documento de diseño.
 
 ## Estructura del repositorio
 
 ```text
-/docs                  entregas, documento de diseño y diagrama entidad-relación
+/docs                  entregas, documento de diseño, diagrama entidad-relación e historias
+  /decisiones          decisiones de arquitectura, una por archivo
 /database
   /migraciones         scripts de creación de la base, numerados en orden
   /semillas            carga inicial de unidades, oficiales y bienes
 /backend
   /app                 un paquete por módulo
   /tests               pruebas automatizadas
-/frontend              aplicación React con Tailwind
+/frontend              aplicación React con TypeScript y Tailwind
 ```
+
+Las historias de usuario y las reglas de negocio están en [docs/historias_y_reglas.md](docs/historias_y_reglas.md).
 
 ## Entregas
 
@@ -48,7 +54,7 @@ La justificación de cada tecnología está en la sección 5 del documento de di
 
 ### Segunda entrega: diseño y módulos
 
-- [Documento de diseño y módulos](docs/Diseno%20y%20modulos%20-%20Proyecto%20Final%20-%20Grupo%20161.md)
+- [Documento de diseño y módulos](docs/2da%20Entrega%20-%20Diseno%20y%20modulos%20-%20Proyecto%20Final%20-%20Grupo%20161.md)
 - [Diagrama entidad-relación](docs/diagrama_entidad_relacion.png)
 - [Script de creación de la base de datos](database/migraciones/001_esquema.sql)
 

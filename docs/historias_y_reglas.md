@@ -1,0 +1,18 @@
+# Historias de usuario y reglas de negocio
+
+Cada historia y cada regla tiene su issue en GitHub con los criterios completos y el contrato de la API. Los criterios de la API se verifican con pruebas de pytest y los de la pantalla se prueban a mano.
+
+## Historias de usuario
+
+| ID | Historia | Criterios | Canal de verificación |
+|---|---|---|---|
+| HU-01 | Como usuario del sistema, quiero entrar con mi usuario y contraseña, para operar sobre los bienes que me corresponden. ([#4](https://github.com/RalbertR/Proyecto_Final_Grupo161/issues/4), [#10](https://github.com/RalbertR/Proyecto_Final_Grupo161/issues/10)) | Con usuario y contraseña correctos, `POST /api/auth/login` responde 200 con el token y los datos del usuario y de su unidad.<br>Con un usuario inexistente, una contraseña incorrecta o un usuario inactivo responde 401 con el mismo mensaje.<br>`GET /api/auth/me` devuelve los datos del usuario, y sin token o con un token vencido responde 401.<br>Sin sesión, cualquier página lleva al login.<br>Al entrar se ve el inventario con el usuario y la unidad en el encabezado.<br>Con datos incorrectos se ve "Usuario o contraseña incorrectos".<br>Mientras espera la respuesta, el botón queda deshabilitado.<br>Al recargar la página la sesión sigue iniciada.<br>Si el token vence, vuelve al login. | API y pantalla |
+| HU-02 | Como usuario del sistema, quiero cerrar mi sesión, para que nadie use mi cuenta en una computadora compartida. ([#10](https://github.com/RalbertR/Proyecto_Final_Grupo161/issues/10)) | Al tocar "Cerrar sesión" vuelve al login y con "atrás" no se puede volver a las páginas protegidas.<br>Si otro usuario inicia sesión en la misma pestaña, no ve datos del anterior. | Pantalla |
+| HU-03 | Como Auxiliar Logístico de una Unidad Operacional, quiero ver los bienes de mi unidad y quién los tiene, para saber qué hay en depósito y qué está en dotación. ([#11](https://github.com/RalbertR/Proyecto_Final_Grupo161/issues/11)) | Se ven solo los bienes de la unidad, con tipo, identificación, marca, modelo, estado operativo y tenencia: la ubicación si está en depósito, o el legajo y nombre del oficial si está en dotación.<br>Los bienes dados de baja no aparecen.<br>Los bienes con un movimiento pendiente aparecen marcados.<br>Se puede filtrar por tipo de bien.<br>Si la unidad no tiene bienes se ve "No hay bienes para mostrar".<br>Pedir por la API el inventario de otra unidad responde 403. | API y pantalla |
+| HU-04 | Como Logístico Regional o de Dirección, quiero ver el inventario de las unidades que dependen de mí, para controlarlas sin pedirles planillas. ([#12](https://github.com/RalbertR/Proyecto_Final_Grupo161/issues/12)) | Un usuario de la Regional Norte ve los bienes de la Regional, de A y de B, con una columna de unidad, y no ve los de C.<br>Puede filtrar por una de sus unidades.<br>Un usuario de Dirección ve los bienes de todas las unidades.<br>Pedir el inventario de una unidad fuera del alcance responde 403.<br>`GET /api/unidades` devuelve las unidades que el usuario puede consultar.<br>Un usuario de una Operacional no ve el filtro ni la columna de unidad. | API y pantalla |
+
+## Reglas de negocio
+
+| ID | Regla | Verificación |
+|---|---|---|
+| RN-01 | Alcance por nivel. Un usuario de una Unidad Operacional consulta solo su unidad, uno de una Unidad Regional consulta su unidad y sus Operacionales, y uno de Dirección consulta todas. Si pide una unidad fuera de su alcance, la API responde 403. | Pruebas de la API de HU-03 y HU-04: el 403 fuera del alcance, el inventario por nivel y `GET /api/unidades`. |
