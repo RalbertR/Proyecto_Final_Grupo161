@@ -1,5 +1,6 @@
 [tool.pytest]
 testpaths = ["tests"]
+pythonpath = ["../database/semillas"]
 
 [tool.coverage.report]
 skip_empty = true
