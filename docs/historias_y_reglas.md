@@ -15,4 +15,4 @@ Cada historia y cada regla tiene su issue en GitHub con los criterios completos 
 
 | ID | Regla | Verificación |
 |---|---|---|
-| RN-01 | Alcance por nivel. Un usuario de una Unidad Operacional consulta solo su unidad, uno de una Unidad Regional consulta su unidad y sus Operacionales, y uno de Dirección consulta todas. Si pide una unidad fuera de su alcance, la API responde 403. | Pruebas de la API de HU-03 y HU-04: el 403 fuera del alcance, el inventario por nivel y `GET /api/unidades`. |
+| RN-01 | Alcance por nivel. Un usuario de una Unidad Operacional consulta solo su unidad, uno de una Unidad Regional consulta su unidad y sus Operacionales, y uno de Dirección consulta todas. Si pide una unidad fuera de su alcance, la API responde 403. | Pruebas de `unidades_visibles` en el [#4](https://github.com/RalbertR/Proyecto_Final_Grupo161/issues/4), una por nivel. Pruebas de la API de HU-03 y HU-04: el 403 fuera del alcance, el inventario por nivel y `GET /api/unidades`. |
