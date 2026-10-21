@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  linters-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      # Usa las mismas versiones de Ruff y Black que .pre-commit-config.yaml.
+      # Si un hook modifica algún archivo, el paso falla.
+      - run: pip install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure
+
+  linters-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      # Se omite hasta que el frontend tenga package.json.
+      - if: hashFiles('frontend/package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - if: hashFiles('frontend/package.json') != ''
+        run: npm ci
+      - if: hashFiles('frontend/package.json') != ''
+        run: npx eslint .
+      - if: hashFiles('frontend/package.json') != ''
+        run: npx prettier --check .
+
+  pytest:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: logistica_policial
+          MYSQL_USER: logistica
+          MYSQL_PASSWORD: logistica
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 60
+    env:
+      DATABASE_URL_PRUEBAS: mysql+pymysql://logistica:logistica@127.0.0.1:3306/logistica_policial?charset=utf8mb4
+    steps:
+      - uses: actions/checkout@v4
+      # Con el cliente mysql y no con Python, porque el 001 usa DELIMITER (ADR 0004).
+      - name: Crear la base con los scripts
+        run: |
+          for archivo in database/migraciones/*.sql; do
+            echo "$archivo"
+            mysql -h 127.0.0.1 -P 3306 -uroot -proot --default-character-set=utf8mb4 < "$archivo"
+          done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: pip install -r backend/requirements-dev.txt
+      - working-directory: backend
+        run: pytest --cov=app --cov-report=term-missing
