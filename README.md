@@ -12,7 +12,9 @@ La organización y todos los datos del proyecto son ficticios.
 
 ## Estado del proyecto
 
-Estamos en la etapa de análisis y diseño. El repositorio tiene la documentación, el script de la base de datos y la estructura de carpetas, todavía sin código. La codificación empieza cuando el tutor apruebe la segunda entrega.
+Terminamos el análisis y el diseño y estamos en la codificación. Ya están la base del backend, el esquema de la base de datos, los datos de prueba, las pruebas automatizadas y la integración continua.
+
+El desarrollo se organiza en sprints. Cada historia de usuario y cada tarea técnica es un issue de GitHub con sus criterios y su estimación. Se trabaja en una rama propia y entra a main por un PR, con los linters y las pruebas corriendo en GitHub Actions.
 
 ## Tecnologías
 
@@ -22,22 +24,26 @@ Estamos en la etapa de análisis y diseño. El repositorio tiene la documentaci�
 | Backend | Python con FastAPI, Pydantic y SQLModel |
 | Estructura de la base | Scripts SQL versionados en /database |
 | Autenticación | JWT |
-| Frontend | React con Tailwind |
+| Frontend | React con TypeScript y Tailwind |
+| Pruebas | pytest |
 
 La justificación de cada tecnología está en la sección 5 del documento de diseño.
 
 ## Estructura del repositorio
 
 ```text
-/docs                  entregas, documento de diseño y diagrama entidad-relación
+/docs                  entregas, documento de diseño, diagrama entidad-relación e historias
+  /decisiones          decisiones de arquitectura, una por archivo
 /database
   /migraciones         scripts de creación de la base, numerados en orden
   /semillas            carga inicial de unidades, oficiales y bienes
 /backend
   /app                 un paquete por módulo
   /tests               pruebas automatizadas
-/frontend              aplicación React con Tailwind
+/frontend              aplicación React con TypeScript y Tailwind
 ```
+
+Las historias de usuario y las reglas de negocio están en [docs/historias_y_reglas.md](docs/historias_y_reglas.md).
 
 ## Entregas
 
@@ -48,7 +54,7 @@ La justificación de cada tecnología está en la sección 5 del documento de di
 
 ### Segunda entrega: diseño y módulos
 
-- [Documento de diseño y módulos](docs/Diseno%20y%20modulos%20-%20Proyecto%20Final%20-%20Grupo%20161.md)
+- [Documento de diseño y módulos](docs/2da%20Entrega%20-%20Diseno%20y%20modulos%20-%20Proyecto%20Final%20-%20Grupo%20161.md)
 - [Diagrama entidad-relación](docs/diagrama_entidad_relacion.png)
 - [Script de creación de la base de datos](database/migraciones/001_esquema.sql)
 
@@ -82,6 +88,28 @@ pre-commit install
 ```
 
 Para revisar todo el repositorio sin hacer un commit: `pre-commit run --all-files`.
+
+## Datos de prueba
+
+El script `database/semillas/cargar_datos_prueba.py` carga una organización ficticia para desarrollar y para la demo. Tiene la Dirección Logística, la Unidad Regional Norte con las Operacionales A y B, y la Unidad Regional Sur con la Operacional C. Cada unidad tiene sus ubicaciones, sus oficiales y bienes de los cuatro tipos en depósito y en dotación, 252 en total. En la Operacional A hay un arma dada de baja y una entrega de dos armas a B pendiente de recepción.
+
+1. Completar `CONTRASENA_DEMO` en el `.env`. Es la contraseña de todos los usuarios de demo.
+2. Con la base de desarrollo creada y el entorno virtual activo, correr desde la raíz del repositorio:
+
+```bash
+python database/semillas/cargar_datos_prueba.py
+```
+
+El script solo carga si la base está vacía. Si ya tiene datos, avisa y no modifica nada. Para cargarlos de nuevo hay que recrear la base como se explica en el desarrollo local. Siempre se cargan los mismos datos, así los ejemplos de la demo no cambian.
+
+| Usuario | Unidad |
+|---|---|
+| `logistico.direccion` | Dirección Logística |
+| `logistico.regional_norte` | Unidad Regional Norte |
+| `logistico.regional_sur` | Unidad Regional Sur |
+| `aux.unidad_a` | Unidad Operacional A |
+| `aux.unidad_b` | Unidad Operacional B |
+| `aux.unidad_c` | Unidad Operacional C |
 
 ## Pruebas
 

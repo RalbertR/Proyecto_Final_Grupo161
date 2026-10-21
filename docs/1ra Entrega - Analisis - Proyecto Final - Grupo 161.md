@@ -74,7 +74,7 @@ Como notificación informativa de estos movimientos existe además un **sistema 
 
 Un sistema informático centralizado permitiría:
 
-- **Trazabilidad completa y en tiempo real**: saber en todo momento quién tiene asignado cada bien, en qué unidad está y cuál es su historial completo de movimientos, sin depender de consultar actas o planillas a mano.
+- **Trazabilidad completa**: saber en todo momento quién tiene asignado cada bien, en qué unidad está y cuál es su historial completo de movimientos, sin depender de consultar actas o planillas a mano.
 - **Registro único y consistente**: eliminar la duplicación de información entre las actas en papel, las planillas Excel de cada unidad y los reportes periódicos o pedidos puntuales. Esos reportes se generarían automáticamente a partir de los datos ya cargados, sin discrepancias entre unidades y sin volver a cargar el mismo dato. La constancia de qué unidad declaró o certificó cada bien en un momento determinado, que es el motivo por el que hoy se sostiene el circuito manual, se puede conservar igual en el sistema sin necesidad de la doble carga.
 - **Visibilidad de disponibilidad y stock**: consultar al instante la cantidad de bienes disponibles, por ejemplo el stock de munición o los móviles operativos, sin relevamientos manuales y en cualquiera de los tres niveles.
 - **Base para reportes y control**: generar información consolidada por unidad, por Unidad Regional o a nivel nacional para la toma de decisiones, por ejemplo sobre bienes fuera de servicio o vencimientos de mantenimiento de la flota.

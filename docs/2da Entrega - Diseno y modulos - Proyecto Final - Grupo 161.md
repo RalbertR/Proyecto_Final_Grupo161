@@ -34,7 +34,7 @@ Al pasar el MVP a un diseño de datos ajustamos algunas definiciones. La tabla r
 |---|---|---|
 | Alta de bienes | La tabla de roles también se la asignaba al Auxiliar Logístico. | Es exclusiva de Dirección y el bien se crea en una ubicación de Dirección. El inventario que ya existe en las unidades lo precargamos nosotros antes de la puesta en marcha. |
 | Roles | Sala de Armas y Auxiliar Logístico tenían permisos separados en la Unidad Operacional. | Hay un solo rol por nivel de unidad. En la Unidad Operacional, el Auxiliar Logístico opera los cuatro tipos de bien. La separación por área se mantiene en las actas. |
-| Movimiento y acta | Un movimiento por cada bien, con acta solo en la entrega. | Un movimiento equivale a un acta y puede incluir varios bienes. El acta es obligatoria en entregas, traslados y bajas. |
+| Movimiento y acta | Un movimiento por cada bien, con acta solo en la entrega. | Un movimiento representa una operación logística y puede incluir varios bienes. Según su tipo puede requerir acta, que es obligatoria en entregas, traslados y bajas. |
 | Recepción y devolución | Se confirmaba el movimiento completo y la devolución no estaba diferenciada. | El destino acepta o rechaza el acta completa, y si la rechaza los bienes quedan en el origen. Cuando un oficial devuelve un bien a su unidad, la devolución se aplica en el acto porque la registra la misma unidad que recibe. |
 | Dotaciones y traslados | La dotación era una entrega a un oficial puntual y el traslado se aplicaba en el momento. | Solo se dota a oficiales de la misma unidad, que sigue siendo la dueña del bien. El traslado de un oficial incluye todas sus dotaciones y queda pendiente hasta que la unidad de destino lo confirma o lo rechaza. |
 | Estado operativo | Estaba fuera del MVP para los móviles. | Se aplica a los cuatro tipos y no es un movimiento. Para pasar un bien a fuera de servicio se adjunta un informe técnico en PDF con observaciones, y para volver a ponerlo en servicio alcanza con las observaciones. Un bien fuera de servicio no se asigna en dotación permanente. |
@@ -106,7 +106,7 @@ Elegimos una base de datos relacional con MySQL 8. Operaciones como una recepci�
 
 ![Diagrama Entidad-Relación del Sistema Logístico Policial](diagrama_entidad_relacion.png)
 
-Los bienes se modelan como una generalización. La tabla bien tiene los datos comunes y cada tipo tiene su ficha en una tabla aparte. El movimiento representa un acta, con la cabecera en movimiento y un renglón por cada bien en movimiento_bien. Los cambios de estado operativo tienen su propia tabla y comparten con los movimientos la tabla de revisiones, donde cada revisión apunta a uno o al otro.
+Los bienes se modelan como una generalización. La tabla bien tiene los datos comunes y cada tipo tiene su ficha en una tabla aparte. El movimiento representa una operación logística, que según su tipo puede requerir acta, con la cabecera en movimiento y un renglón por cada bien en movimiento_bien. Los cambios de estado operativo tienen su propia tabla y comparten con los movimientos la tabla de revisiones, donde cada revisión apunta a uno o al otro.
 
 El esquema está en tercera forma normal. Algunos datos que se podrían calcular desde el historial, como la tenencia y el estado actual de cada bien, los guardamos igual para consultar el inventario de forma directa.
 
@@ -212,7 +212,7 @@ La tabla **cambio_estado_operativo** guarda el historial de estado de cada bien.
 
 ### Movimientos
 
-La tabla **movimiento** es la cabecera y corresponde a un acta.
+La tabla **movimiento** es la cabecera y representa una operación logística. Según su tipo puede requerir acta.
 
 | Columna | Tipo | Descripción |
 |---|---|---|
@@ -232,7 +232,7 @@ La tabla **movimiento** es la cabecera y corresponde a un acta.
 | anulado_por_id, fecha_anulacion | INT, DATETIME | FK a usuario y fecha. Opcionales, se completan si el acta se anula. |
 | motivo_anulacion | VARCHAR(500) | Obligatorio si el acta se anula |
 
-La tabla **movimiento_bien** es el detalle, con un renglón por cada bien del acta. Como el acta se recibe y se anula completa, el estado es el de la cabecera.
+La tabla **movimiento_bien** es el detalle, con un renglón por cada bien del movimiento. Como el movimiento se recibe y se anula completo, el estado es el de la cabecera.
 
 | Columna | Tipo | Descripción |
 |---|---|---|
