@@ -56,6 +56,7 @@ jobs:
           --health-retries 60
     env:
       DATABASE_URL_PRUEBAS: mysql+pymysql://logistica:logistica@127.0.0.1:3306/logistica_policial?charset=utf8mb4
+      CLAVE_JWT: clave_de_prueba_del_ci_con_mas_de_32_caracteres
     steps:
       - uses: actions/checkout@v4
       # Con el cliente mysql y no con Python, porque el 001 usa DELIMITER (ADR 0004).
