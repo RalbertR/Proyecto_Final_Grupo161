@@ -62,7 +62,7 @@ Las historias de usuario y las reglas de negocio están en [docs/historias_y_reg
 
 Hace falta Docker, Python 3.13 o superior, Node 22 o superior y pnpm. Si pnpm no está instalado, se instala con `npm install -g pnpm`.
 
-1. Copiar `.env.example` como `.env` y completar las contraseñas. Si el puerto 3306 está ocupado, cambiar `MYSQL_PUERTO` y el puerto de `DATABASE_URL`.
+1. Copiar `.env.example` como `.env` y completar las contraseñas. Si el puerto 3306 está ocupado, cambiar `MYSQL_PUERTO` y el puerto de `DATABASE_URL`. `CLAVE_JWT` es la clave que firma los tokens de sesión y tiene que tener al menos 32 caracteres. Se puede generar con `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
 2. Levantar MySQL con `docker compose up -d`. La primera vez crea la base con los scripts de `database/migraciones`.
 3. Crear el entorno virtual del backend, instalar las dependencias y levantar la API:
 
