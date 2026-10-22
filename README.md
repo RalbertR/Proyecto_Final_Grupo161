@@ -60,7 +60,7 @@ Las historias de usuario y las reglas de negocio están en [docs/historias_y_reg
 
 ## Desarrollo local
 
-Hace falta Docker y Python 3.13 o superior.
+Hace falta Docker, Python 3.13 o superior, Node 22 o superior y pnpm. Si pnpm no está instalado, se instala con `npm install -g pnpm`.
 
 1. Copiar `.env.example` como `.env` y completar las contraseñas. Si el puerto 3306 está ocupado, cambiar `MYSQL_PUERTO` y el puerto de `DATABASE_URL`.
 2. Levantar MySQL con `docker compose up -d`. La primera vez crea la base con los scripts de `database/migraciones`.
@@ -80,7 +80,17 @@ En Linux o macOS el entorno se activa con `source .venv/bin/activate`.
 
 Los scripts solo se ejecutan cuando el volumen de MySQL está vacío. Para recrear la base desde cero hay que correr `docker compose down -v` y después `docker compose up -d`.
 
-5. Activar pre-commit una sola vez, desde la raíz del repositorio y con el entorno virtual activo, para que Black y Ruff revisen el código en cada commit:
+5. Con la API levantada, abrir otra terminal, instalar las dependencias del frontend y levantarlo:
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+La aplicación queda en `http://localhost:5173`. El servidor de Vite reenvía a la API todo lo que empieza con `/api`, así que sin el backend levantado las pantallas no cargan datos. Antes de abrir un PR hay que correr `pnpm lint` y `pnpm format:check`, que son los que corre la integración continua.
+
+6. Activar pre-commit una sola vez, desde la raíz del repositorio y con el entorno virtual activo, para que Black y Ruff revisen el código en cada commit:
 
 ```bash
 pip install pre-commit
