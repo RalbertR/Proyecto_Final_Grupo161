@@ -1,10 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  --color-marca: #1e3a8a;
-  --color-marca-hover: #1e40af;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-marca: #1f2a44;
+  --color-marca-hover: #111827;
   --color-secundario: #64748b;
   --color-exito: #16a34a;
-  --color-error: #dc2626;
+  --color-error: #991b1b;
   --color-pendiente: #d97706;
+  --color-foco: #fbbf24;
 }

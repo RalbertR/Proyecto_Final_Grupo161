@@ -11,8 +11,8 @@ export const App = () => (
     <Route element={<RutaProtegida />}>
       <Route element={<LayoutPrincipal />}>
         <Route index element={<InventarioPagina />} />
+        <Route path="*" element={<NoEncontradaPagina />} />
       </Route>
     </Route>
-    <Route path="*" element={<NoEncontradaPagina />} />
   </Routes>
 )
