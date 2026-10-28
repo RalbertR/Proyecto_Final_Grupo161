@@ -1,0 +1,53 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: logistica_policial
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_datos:/var/lib/mysql
+      - ./database/migraciones:/migraciones:ro
+      - ./database/iniciar_produccion.sh:/docker-entrypoint-initdb.d/iniciar_produccion.sh:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/logistica_policial?charset=utf8mb4
+      CLAVE_JWT: ${CLAVE_JWT}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  nginx:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  # Carga de datos de demo, se corre a mano: docker compose run --rm semillas
+  semillas:
+    build: ./backend
+    profiles: [semillas]
+    command: python /semillas/cargar_datos_prueba.py
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/logistica_policial?charset=utf8mb4
+      CONTRASENA_DEMO: ${CONTRASENA_DEMO}
+    volumes:
+      - ./database/semillas:/semillas:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_datos:

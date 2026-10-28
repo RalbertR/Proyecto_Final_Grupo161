@@ -142,6 +142,39 @@ La salida de este comando es la que se pega en cada PR.
 
 La base de prueba se crea de nuevo cada vez que arranca el contenedor. Cuando se agrega un script a `database/migraciones`, alcanza con `docker compose up -d --wait --force-recreate mysql_pruebas`. Para apagarla se usa `docker compose stop mysql_pruebas`, porque un `docker compose down` no la incluye.
 
+## Despliegue
+
+El sistema se publica en una VM con Docker, con `docker-compose.prod.yml`. Corren tres contenedores: MySQL, el backend y nginx con el build del frontend. nginx sirve la aplicación en `/` y pasa `/api` al backend. MySQL no expone puertos. nginx publica el puerto 80 de la VM, y desde afuera se entra por el Cloudflare Tunnel que ya corre en el homelab, que da HTTPS sin abrir puertos en el router.
+
+La primera vez que arranca, MySQL crea la base con los scripts de `database/migraciones` y `database/iniciar_produccion.sh` deja al usuario de la aplicación solo con `SELECT`, `INSERT`, `UPDATE` y `DELETE` sobre la base. El backend nunca usa root.
+
+1. Crear la VM con Debian o Ubuntu (2 GB de RAM y 15 GB de disco alcanzan) e instalar Docker con el plugin compose y git.
+2. En el panel de Cloudflare, ir a Zero Trust, Networks, Tunnels, abrir el túnel del homelab y agregar un Public Hostname con el subdominio y el dominio, servicio `HTTP` y URL `<IP de la VM>:80`. Usar un subdominio que no tenga ya un registro DNS.
+3. Clonar el repositorio en la VM y crear el `.env` en la raíz. Los secretos viven solo en ese archivo, que no se sube al repositorio:
+
+```bash
+COMPOSE_FILE=docker-compose.prod.yml
+MYSQL_ROOT_PASSWORD=
+MYSQL_USER=logistica
+MYSQL_PASSWORD=
+CLAVE_JWT=
+CONTRASENA_DEMO=
+```
+
+Cada contraseña y la clave JWT se generan con `openssl rand -hex 32`. La contraseña de MySQL va dentro de la URL de conexión, por eso tiene que ser hexadecimal y sin símbolos. `COMPOSE_FILE` hace que todos los `docker compose` usen el archivo de producción sin tener que pasar `-f`. Después de completarlo, correr `chmod 600 .env`.
+
+4. Levantar todo con `docker compose up -d --build` y revisar con `docker compose ps` que los contenedores estén corriendo y MySQL figure `healthy`.
+5. Abrir `https://<subdominio>/api/salud`, que tiene que responder `{"estado":"ok"}`, y después `https://<subdominio>` para ver el login.
+6. Para la demo, cargar los datos de prueba con `docker compose run --rm semillas`. Usa la `CONTRASENA_DEMO` del `.env`.
+
+Para actualizar a una versión nueva, correr `git pull` y `docker compose up -d --build`. Los scripts de migraciones solo corren con la base vacía, así que un script nuevo se aplica a mano:
+
+```bash
+docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" logistica_policial' < database/migraciones/002_ejemplo.sql
+```
+
+Los logs se ven con `docker compose logs -f backend`, o con el nombre de otro servicio.
+
 ## Licencia
 
 [MIT](LICENSE).
