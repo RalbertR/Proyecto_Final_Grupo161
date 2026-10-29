@@ -78,12 +78,16 @@ DELIMITER //
 
 CREATE TRIGGER trg_revision_version BEFORE INSERT ON revision FOR EACH ROW
 BEGIN
+  DECLARE bloqueado INT UNSIGNED;
   DECLARE vigente SMALLINT UNSIGNED;
   IF NEW.movimiento_id IS NOT NULL THEN
+    SELECT id INTO bloqueado FROM movimiento WHERE id = NEW.movimiento_id FOR UPDATE;
     SET vigente = (SELECT COALESCE(MAX(version), 0)
                    FROM rectificacion
                    WHERE movimiento_id = NEW.movimiento_id);
   ELSE
+    SELECT id INTO bloqueado FROM cambio_estado_operativo
+    WHERE id = NEW.cambio_estado_id FOR UPDATE;
     SET vigente = (SELECT COALESCE(MAX(version), 0)
                    FROM rectificacion_cambio_estado
                    WHERE cambio_estado_id = NEW.cambio_estado_id);
@@ -92,6 +96,20 @@ BEGIN
     SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'La revision no corresponde a la version vigente';
   END IF;
+END//
+
+CREATE TRIGGER trg_rectificacion_bloqueo BEFORE INSERT ON rectificacion FOR EACH ROW
+BEGIN
+  DECLARE bloqueado INT UNSIGNED;
+  SELECT id INTO bloqueado FROM movimiento WHERE id = NEW.movimiento_id FOR UPDATE;
+END//
+
+CREATE TRIGGER trg_rect_cambio_bloqueo BEFORE INSERT ON rectificacion_cambio_estado
+FOR EACH ROW
+BEGIN
+  DECLARE bloqueado INT UNSIGNED;
+  SELECT id INTO bloqueado FROM cambio_estado_operativo
+  WHERE id = NEW.cambio_estado_id FOR UPDATE;
 END//
 
 DELIMITER ;

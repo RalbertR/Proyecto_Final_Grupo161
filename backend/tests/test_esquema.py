@@ -1,6 +1,15 @@
+import threading
+
 import pytest
 from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlmodel import text
+from sqlmodel import Session, text
+
+from app.core.database import engine
+
+FILA_CON_DEPENDIENTES = 1451
+PASAR_LA_REGIONAL_2_A_OPERACIONAL_DE_LA_3 = (
+    "UPDATE unidad SET nivel = 'OPERACIONAL', unidad_superior_id = 3 WHERE id = 2"
+)
 
 
 def insertar_unidad(session, id, nivel, superior):
@@ -67,10 +76,20 @@ def test_una_regional_que_depende_de_otra_regional_es_rechazada(
 def test_cambiar_el_nivel_de_una_regional_con_operacionales_es_rechazado(
     session, direccion_y_regional
 ):
-    insertar_unidad(session, 3, "OPERACIONAL", 2)
+    insertar_unidad(session, 3, "REGIONAL", 1)
+    insertar_unidad(session, 4, "OPERACIONAL", 2)
 
-    with pytest.raises(IntegrityError):
-        session.exec(text("UPDATE unidad SET nivel = 'OPERACIONAL' WHERE id = 2"))
+    with pytest.raises(IntegrityError) as error:
+        session.exec(text(PASAR_LA_REGIONAL_2_A_OPERACIONAL_DE_LA_3))
+    assert error.value.orig.args[0] == FILA_CON_DEPENDIENTES
+
+
+def test_cambiar_el_nivel_de_una_regional_sin_operacionales_se_acepta(
+    session, direccion_y_regional
+):
+    insertar_unidad(session, 3, "REGIONAL", 1)
+
+    session.exec(text(PASAR_LA_REGIONAL_2_A_OPERACIONAL_DE_LA_3))
 
 
 @pytest.fixture
@@ -288,19 +307,113 @@ def test_una_revision_de_una_version_que_no_existe_es_rechazada(session, organiz
         revisar(session, 1, movimiento_id=1)
 
 
-def test_la_revision_de_un_cambio_de_estado_controla_su_version(session, organizacion):
-    registrar_cambio_de_estado(session, 1, 1)
+def rectificar_cambio_de_estado(session, cambio_estado_id, version):
     session.exec(
         text(
             "INSERT INTO rectificacion_cambio_estado (cambio_estado_id, version, "
-            "observaciones, motivo, usuario_id) VALUES (1, 1, "
+            "observaciones, motivo, usuario_id) VALUES (:c, :v, "
             "'Reparada y probada en el polígono', 'Se completa la observación', 1)"
-        )
+        ).bindparams(c=cambio_estado_id, v=version)
     )
+
+
+def test_la_revision_de_un_cambio_de_estado_controla_su_version(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+    rectificar_cambio_de_estado(session, 1, 1)
 
     with pytest.raises(OperationalError, match="version vigente"):
         revisar(session, 0, cambio_estado_id=1)
     revisar(session, 1, cambio_estado_id=1)
+
+
+def en_otra_transaccion(operacion):
+    resultado = {}
+
+    def ejecutar_y_confirmar():
+        with Session(engine) as otra:
+            try:
+                operacion(otra)
+                otra.commit()
+            except OperationalError as error:
+                resultado["error"] = str(error)
+
+    hilo = threading.Thread(target=ejecutar_y_confirmar)
+    hilo.start()
+    return hilo, resultado
+
+
+def test_una_revision_espera_la_rectificacion_en_curso_del_movimiento(
+    session, organizacion
+):
+    entregar(session, 1, [1], estado="APLICADO")
+    session.commit()
+
+    with Session(engine) as autor:
+        rectificar(autor, 1, 1)
+        hilo, resultado = en_otra_transaccion(
+            lambda revisor: revisar(revisor, 0, movimiento_id=1)
+        )
+        hilo.join(timeout=1)
+        assert hilo.is_alive()
+        autor.commit()
+    hilo.join(timeout=10)
+
+    assert "version vigente" in resultado["error"]
+
+
+def test_una_revision_espera_la_rectificacion_en_curso_del_cambio_de_estado(
+    session, organizacion
+):
+    registrar_cambio_de_estado(session, 1, 1)
+    session.commit()
+
+    with Session(engine) as autor:
+        rectificar_cambio_de_estado(autor, 1, 1)
+        hilo, resultado = en_otra_transaccion(
+            lambda revisor: revisar(revisor, 0, cambio_estado_id=1)
+        )
+        hilo.join(timeout=1)
+        assert hilo.is_alive()
+        autor.commit()
+    hilo.join(timeout=10)
+
+    assert "version vigente" in resultado["error"]
+
+
+def test_una_rectificacion_espera_la_revision_en_curso_del_movimiento(
+    session, organizacion
+):
+    entregar(session, 1, [1], estado="APLICADO")
+    session.commit()
+
+    with Session(engine) as revisor:
+        revisar(revisor, 0, movimiento_id=1)
+        hilo, resultado = en_otra_transaccion(lambda autor: rectificar(autor, 1, 1))
+        hilo.join(timeout=1)
+        assert hilo.is_alive()
+        revisor.commit()
+    hilo.join(timeout=10)
+
+    assert resultado == {}
+
+
+def test_una_rectificacion_espera_la_revision_en_curso_del_cambio_de_estado(
+    session, organizacion
+):
+    registrar_cambio_de_estado(session, 1, 1)
+    session.commit()
+
+    with Session(engine) as revisor:
+        revisar(revisor, 0, cambio_estado_id=1)
+        hilo, resultado = en_otra_transaccion(
+            lambda autor: rectificar_cambio_de_estado(autor, 1, 1)
+        )
+        hilo.join(timeout=1)
+        assert hilo.is_alive()
+        revisor.commit()
+    hilo.join(timeout=10)
+
+    assert resultado == {}
 
 
 def test_el_historial_muestra_el_numero_de_orden_de_cada_registro(

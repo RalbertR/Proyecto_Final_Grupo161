@@ -14,4 +14,4 @@ Cada revisión guarda en `version_revisada` la versión que vio el revisor: 0 pa
 
 Si el autor corrige el registro mientras el revisor lo tiene abierto, la revisión se rechaza y la API responde 409 con el mensaje del trigger, igual que con los demás triggers.
 
-Trabajamos con READ COMMITTED, como dice el ADR 0001, así que el trigger no ve una rectificación que todavía no se confirmó. Para que una revisión y una corrección simultáneas no pasen las dos, la API de revisión y la de rectificación bloquean la cabecera del registro con `SELECT ... FOR UPDATE` antes de escribir.
+Para que una revisión y una corrección simultáneas no se crucen, los triggers de `revision`, `rectificacion` y `rectificacion_cambio_estado` empiezan bloqueando la cabecera del registro con `SELECT ... FOR UPDATE`. Así la segunda operación espera a que la primera confirme y trabaja con lo que quedó, aunque usemos READ COMMITTED como dice el ADR 0001. La API no tiene que bloquear nada por su cuenta, y las dos operaciones no terminan en un deadlock cuando actualizan el estado de revisión de la cabecera.
