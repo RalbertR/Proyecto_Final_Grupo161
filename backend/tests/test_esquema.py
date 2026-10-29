@@ -243,3 +243,61 @@ def test_un_numero_de_orden_repetido_para_el_mismo_bien_es_rechazado(
         session.exec(
             text("UPDATE movimiento_bien SET orden = 1 WHERE movimiento_id = 2")
         )
+
+
+def rectificar(session, movimiento_id, version):
+    session.exec(
+        text(
+            "INSERT INTO rectificacion (movimiento_id, version, fecha_hecho, "
+            "numero_acta, motivo, usuario_id) VALUES (:m, :v, CURDATE(), "
+            "'0001/2026', 'Se corrige la fecha según el acta firmada', 1)"
+        ).bindparams(m=movimiento_id, v=version)
+    )
+
+
+def revisar(session, version, movimiento_id=None, cambio_estado_id=None):
+    session.exec(
+        text(
+            "INSERT INTO revision (movimiento_id, cambio_estado_id, resultado, "
+            "version_revisada, usuario_id) VALUES (:m, :c, 'REVISADO', :v, 1)"
+        ).bindparams(m=movimiento_id, c=cambio_estado_id, v=version)
+    )
+
+
+def test_una_revision_de_la_version_original_se_acepta(session, organizacion):
+    entregar(session, 1, [1], estado="APLICADO")
+
+    revisar(session, 0, movimiento_id=1)
+
+
+def test_una_revision_de_una_version_anterior_a_la_vigente_es_rechazada(
+    session, organizacion
+):
+    entregar(session, 1, [1], estado="APLICADO")
+    rectificar(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="version vigente"):
+        revisar(session, 0, movimiento_id=1)
+    revisar(session, 1, movimiento_id=1)
+
+
+def test_una_revision_de_una_version_que_no_existe_es_rechazada(session, organizacion):
+    entregar(session, 1, [1], estado="APLICADO")
+
+    with pytest.raises(OperationalError, match="version vigente"):
+        revisar(session, 1, movimiento_id=1)
+
+
+def test_la_revision_de_un_cambio_de_estado_controla_su_version(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+    session.exec(
+        text(
+            "INSERT INTO rectificacion_cambio_estado (cambio_estado_id, version, "
+            "observaciones, motivo, usuario_id) VALUES (1, 1, "
+            "'Reparada y probada en el polígono', 'Se completa la observación', 1)"
+        )
+    )
+
+    with pytest.raises(OperationalError, match="version vigente"):
+        revisar(session, 0, cambio_estado_id=1)
+    revisar(session, 1, cambio_estado_id=1)

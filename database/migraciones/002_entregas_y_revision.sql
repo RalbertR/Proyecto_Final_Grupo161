@@ -71,3 +71,27 @@ BEGIN
 END//
 
 DELIMITER ;
+
+ALTER TABLE revision ADD COLUMN version_revisada SMALLINT UNSIGNED NOT NULL;
+
+DELIMITER //
+
+CREATE TRIGGER trg_revision_version BEFORE INSERT ON revision FOR EACH ROW
+BEGIN
+  DECLARE vigente SMALLINT UNSIGNED;
+  IF NEW.movimiento_id IS NOT NULL THEN
+    SET vigente = (SELECT COALESCE(MAX(version), 0)
+                   FROM rectificacion
+                   WHERE movimiento_id = NEW.movimiento_id);
+  ELSE
+    SET vigente = (SELECT COALESCE(MAX(version), 0)
+                   FROM rectificacion_cambio_estado
+                   WHERE cambio_estado_id = NEW.cambio_estado_id);
+  END IF;
+  IF NEW.version_revisada <> vigente THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'La revision no corresponde a la version vigente';
+  END IF;
+END//
+
+DELIMITER ;
