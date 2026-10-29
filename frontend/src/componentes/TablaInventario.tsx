@@ -15,6 +15,7 @@ import { Boton } from "./Boton"
 const col = createColumnHelper<FilaInventario>()
 
 const columnas = [
+  col.accessor("unidad", { header: "Unidad" }),
   col.accessor("tipo_bien", {
     header: "Tipo",
     cell: (info) => tiposDeBien[info.getValue()] ?? info.getValue(),
@@ -59,9 +60,9 @@ const columnas = [
 
 const sinBienes: FilaInventario[] = []
 
-type TablaInventarioProps = { tipos: string[] }
+type TablaInventarioProps = { tipos: string[]; mostrarUnidad: boolean }
 
-export const TablaInventario = ({ tipos }: TablaInventarioProps) => {
+export const TablaInventario = ({ tipos, mostrarUnidad }: TablaInventarioProps) => {
   const { data, isPending, isError, error, isFetching, refetch } = useQuery({
     queryKey: ["inventario"],
     queryFn: obtenerInventario,
@@ -76,7 +77,7 @@ export const TablaInventario = ({ tipos }: TablaInventarioProps) => {
   const table = useReactTable({
     data: bienes,
     columns: columnas,
-    state: { sorting },
+    state: { sorting, columnVisibility: { unidad: mostrarUnidad } },
     onSortingChange: setSorting,
     getRowId: (bien) => String(bien.bien_id),
     getCoreRowModel: getCoreRowModel(),

@@ -1,9 +1,13 @@
+import { useQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
 import { useSearchParams } from "react-router-dom"
+import { obtenerYo } from "../api/auth"
 import { TablaInventario } from "../componentes/TablaInventario"
 import { tiposDeBien } from "../tipos/bien"
 
 export const InventarioPagina = () => {
+  const { data: yo } = useQuery({ queryKey: ["yo"], queryFn: obtenerYo, retry: false })
+  const verUnidades = !!yo && yo.unidad.nivel !== "OPERACIONAL"
   const [sp, setSp] = useSearchParams()
   const tipos = useMemo(() => sp.getAll("tipo"), [sp])
 
@@ -37,7 +41,7 @@ export const InventarioPagina = () => {
           </div>
         </fieldset>
       </div>
-      <TablaInventario tipos={tipos} />
+      <TablaInventario tipos={tipos} mostrarUnidad={verUnidades} />
     </section>
   )
 }
