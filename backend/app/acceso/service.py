@@ -53,3 +53,11 @@ def unidades_visibles(session: Session, usuario: UsuarioPublic) -> list[UnidadPu
     else:
         unidades = repository.listar_unidades(session)
     return [UnidadPublic.model_validate(unidad) for unidad in unidades]
+
+
+def unidades_de_destino(session: Session, usuario: UsuarioPublic) -> list[UnidadPublic]:
+    return [
+        UnidadPublic.model_validate(unidad)
+        for unidad in repository.listar_unidades(session)
+        if unidad.id != usuario.unidad.id
+    ]

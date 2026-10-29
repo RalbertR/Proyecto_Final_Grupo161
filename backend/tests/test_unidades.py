@@ -45,10 +45,9 @@ def organizacion():
         )
 
 
-def pedir_unidades(client, usuario_id):
+def pedir_unidades(client, usuario_id, ruta="/api/unidades"):
     return client.get(
-        "/api/unidades",
-        headers={"Authorization": f"Bearer {crear_token(usuario_id)}"},
+        ruta, headers={"Authorization": f"Bearer {crear_token(usuario_id)}"}
     )
 
 
@@ -74,6 +73,19 @@ def test_cada_nivel_recibe_las_unidades_de_su_alcance(
     respuesta = pedir_unidades(client, usuario_id)
 
     assert [unidad["id"] for unidad in respuesta.json()] == unidades_esperadas
+
+
+def test_los_destinos_son_todas_las_unidades_menos_la_propia(client, organizacion):
+    respuesta = pedir_unidades(client, 4, "/api/unidades/destinos")
+
+    assert respuesta.status_code == 200
+    assert respuesta.json() == [
+        {"id": 1, "nombre": "Dirección Logística", "nivel": "DIRECCION"},
+        {"id": 2, "nombre": "Unidad Regional Norte", "nivel": "REGIONAL"},
+        {"id": 3, "nombre": "Unidad Regional Sur", "nivel": "REGIONAL"},
+        {"id": 5, "nombre": "Unidad Operacional B", "nivel": "OPERACIONAL"},
+        {"id": 6, "nombre": "Unidad Operacional C", "nivel": "OPERACIONAL"},
+    ]
 
 
 def test_sin_sesion_responde_401(client, organizacion):
