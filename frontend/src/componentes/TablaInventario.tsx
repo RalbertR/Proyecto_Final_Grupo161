@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import {
   createColumnHelper,
   flexRender,
@@ -60,12 +60,14 @@ const columnas = [
 
 const sinBienes: FilaInventario[] = []
 
-type TablaInventarioProps = { tipos: string[]; mostrarUnidad: boolean }
+type TablaInventarioProps = { tipos: string[]; mostrarUnidad: boolean; unidadId?: number }
 
-export const TablaInventario = ({ tipos, mostrarUnidad }: TablaInventarioProps) => {
+export const TablaInventario = ({ tipos, mostrarUnidad, unidadId }: TablaInventarioProps) => {
   const { data, isPending, isError, error, isFetching, refetch } = useQuery({
-    queryKey: ["inventario"],
-    queryFn: obtenerInventario,
+    queryKey: ["inventario", unidadId],
+    queryFn: () => obtenerInventario(unidadId),
+    placeholderData: keepPreviousData,
+    retry: false,
   })
   // ponytail: filtra en el cliente porque la API acepta un solo tipo_bien;
   // si la API acepta varios, el filtro pasa a la queryKey.
