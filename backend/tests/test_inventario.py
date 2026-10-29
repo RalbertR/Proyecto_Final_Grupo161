@@ -148,12 +148,51 @@ def inventario():
         )
 
 
+@pytest.fixture
+def dependientes(inventario):
+    with engine.begin() as conexion:
+        conexion.execute(
+            text(
+                "INSERT INTO usuario (id, nombre_usuario, hash_contrasena, unidad_id) "
+                "VALUES (1, 'logistico.direccion', 'x', 1), "
+                "(2, 'logistico.regional_norte', 'x', 2)"
+            )
+        )
+        conexion.execute(
+            text(
+                "INSERT INTO ubicacion (id, unidad_id, nombre) "
+                "VALUES (3, 2, 'Depósito Regional'), (4, 6, 'Sala de Armas')"
+            )
+        )
+        conexion.execute(
+            text(
+                "INSERT INTO bien (id, tipo_bien, marca, modelo, numero_serie, "
+                "unidad_id, ubicacion_id) VALUES "
+                "(6, 'EQUIPO_COMUNICACIONES', 'Motorola', 'DEP450', 'MT-1', 2, 3), "
+                "(7, 'ARMAMENTO', 'Bersa', 'TPR9', 'BT-4', 6, 4)"
+            )
+        )
+
+
+DE_LA_REGIONAL_NORTE = [
+    ("Unidad Regional Norte", 6),
+    ("Unidad Operacional A", 1),
+    ("Unidad Operacional A", 4),
+    ("Unidad Operacional A", 2),
+    ("Unidad Operacional B", 5),
+]
+
+
 def con_token(usuario_id):
     return {"Authorization": f"Bearer {crear_token(usuario_id)}"}
 
 
 def pedir_inventario(client, usuario_id, **filtros):
     return client.get("/api/inventario", params=filtros, headers=con_token(usuario_id))
+
+
+def unidad_y_bien(respuesta):
+    return [(fila["unidad"], fila["bien_id"]) for fila in respuesta.json()]
 
 
 def test_operacional_ve_solo_los_bienes_de_su_unidad_con_su_tenencia(
@@ -202,6 +241,42 @@ def test_pedir_la_propia_unidad_devuelve_su_inventario(client, inventario):
 
 def test_pedir_el_inventario_de_otra_unidad_responde_403(client, inventario):
     respuesta = pedir_inventario(client, 4, unidad_id=5)
+
+    assert respuesta.status_code == 403
+    assert respuesta.json() == {"detail": "No tiene acceso al inventario de esa unidad"}
+
+
+def test_la_regional_ve_su_inventario_y_el_de_sus_operacionales_con_la_unidad(
+    client, dependientes
+):
+    respuesta = pedir_inventario(client, 2)
+
+    assert respuesta.status_code == 200
+    assert unidad_y_bien(respuesta) == DE_LA_REGIONAL_NORTE
+
+
+def test_la_regional_filtra_por_una_de_sus_unidades(client, dependientes):
+    respuesta = pedir_inventario(client, 2, unidad_id=4)
+
+    assert unidad_y_bien(respuesta) == [
+        ("Unidad Operacional A", 1),
+        ("Unidad Operacional A", 4),
+        ("Unidad Operacional A", 2),
+    ]
+
+
+def test_direccion_ve_el_inventario_de_todas_las_unidades(client, dependientes):
+    respuesta = pedir_inventario(client, 1)
+
+    assert unidad_y_bien(respuesta) == DE_LA_REGIONAL_NORTE + [
+        ("Unidad Operacional C", 7)
+    ]
+
+
+def test_la_regional_no_puede_pedir_el_inventario_de_una_unidad_de_otra_regional(
+    client, dependientes
+):
+    respuesta = pedir_inventario(client, 2, unidad_id=6)
 
     assert respuesta.status_code == 403
     assert respuesta.json() == {"detail": "No tiene acceso al inventario de esa unidad"}

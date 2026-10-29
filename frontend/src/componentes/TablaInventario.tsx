@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import {
   createColumnHelper,
   flexRender,
@@ -15,6 +15,7 @@ import { Boton } from "./Boton"
 const col = createColumnHelper<FilaInventario>()
 
 const columnas = [
+  col.accessor("unidad", { header: "Unidad" }),
   col.accessor("tipo_bien", {
     header: "Tipo",
     cell: (info) => tiposDeBien[info.getValue()] ?? info.getValue(),
@@ -59,12 +60,14 @@ const columnas = [
 
 const sinBienes: FilaInventario[] = []
 
-type TablaInventarioProps = { tipos: string[] }
+type TablaInventarioProps = { tipos: string[]; mostrarUnidad: boolean; unidadId?: number }
 
-export const TablaInventario = ({ tipos }: TablaInventarioProps) => {
+export const TablaInventario = ({ tipos, mostrarUnidad, unidadId }: TablaInventarioProps) => {
   const { data, isPending, isError, error, isFetching, refetch } = useQuery({
-    queryKey: ["inventario"],
-    queryFn: obtenerInventario,
+    queryKey: ["inventario", unidadId],
+    queryFn: () => obtenerInventario(unidadId),
+    placeholderData: keepPreviousData,
+    retry: false,
   })
   // ponytail: filtra en el cliente porque la API acepta un solo tipo_bien;
   // si la API acepta varios, el filtro pasa a la queryKey.
@@ -76,7 +79,7 @@ export const TablaInventario = ({ tipos }: TablaInventarioProps) => {
   const table = useReactTable({
     data: bienes,
     columns: columnas,
-    state: { sorting },
+    state: { sorting, columnVisibility: { unidad: mostrarUnidad } },
     onSortingChange: setSorting,
     getRowId: (bien) => String(bien.bien_id),
     getCoreRowModel: getCoreRowModel(),
