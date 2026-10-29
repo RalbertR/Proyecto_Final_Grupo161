@@ -104,7 +104,248 @@ Elegimos una base de datos relacional con MySQL 8. Operaciones como una recepci�
 
 ### Diagrama Entidad-Relación
 
-![Diagrama Entidad-Relación del Sistema Logístico Policial](diagrama_entidad_relacion.png)
+En el diagrama, PK marca las claves primarias, FK las claves foráneas y UK las columnas que no se repiten.
+
+```mermaid
+erDiagram
+    unidad {
+        INT id PK
+        VARCHAR(100) nombre UK
+        ENUM nivel
+        INT unidad_superior_id FK
+        ENUM nivel_superior FK
+        BOOLEAN activa
+    }
+    ubicacion {
+        INT id PK
+        INT unidad_id FK
+        VARCHAR(100) nombre
+        BOOLEAN activa
+    }
+    oficial {
+        INT id PK
+        VARCHAR(20) legajo UK
+        VARCHAR(80) apellido
+        VARCHAR(80) nombre
+        INT unidad_id FK
+        BOOLEAN activo
+    }
+    usuario {
+        INT id PK
+        VARCHAR(50) nombre_usuario UK
+        VARCHAR(255) hash_contrasena
+        INT unidad_id FK
+        INT oficial_id FK, UK
+        BOOLEAN activo
+        DATETIME fecha_alta
+    }
+    tipo_bien {
+        VARCHAR(30) codigo PK
+        VARCHAR(60) nombre
+    }
+    tipo_vehiculo {
+        SMALLINT id PK
+        VARCHAR(60) nombre UK
+    }
+    tipo_tarea {
+        SMALLINT id PK
+        VARCHAR(60) nombre UK
+    }
+    bien {
+        INT id PK
+        VARCHAR(30) tipo_bien FK
+        VARCHAR(60) marca
+        VARCHAR(60) modelo
+        VARCHAR(50) numero_serie
+        VARCHAR(255) descripcion
+        ENUM estado_operativo
+        BOOLEAN de_baja
+        INT unidad_id FK
+        INT oficial_id FK
+        INT ubicacion_id FK
+        INT ultimo_orden
+    }
+    armamento {
+        INT bien_id PK, FK
+        VARCHAR(30) tipo_bien FK
+        VARCHAR(20) calibre
+        SMALLINT sbo_cartuchos
+    }
+    chaleco {
+        INT bien_id PK, FK
+        VARCHAR(30) tipo_bien FK
+        VARCHAR(10) talle
+        VARCHAR(10) nivel_proteccion
+        DATE fecha_vencimiento
+    }
+    movil {
+        INT bien_id PK, FK
+        VARCHAR(30) tipo_bien FK
+        VARCHAR(10) patente UK
+        VARCHAR(20) numero_interno UK
+        SMALLINT anio
+        SMALLINT tipo_vehiculo_id FK
+        SMALLINT tipo_tarea_id FK
+    }
+    equipo_comunicaciones {
+        INT bien_id PK, FK
+        VARCHAR(30) tipo_bien FK
+        ENUM tipo_equipo
+    }
+    documento {
+        INT id PK
+        VARCHAR(255) nombre_original
+        VARCHAR(100) tipo_mime
+        BIGINT tamano_bytes
+        CHAR(64) hash_sha256 UK
+        VARCHAR(500) ruta_almacenamiento
+        INT usuario_id FK
+        DATETIME fecha_carga
+        INT reemplaza_documento_id FK, UK
+        VARCHAR(255) motivo_reemplazo
+    }
+    movimiento {
+        INT id PK
+        ENUM tipo
+        ENUM estado
+        ENUM estado_revision
+        VARCHAR(30) numero_acta
+        DATE fecha_hecho
+        DATETIME fecha_carga
+        INT usuario_id FK
+        INT unidad_registrante_id FK
+        INT unidad_origen_id FK
+        INT oficial_origen_id FK
+        INT unidad_destino_id FK
+        INT oficial_destino_id FK
+        VARCHAR(500) motivo
+        VARCHAR(500) descripcion
+        INT anulado_por_id FK
+        DATETIME fecha_anulacion
+        VARCHAR(500) motivo_anulacion
+    }
+    movimiento_bien {
+        INT movimiento_id PK, FK
+        INT bien_id PK, FK
+        INT ubicacion_origen_id FK
+        INT ubicacion_destino_id FK
+        INT orden
+    }
+    recepcion {
+        INT id PK
+        INT movimiento_id FK, UK
+        ENUM resultado
+        VARCHAR(500) motivo_rechazo
+        INT usuario_id FK
+        DATETIME fecha
+    }
+    rectificacion {
+        INT id PK
+        INT movimiento_id FK
+        SMALLINT version
+        DATE fecha_hecho
+        VARCHAR(30) numero_acta
+        VARCHAR(500) descripcion
+        VARCHAR(500) motivo
+        INT usuario_id FK
+        DATETIME fecha
+    }
+    movimiento_documento {
+        INT movimiento_id PK, FK
+        INT documento_id PK, FK
+    }
+    cambio_estado_operativo {
+        INT id PK
+        INT bien_id FK
+        ENUM estado_anterior
+        ENUM estado_nuevo
+        VARCHAR(500) observaciones
+        INT documento_id FK
+        ENUM estado_revision
+        INT usuario_id FK
+        INT unidad_registrante_id FK
+        DATETIME fecha
+        INT orden
+    }
+    rectificacion_cambio_estado {
+        INT id PK
+        INT cambio_estado_id FK
+        SMALLINT version
+        VARCHAR(500) observaciones
+        INT documento_id FK
+        VARCHAR(500) motivo
+        INT usuario_id FK
+        DATETIME fecha
+    }
+    revision {
+        INT id PK
+        INT movimiento_id FK
+        INT cambio_estado_id FK
+        ENUM resultado
+        VARCHAR(500) motivo_observacion
+        SMALLINT version_revisada
+        INT usuario_id FK
+        DATETIME fecha
+    }
+    traslado_oficial {
+        INT id PK
+        INT oficial_id FK
+        INT unidad_origen_id FK
+        INT unidad_destino_id FK
+        INT movimiento_id FK, UK
+        ENUM estado
+        INT usuario_solicitante_id FK
+        DATETIME fecha_solicitud
+        INT usuario_resolucion_id FK
+        DATETIME fecha_resolucion
+        VARCHAR(500) motivo_resolucion
+        INT oficial_pendiente_id UK
+    }
+
+    unidad |o--o{ unidad : "es superior de"
+    unidad ||--o{ ubicacion : tiene
+    unidad ||--o{ oficial : tiene
+    unidad ||--o{ usuario : tiene
+    oficial |o--o| usuario : "tiene cuenta"
+    tipo_bien ||--o{ bien : clasifica
+    unidad ||--o{ bien : "es dueña de"
+    oficial |o--o{ bien : "tiene en dotación"
+    ubicacion |o--o{ bien : guarda
+    bien ||--o| armamento : es
+    bien ||--o| chaleco : es
+    bien ||--o| movil : es
+    bien ||--o| equipo_comunicaciones : es
+    tipo_vehiculo ||--o{ movil : clasifica
+    tipo_tarea ||--o{ movil : asigna
+    usuario ||--o{ documento : carga
+    documento |o--o| documento : reemplaza
+    usuario ||--o{ movimiento : "registra o anula"
+    unidad ||--o{ movimiento : "registra, es origen o destino"
+    oficial |o--o{ movimiento : "es origen o destino"
+    movimiento ||--|{ movimiento_bien : incluye
+    bien ||--o{ movimiento_bien : "figura en"
+    ubicacion |o--o{ movimiento_bien : "es origen o destino"
+    movimiento ||--o| recepcion : "se recibe con"
+    usuario ||--o{ recepcion : responde
+    movimiento ||--o{ rectificacion : "se corrige con"
+    usuario ||--o{ rectificacion : corrige
+    movimiento ||--o{ movimiento_documento : adjunta
+    documento ||--o{ movimiento_documento : "se adjunta en"
+    bien ||--o{ cambio_estado_operativo : "cambia de estado con"
+    documento |o--o{ cambio_estado_operativo : respalda
+    usuario ||--o{ cambio_estado_operativo : registra
+    unidad ||--o{ cambio_estado_operativo : registra
+    cambio_estado_operativo ||--o{ rectificacion_cambio_estado : "se corrige con"
+    documento |o--o{ rectificacion_cambio_estado : respalda
+    usuario ||--o{ rectificacion_cambio_estado : corrige
+    movimiento |o--o{ revision : recibe
+    cambio_estado_operativo |o--o{ revision : recibe
+    usuario ||--o{ revision : revisa
+    oficial ||--o{ traslado_oficial : "se traslada con"
+    unidad ||--o{ traslado_oficial : "es origen o destino"
+    movimiento |o--o| traslado_oficial : "mueve las dotaciones de"
+    usuario ||--o{ traslado_oficial : "solicita o resuelve"
+```
 
 Los bienes se modelan como una generalización. La tabla bien tiene los datos comunes y cada tipo tiene su ficha en una tabla aparte. El movimiento representa una operación logística, que según su tipo puede requerir acta, con la cabecera en movimiento y un renglón por cada bien en movimiento_bien. Los cambios de estado operativo tienen su propia tabla y comparten con los movimientos la tabla de revisiones, donde cada revisión apunta a uno o al otro.
 
@@ -124,6 +365,7 @@ La tabla **unidad** guarda la estructura de Dirección, Regionales y Operacional
 | nombre | VARCHAR(100) | Único |
 | nivel | ENUM | DIRECCION, REGIONAL u OPERACIONAL |
 | unidad_superior_id | INT | FK a unidad. Opcional, porque Dirección no tiene superior. |
+| nivel_superior | ENUM | La calcula la base a partir del nivel: DIRECCION para una Regional, REGIONAL para una Operacional y vacía para Dirección. Forma una FK compuesta con unidad_superior_id, así una Regional solo depende de Dirección y una Operacional solo de una Regional. |
 | activa | BOOLEAN | Permite dar de baja la unidad sin borrarla |
 
 La tabla **ubicacion** tiene los lugares físicos de cada unidad, como el depósito o la sala de armas.
@@ -185,6 +427,7 @@ La tabla **bien** guarda los datos comunes y la tenencia actual.
 | unidad_id | INT | FK a unidad. Es la unidad dueña, en cuyo inventario figura el bien. |
 | oficial_id | INT | FK a oficial. Opcional, se completa cuando el bien está en dotación. |
 | ubicacion_id | INT | FK a ubicacion. Opcional, se completa cuando el bien está en depósito. |
+| ultimo_orden | INT | Último número de orden de aplicación del bien. Empieza en 0 y la base lo aumenta con cada movimiento o cambio de estado aplicado. |
 
 Cuando un oficial cambia de unidad, la base actualiza automáticamente la unidad de sus dotaciones, de modo que un bien asignado siempre pertenece a la unidad de su oficial.
 
@@ -209,6 +452,7 @@ La tabla **cambio_estado_operativo** guarda el historial de estado de cada bien.
 | estado_revision | ENUM | NO_APLICA, PENDIENTE, REVISADO u OBSERVADO |
 | usuario_id, unidad_registrante_id | INT | FK a usuario y a unidad. Definen quién revisa. |
 | fecha | DATETIME | |
+| orden | INT | Número de orden de aplicación del bien. Lo asigna la base al registrar el cambio y no se repite para el mismo bien. |
 
 ### Movimientos
 
@@ -238,6 +482,9 @@ La tabla **movimiento_bien** es el detalle, con un renglón por cada bien del mo
 |---|---|---|
 | movimiento_id, bien_id | INT | PK compuesta. FK a movimiento y a bien. |
 | ubicacion_origen_id, ubicacion_destino_id | INT | FK a ubicacion. Opcionales. |
+| orden | INT | Número de orden de aplicación del bien. Opcional, lo asigna la base cuando el movimiento se aplica y no se repite para el mismo bien. |
+
+Usamos el número de orden para saber en qué orden se aplicaron los movimientos y los cambios de estado de cada bien, porque la fecha del hecho guarda solo el día.
 
 La tabla **recepcion** registra la respuesta de la unidad de destino, una sola vez por movimiento. Solo existe en las entregas entre unidades y en los traslados, que son los movimientos que quedan pendientes. El destino acepta o rechaza el acta completa. En un traslado, la recepción es la confirmación de la unidad de destino.
 
@@ -261,6 +508,7 @@ La tabla **revision** guarda cada revisión del superior. Un registro observado 
 | cambio_estado_id | INT | FK a cambio_estado_operativo. Opcional. |
 | resultado | ENUM | REVISADO u OBSERVADO |
 | motivo_observacion | VARCHAR(500) | Obligatorio si se observa |
+| version_revisada | SMALLINT | Versión que se revisó: 0 para el registro original o el número de la rectificación. Tiene que ser la vigente al momento de revisar. |
 | usuario_id | INT | FK a usuario. Quién revisó. |
 | fecha | DATETIME | |
 

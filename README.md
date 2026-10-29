@@ -55,7 +55,7 @@ Las historias de usuario y las reglas de negocio están en [docs/historias_y_reg
 ### Segunda entrega: diseño y módulos
 
 - [Documento de diseño y módulos](docs/2da%20Entrega%20-%20Diseno%20y%20modulos%20-%20Proyecto%20Final%20-%20Grupo%20161.md)
-- [Diagrama entidad-relación](docs/diagrama_entidad_relacion.png)
+- [Diagrama entidad-relación](docs/2da%20Entrega%20-%20Diseno%20y%20modulos%20-%20Proyecto%20Final%20-%20Grupo%20161.md#diagrama-entidad-relación)
 - [Script de creación de la base de datos](database/migraciones/001_esquema.sql)
 
 ## Desarrollo local
