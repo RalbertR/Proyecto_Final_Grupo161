@@ -8,7 +8,7 @@ from app.organizacion.schema import UnidadPublic
 
 class EntregaCreate(BaseModel):
     unidad_destino_id: int
-    numero_acta: str = Field(pattern=r"^\d{4}/\d{4}$")
+    numero_acta: str = Field(pattern=r"^[0-9]{4}/[0-9]{4}$")
     fecha_hecho: date
     descripcion: str | None = Field(default=None, max_length=500)
     bienes: list[int] = Field(min_length=1)
