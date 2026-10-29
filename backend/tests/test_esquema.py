@@ -301,3 +301,36 @@ def test_la_revision_de_un_cambio_de_estado_controla_su_version(session, organiz
     with pytest.raises(OperationalError, match="version vigente"):
         revisar(session, 0, cambio_estado_id=1)
     revisar(session, 1, cambio_estado_id=1)
+
+
+def test_el_historial_muestra_el_numero_de_orden_de_cada_registro(
+    session, organizacion
+):
+    reubicar(session, 1, [1])
+    registrar_cambio_de_estado(session, 1, 1)
+
+    historial = session.exec(
+        text(
+            "SELECT registro, orden, fecha_carga FROM v_historial_bien "
+            "WHERE bien_id = 1 ORDER BY orden"
+        )
+    ).all()
+
+    assert [(registro, orden) for registro, orden, _ in historial] == [
+        ("MOVIMIENTO", 1),
+        ("CAMBIO_ESTADO", 2),
+    ]
+    assert all(fecha_carga is not None for _, _, fecha_carga in historial)
+
+
+def test_la_bandeja_muestra_la_version_vigente(session, organizacion):
+    entregar(session, 1, [1], estado="APLICADO")
+    version_en_la_bandeja = text(
+        "SELECT version_vigente FROM v_bandeja_revision "
+        "WHERE unidad_revisora_id = 2 AND registro = 'MOVIMIENTO' AND registro_id = 1"
+    )
+    assert session.exec(version_en_la_bandeja).scalar_one() == 0
+
+    rectificar(session, 1, 1)
+
+    assert session.exec(version_en_la_bandeja).scalar_one() == 1

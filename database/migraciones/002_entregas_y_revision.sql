@@ -95,3 +95,92 @@ BEGIN
 END//
 
 DELIMITER ;
+
+CREATE OR REPLACE VIEW v_movimiento_vigente AS
+SELECT mv.id,
+       mv.tipo,
+       mv.estado,
+       mv.estado_revision,
+       COALESCE(r.fecha_hecho, mv.fecha_hecho) AS fecha_hecho,
+       CASE WHEN r.id IS NULL THEN mv.numero_acta ELSE r.numero_acta END AS numero_acta,
+       CASE WHEN r.id IS NULL THEN mv.descripcion ELSE r.descripcion END AS descripcion,
+       COALESCE(r.version, 0) AS version_vigente,
+       mv.fecha_carga,
+       mv.usuario_id,
+       mv.unidad_registrante_id,
+       mv.unidad_origen_id,
+       mv.oficial_origen_id,
+       mv.unidad_destino_id,
+       mv.oficial_destino_id,
+       mv.motivo
+FROM movimiento mv
+LEFT JOIN rectificacion r
+       ON r.movimiento_id = mv.id
+      AND r.version = (SELECT MAX(r2.version) FROM rectificacion r2 WHERE r2.movimiento_id = mv.id);
+
+CREATE OR REPLACE VIEW v_cambio_estado_vigente AS
+SELECT c.id,
+       c.bien_id,
+       c.orden,
+       c.estado_anterior,
+       c.estado_nuevo,
+       CASE WHEN r.id IS NULL THEN c.observaciones ELSE r.observaciones END AS observaciones,
+       CASE WHEN r.id IS NULL THEN c.documento_id ELSE r.documento_id END AS documento_id,
+       COALESCE(r.version, 0) AS version_vigente,
+       c.estado_revision,
+       c.usuario_id,
+       c.unidad_registrante_id,
+       c.fecha
+FROM cambio_estado_operativo c
+LEFT JOIN rectificacion_cambio_estado r
+       ON r.cambio_estado_id = c.id
+      AND r.version = (SELECT MAX(r2.version) FROM rectificacion_cambio_estado r2 WHERE r2.cambio_estado_id = c.id);
+
+CREATE OR REPLACE VIEW v_historial_bien AS
+SELECT mb.bien_id,
+       'MOVIMIENTO' AS registro,
+       v.id AS registro_id,
+       mb.orden,
+       v.tipo AS evento,
+       v.fecha_hecho AS fecha,
+       v.numero_acta,
+       v.estado,
+       v.unidad_origen_id,
+       v.oficial_origen_id,
+       mb.ubicacion_origen_id,
+       v.unidad_destino_id,
+       v.oficial_destino_id,
+       mb.ubicacion_destino_id,
+       NULL AS estado_operativo_nuevo,
+       v.descripcion AS detalle,
+       v.estado_revision,
+       v.usuario_id,
+       v.fecha_carga
+FROM movimiento_bien mb
+JOIN v_movimiento_vigente v ON v.id = mb.movimiento_id
+UNION ALL
+SELECT c.bien_id, 'CAMBIO_ESTADO', c.id, c.orden, 'CAMBIO_ESTADO', DATE(c.fecha), NULL, NULL,
+       NULL, NULL, NULL, NULL, NULL, NULL,
+       c.estado_nuevo, c.observaciones, c.estado_revision, c.usuario_id, c.fecha
+FROM v_cambio_estado_vigente c;
+
+CREATE OR REPLACE VIEW v_bandeja_revision AS
+SELECT u.unidad_superior_id AS unidad_revisora_id,
+       'MOVIMIENTO' AS registro,
+       v.id AS registro_id,
+       v.tipo AS evento,
+       v.fecha_hecho AS fecha,
+       v.unidad_registrante_id,
+       v.usuario_id,
+       v.descripcion AS detalle,
+       v.version_vigente
+FROM v_movimiento_vigente v
+JOIN unidad u ON u.id = v.unidad_registrante_id
+WHERE v.estado = 'APLICADO'
+  AND v.estado_revision = 'PENDIENTE'
+UNION ALL
+SELECT u.unidad_superior_id, 'CAMBIO_ESTADO', c.id, 'CAMBIO_ESTADO', DATE(c.fecha),
+       c.unidad_registrante_id, c.usuario_id, c.observaciones, c.version_vigente
+FROM v_cambio_estado_vigente c
+JOIN unidad u ON u.id = c.unidad_registrante_id
+WHERE c.estado_revision = 'PENDIENTE';
