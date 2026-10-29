@@ -65,3 +65,15 @@ def test_no_carga_nada_si_la_base_ya_tiene_datos(datos_de_prueba, monkeypatch, c
     main()
     assert "no se cargó nada" in capsys.readouterr().out
     assert consultar("SELECT COUNT(*) FROM bien") == bienes
+
+
+def test_los_movimientos_aplicados_de_los_datos_de_prueba_tienen_numero_de_orden(
+    datos_de_prueba,
+):
+    renglones = (
+        "SELECT mb.orden, b.ultimo_orden FROM movimiento_bien mb "
+        "JOIN movimiento m ON m.id = mb.movimiento_id "
+        "JOIN bien b ON b.id = mb.bien_id WHERE m.tipo = :tipo"
+    )
+    assert consultar(renglones, tipo="BAJA") == [(1, 1)]
+    assert consultar(renglones, tipo="ENTREGA") == [(None, 0), (None, 0)]
