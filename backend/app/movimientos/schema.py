@@ -1,6 +1,7 @@
 from datetime import date, datetime
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlmodel import SQLModel
 
 from app.organizacion.schema import UnidadPublic
@@ -19,6 +20,23 @@ class EntregaCreate(BaseModel):
         if fecha_hecho > date.today():
             raise ValueError("La fecha del hecho no puede ser posterior a hoy")
         return fecha_hecho
+
+
+class UbicacionDestino(BaseModel):
+    bien_id: int
+    ubicacion_id: int
+
+
+class RecepcionAceptada(BaseModel):
+    resultado: Literal["ACEPTADO"]
+    ubicaciones: list[UbicacionDestino]
+
+
+class RecepcionRechazada(BaseModel):
+    resultado: Literal["RECHAZADO"]
+    motivo_rechazo: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
+    ]
 
 
 class RenglonPublic(SQLModel):

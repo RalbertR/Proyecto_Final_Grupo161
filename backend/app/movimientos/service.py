@@ -6,9 +6,16 @@ from app.acceso.schema import UsuarioPublic
 from app.acceso.service import unidades_visibles
 from app.organizacion.model import Nivel, Unidad
 from app.organizacion.schema import UnidadPublic
+from app.organizacion.service import listar_ubicaciones
 
 from . import repository
-from .schema import EntregaCreate, MovimientoPublic, RenglonPublic
+from .schema import (
+    EntregaCreate,
+    MovimientoPublic,
+    RecepcionAceptada,
+    RecepcionRechazada,
+    RenglonPublic,
+)
 
 AREA_DEL_TIPO = {
     "ARMAMENTO": "armamento y chalecos",
@@ -90,6 +97,69 @@ def consultar_movimiento(
             detail="No tiene acceso a ese movimiento",
         )
     return detalle(session, cabecera)
+
+
+def listar_por_recibir(
+    session: Session, usuario: UsuarioPublic
+) -> list[MovimientoPublic]:
+    return [
+        detalle(session, cabecera)
+        for cabecera in repository.listar_por_recibir(session, usuario.unidad.id)
+    ]
+
+
+def recibir_entrega(
+    session: Session,
+    usuario: UsuarioPublic,
+    movimiento_id: int,
+    recepcion: RecepcionAceptada | RecepcionRechazada,
+) -> MovimientoPublic:
+    # Se bloquean antes de leer el acta: otra recepción espera acá y, con
+    # READ COMMITTED, al seguir ve el acta recibida (ADR 0001).
+    bienes = repository.bloquear_bienes_del_movimiento(session, movimiento_id)
+    cabecera = repository.buscar_cabecera(session, movimiento_id)
+    if cabecera is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="El movimiento no existe"
+        )
+    if cabecera["unidad_destino_id"] != usuario.unidad.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo la unidad de destino recibe el acta",
+        )
+    # Un traslado también queda pendiente, pero lo confirma Traslados.
+    if cabecera["tipo"] != "ENTREGA" or cabecera["estado"] != "PENDIENTE":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El acta no está pendiente de recepción",
+        )
+    if isinstance(recepcion, RecepcionAceptada):
+        destinos = {u.bien_id: u.ubicacion_id for u in recepcion.ubicaciones}
+        propias = {
+            ubicacion.id for ubicacion in listar_ubicaciones(session, usuario.unidad.id)
+        }
+        if destinos.keys() != set(bienes) or not set(destinos.values()) <= propias:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Indique una ubicación de su unidad para cada bien del acta",
+            )
+        for bien_id, ubicacion_id in destinos.items():
+            repository.ubicar_renglon(session, movimiento_id, bien_id, ubicacion_id)
+        repository.mover_bienes(session, movimiento_id)
+        estado, motivo_rechazo = "APLICADO", None
+    else:
+        estado, motivo_rechazo = "RECHAZADO", recepcion.motivo_rechazo
+    repository.insertar_recepcion(
+        session,
+        movimiento_id=movimiento_id,
+        resultado=recepcion.resultado,
+        motivo_rechazo=motivo_rechazo,
+        usuario_id=usuario.id,
+    )
+    # Al pasar a aplicada, trg_mov_orden numera los renglones (ADR 0006).
+    repository.cambiar_estado(session, movimiento_id, estado)
+    session.commit()
+    return detalle(session, repository.buscar_cabecera(session, movimiento_id))
 
 
 def detalle(session: Session, cabecera: RowMapping) -> MovimientoPublic:
