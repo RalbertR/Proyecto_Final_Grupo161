@@ -34,6 +34,39 @@ CABECERA = text(
     "WHERE v.id = :id"
 )
 
+POR_RECIBIR = text(
+    "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
+    "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
+    "u.nombre_usuario AS usuario, v.fecha_carga "
+    "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
+    "WHERE v.tipo = 'ENTREGA' AND v.estado = 'PENDIENTE' "
+    "AND v.unidad_destino_id = :unidad_id ORDER BY v.id"
+)
+
+BLOQUEAR_BIENES_DEL_MOVIMIENTO = text(
+    "SELECT b.id FROM movimiento_bien mb JOIN bien b ON b.id = mb.bien_id "
+    "WHERE mb.movimiento_id = :id ORDER BY b.id FOR UPDATE"
+)
+
+UBICAR_RENGLON = text(
+    "UPDATE movimiento_bien SET ubicacion_destino_id = :ubicacion_id "
+    "WHERE movimiento_id = :movimiento_id AND bien_id = :bien_id"
+)
+
+MOVER_BIENES = text(
+    "UPDATE bien b JOIN movimiento_bien mb ON mb.bien_id = b.id "
+    "JOIN movimiento m ON m.id = mb.movimiento_id "
+    "SET b.unidad_id = m.unidad_destino_id, b.ubicacion_id = mb.ubicacion_destino_id "
+    "WHERE mb.movimiento_id = :id"
+)
+
+INSERTAR_RECEPCION = text(
+    "INSERT INTO recepcion (movimiento_id, resultado, motivo_rechazo, usuario_id) "
+    "VALUES (:movimiento_id, :resultado, :motivo_rechazo, :usuario_id)"
+)
+
+CAMBIAR_ESTADO = text("UPDATE movimiento SET estado = :estado WHERE id = :id")
+
 RENGLONES = text(
     "SELECT mb.bien_id, b.tipo_bien, "
     "COALESCE(b.numero_serie, ml.patente) AS identificacion, b.marca, b.modelo, "
@@ -82,3 +115,40 @@ def buscar_cabecera(session: Session, movimiento_id: int) -> RowMapping | None:
 
 def listar_renglones(session: Session, movimiento_id: int) -> list[RowMapping]:
     return list(session.exec(RENGLONES, params={"id": movimiento_id}).mappings())
+
+
+def listar_por_recibir(session: Session, unidad_id: int) -> list[RowMapping]:
+    return list(session.exec(POR_RECIBIR, params={"unidad_id": unidad_id}).mappings())
+
+
+def bloquear_bienes_del_movimiento(session: Session, movimiento_id: int) -> list[int]:
+    return list(
+        session.exec(
+            BLOQUEAR_BIENES_DEL_MOVIMIENTO, params={"id": movimiento_id}
+        ).scalars()
+    )
+
+
+def ubicar_renglon(
+    session: Session, movimiento_id: int, bien_id: int, ubicacion_id: int
+) -> None:
+    session.exec(
+        UBICAR_RENGLON,
+        params={
+            "movimiento_id": movimiento_id,
+            "bien_id": bien_id,
+            "ubicacion_id": ubicacion_id,
+        },
+    )
+
+
+def mover_bienes(session: Session, movimiento_id: int) -> None:
+    session.exec(MOVER_BIENES, params={"id": movimiento_id})
+
+
+def insertar_recepcion(session: Session, **valores) -> None:
+    session.exec(INSERTAR_RECEPCION, params=valores)
+
+
+def cambiar_estado(session: Session, movimiento_id: int, estado: str) -> None:
+    session.exec(CAMBIAR_ESTADO, params={"id": movimiento_id, "estado": estado})
