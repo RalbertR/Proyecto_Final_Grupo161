@@ -28,7 +28,7 @@ export const ListaBienesEntrega = ({ bienes, bloqueados, onQuitar }: ListaBienes
             type="button"
             onClick={() => onQuitar(bien.bien_id)}
             aria-label={`Quitar ${bien.identificacion}`}
-            className="inline-flex size-8 shrink-0 items-center justify-center rounded-xs text-lg leading-none text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-3 focus-visible:outline-foco"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-xs text-lg leading-none text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-3 focus-visible:outline-foco disabled:cursor-not-allowed disabled:opacity-50"
           >
             ×
           </button>

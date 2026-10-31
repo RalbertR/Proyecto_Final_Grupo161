@@ -14,7 +14,7 @@ const hoy = () => {
   return `${ahora.getFullYear()}-${mes}-${dia}`
 }
 
-const datosIniciales = () => ({ destino: "", numeroActa: "", fechaHecho: hoy(), descripcion: "" })
+const datosIniciales = () => ({ destino: "", numeroActa: "", fechaHecho: "", descripcion: "" })
 
 type Datos = ReturnType<typeof datosIniciales>
 
@@ -90,7 +90,7 @@ export const ModalEntrega = ({
     mutate({
       unidad_destino_id: Number(datos.destino),
       numero_acta: datos.numeroActa,
-      fecha_hecho: datos.fechaHecho,
+      fecha_hecho: datos.fechaHecho || hoy(),
       descripcion: datos.descripcion.trim() || null,
       bienes: enviables.map((b) => b.bien_id),
     })
@@ -119,6 +119,9 @@ export const ModalEntrega = ({
   return (
     <dialog
       ref={dialogo}
+      onCancel={(e) => {
+        if (isPending) e.preventDefault()
+      }}
       onClose={registrada ? handleVolver : handleCerrar}
       aria-labelledby="titulo-entrega"
       className="m-auto w-full max-w-lg rounded-xs p-0 text-gray-900 shadow-xl backdrop:bg-gray-900/45"
@@ -145,86 +148,88 @@ export const ModalEntrega = ({
             </h2>
             <span className="text-sm text-gray-500">Desde {unidadOrigen}</span>
           </header>
-          <div className="flex flex-col gap-4 overflow-y-auto px-6 py-4">
-            {isError && (
-              <div
-                role="alert"
-                className="rounded-xs border border-error bg-error/5 px-4 py-3 text-sm font-medium text-error"
-              >
-                {error.message}
+          {isError && (
+            <div
+              role="alert"
+              className="mx-6 mt-4 shrink-0 rounded-xs border border-error bg-error/5 px-4 py-3 text-sm font-medium text-error"
+            >
+              {error.message}
+            </div>
+          )}
+          <div className="overflow-y-auto px-6 py-4">
+            <fieldset disabled={isPending} className="flex min-w-0 flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-4">
+                  <h3 className="text-sm font-semibold">Bienes · {enviables.length}</h3>
+                  <button
+                    type="button"
+                    onClick={handleCerrar}
+                    className="text-sm font-semibold text-marca underline hover:text-marca-hover focus-visible:outline-3 focus-visible:outline-foco disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    + Sumar bienes
+                  </button>
+                </div>
+                <ListaBienesEntrega bienes={bienes} bloqueados={bloqueados} onQuitar={onQuitar} />
               </div>
-            )}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-baseline justify-between gap-4">
-                <h3 className="text-sm font-semibold">Bienes · {enviables.length}</h3>
-                <button
-                  type="button"
-                  onClick={handleCerrar}
-                  className="text-sm font-semibold text-marca underline hover:text-marca-hover focus-visible:outline-3 focus-visible:outline-foco"
+              <label className={claseCampo}>
+                Unidad de destino
+                <select
+                  required
+                  value={datos.destino}
+                  onChange={cambiar("destino")}
+                  className={claseControl}
                 >
-                  + Sumar bienes
-                </button>
+                  <option value="">Elegí una unidad</option>
+                  {destinos?.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className={claseCampo}>
+                  Número de acta
+                  <input
+                    required
+                    pattern="[0-9]{4}/[0-9]{4}"
+                    placeholder="0001/2026"
+                    title="Cuatro dígitos y el año, por ejemplo 0001/2026"
+                    value={datos.numeroActa}
+                    onChange={cambiar("numeroActa")}
+                    className={`${claseControl} font-mono`}
+                  />
+                  <span className="text-xs font-normal text-gray-500">Cuatro dígitos y el año</span>
+                </label>
+                <label className={claseCampo}>
+                  Fecha del hecho
+                  <input
+                    type="date"
+                    required
+                    max={hoy()}
+                    value={datos.fechaHecho || hoy()}
+                    onChange={cambiar("fechaHecho")}
+                    className={`${claseControl} font-mono`}
+                  />
+                </label>
               </div>
-              <ListaBienesEntrega bienes={bienes} bloqueados={bloqueados} onQuitar={onQuitar} />
-            </div>
-            <label className={claseCampo}>
-              Unidad de destino
-              <select
-                required
-                value={datos.destino}
-                onChange={cambiar("destino")}
-                className={claseControl}
-              >
-                <option value="">Elegí una unidad</option>
-                {destinos?.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
               <label className={claseCampo}>
-                Número de acta
-                <input
-                  required
-                  pattern="[0-9]{4}/[0-9]{4}"
-                  placeholder="0001/2026"
-                  title="Cuatro dígitos y el año, por ejemplo 0001/2026"
-                  value={datos.numeroActa}
-                  onChange={cambiar("numeroActa")}
-                  className={`${claseControl} font-mono`}
+                Descripción
+                <textarea
+                  maxLength={500}
+                  rows={3}
+                  value={datos.descripcion}
+                  onChange={cambiar("descripcion")}
+                  className={claseControl}
                 />
-                <span className="text-xs font-normal text-gray-500">Cuatro dígitos y el año</span>
+                <span className="text-xs font-normal text-gray-500">
+                  Opcional, hasta 500 caracteres
+                </span>
               </label>
-              <label className={claseCampo}>
-                Fecha del hecho
-                <input
-                  type="date"
-                  required
-                  max={hoy()}
-                  value={datos.fechaHecho}
-                  onChange={cambiar("fechaHecho")}
-                  className={`${claseControl} font-mono`}
-                />
-              </label>
-            </div>
-            <label className={claseCampo}>
-              Descripción
-              <textarea
-                maxLength={500}
-                rows={3}
-                value={datos.descripcion}
-                onChange={cambiar("descripcion")}
-                className={claseControl}
-              />
-              <span className="text-xs font-normal text-gray-500">
-                Opcional, hasta 500 caracteres
-              </span>
-            </label>
+            </fieldset>
           </div>
           <footer className="flex justify-end gap-2 border-t border-gray-200 px-6 py-3">
-            <Boton type="button" variant="contorno" onClick={handleCancelar}>
+            <Boton type="button" variant="contorno" onClick={handleCancelar} disabled={isPending}>
               Cancelar
             </Boton>
             <Boton type="submit" disabled={isPending || enviables.length === 0}>
