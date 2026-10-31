@@ -6,6 +6,7 @@ from app.consultas.router import router as consultas_router
 from app.core.errores import error_de_trigger
 from app.movimientos.router import router as movimientos_router
 from app.organizacion.router import router as organizacion_router
+from app.revision.router import router as revision_router
 from app.salud.router import router as salud_router
 
 
@@ -17,6 +18,7 @@ def create_app() -> FastAPI:
     app.include_router(consultas_router, prefix="/api")
     app.include_router(organizacion_router, prefix="/api")
     app.include_router(movimientos_router, prefix="/api")
+    app.include_router(revision_router, prefix="/api")
     return app
 
 

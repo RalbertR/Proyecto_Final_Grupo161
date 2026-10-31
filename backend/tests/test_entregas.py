@@ -84,6 +84,7 @@ ACTA_REGISTRADA = {
             "ubicacion_destino": None,
         },
     ],
+    "revisiones": [],
 }
 
 INSERTAR_ENTREGA_PENDIENTE = (

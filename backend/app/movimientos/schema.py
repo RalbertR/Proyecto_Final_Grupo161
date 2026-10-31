@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlmodel import SQLModel
 
 from app.organizacion.schema import UnidadPublic
+from app.revision.schema import RevisionPublic
 
 
 class EntregaCreate(BaseModel):
@@ -62,3 +63,4 @@ class MovimientoPublic(SQLModel):
     usuario: str
     fecha_carga: datetime
     bienes: list[RenglonPublic]
+    revisiones: list[RevisionPublic]
