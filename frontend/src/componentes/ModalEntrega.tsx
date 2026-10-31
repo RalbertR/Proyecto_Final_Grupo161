@@ -101,6 +101,11 @@ export const ModalEntrega = ({
     reset()
   }
 
+  const handleCerrar = () => {
+    if (!isPending) reset()
+    onCerrar()
+  }
+
   const handleCancelar = () => {
     empezarDeNuevo()
     onCerrar()
@@ -114,7 +119,7 @@ export const ModalEntrega = ({
   return (
     <dialog
       ref={dialogo}
-      onClose={registrada ? handleVolver : onCerrar}
+      onClose={registrada ? handleVolver : handleCerrar}
       aria-labelledby="titulo-entrega"
       className="m-auto w-full max-w-lg rounded-xs p-0 text-gray-900 shadow-xl backdrop:bg-gray-900/45"
     >
@@ -154,7 +159,7 @@ export const ModalEntrega = ({
                 <h3 className="text-sm font-semibold">Bienes · {enviables.length}</h3>
                 <button
                   type="button"
-                  onClick={onCerrar}
+                  onClick={handleCerrar}
                   className="text-sm font-semibold text-marca underline hover:text-marca-hover focus-visible:outline-3 focus-visible:outline-foco"
                 >
                   + Sumar bienes

@@ -16,22 +16,22 @@ export const ListaBienesEntrega = ({ bienes, bloqueados, onQuitar }: ListaBienes
           key={bien.bien_id}
           className="flex items-center justify-between gap-3 px-3 py-1.5 text-sm"
         >
-          <span className={motivo ? "text-gray-400 line-through" : ""}>
-            {tiposDeBien[bien.tipo_bien] ?? bien.tipo_bien} ·{" "}
-            <span className="font-mono">{bien.identificacion}</span> · {bien.marca} {bien.modelo}
-            {bien.ubicacion && <span className="text-gray-500"> · {bien.ubicacion}</span>}
-          </span>
-          <span className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-col items-start gap-1">
+            <span className={motivo ? "text-gray-400 line-through" : ""}>
+              {tiposDeBien[bien.tipo_bien] ?? bien.tipo_bien} ·{" "}
+              <span className="font-mono">{bien.identificacion}</span> · {bien.marca} {bien.modelo}
+              {bien.ubicacion && <span className="text-gray-500"> · {bien.ubicacion}</span>}
+            </span>
             {motivo && <Marca>{motivo}</Marca>}
-            <button
-              type="button"
-              onClick={() => onQuitar(bien.bien_id)}
-              aria-label={`Quitar ${bien.identificacion}`}
-              className="inline-flex size-8 items-center justify-center rounded-xs text-lg leading-none text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-3 focus-visible:outline-foco"
-            >
-              ×
-            </button>
-          </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onQuitar(bien.bien_id)}
+            aria-label={`Quitar ${bien.identificacion}`}
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-xs text-lg leading-none text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-3 focus-visible:outline-foco"
+          >
+            ×
+          </button>
         </li>
       )
     })}

@@ -1,12 +1,13 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useMemo, useState, type ChangeEvent } from "react"
 import { useSearchParams } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
+import { obtenerInventario } from "../api/inventario"
 import { obtenerUnidades } from "../api/unidades"
 import { BarraSeleccion } from "../componentes/BarraSeleccion"
 import { ModalEntrega } from "../componentes/ModalEntrega"
 import { TablaInventario } from "../componentes/TablaInventario"
-import { areasDe, tiposDeBien, type FilaInventario } from "../tipos/bien"
+import { areasDe, motivoBloqueo, tiposDeBien, type FilaInventario } from "../tipos/bien"
 
 const sinBloqueados = new Map<number, string>()
 
@@ -33,6 +34,8 @@ export const InventarioPagina = () => {
   const [seleccion, setSeleccion] = useState<FilaInventario[]>([])
   const [avisoArea, setAvisoArea] = useState(false)
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [bloqueados, setBloqueados] = useState(sinBloqueados)
+  const queryClient = useQueryClient()
 
   const handleAlternar = useCallback((bien: FilaInventario) => {
     setSeleccion((actual) =>
@@ -56,11 +59,35 @@ export const InventarioPagina = () => {
   const handleQuitar = (bienId: number) =>
     setSeleccion((actual) => actual.filter((b) => b.bien_id !== bienId))
 
-  const handleCerrarModal = () => setModalAbierto(false)
+  const handleCerrarModal = () => {
+    setModalAbierto(false)
+    setSeleccion((actual) => actual.filter((b) => !bloqueados.has(b.bien_id)))
+    setBloqueados(sinBloqueados)
+  }
 
   const handleRegistrada = () => {
     setModalAbierto(false)
     setSeleccion([])
+    setBloqueados(sinBloqueados)
+  }
+
+  const handleErrorEntrega = async () => {
+    if (!yo) return
+    queryClient.invalidateQueries({ queryKey: ["inventario"] })
+    const frescas = await queryClient
+      .fetchQuery({
+        queryKey: ["inventario", yo.unidad.id],
+        queryFn: () => obtenerInventario(yo.unidad.id),
+      })
+      .catch(() => null)
+    if (!frescas) return
+    const motivos = new Map<number, string>()
+    for (const bien of seleccion) {
+      const fresca = frescas.find((f) => f.bien_id === bien.bien_id)
+      const motivo = fresca ? motivoBloqueo(fresca, yo.unidad.id) : "Ya no está en el inventario"
+      if (motivo) motivos.set(bien.bien_id, motivo)
+    }
+    setBloqueados(motivos)
   }
 
   return (
@@ -126,11 +153,11 @@ export const InventarioPagina = () => {
           abierto={modalAbierto}
           unidadOrigen={yo.unidad.nombre}
           bienes={seleccion}
-          bloqueados={sinBloqueados}
+          bloqueados={bloqueados}
           onQuitar={handleQuitar}
           onCerrar={handleCerrarModal}
           onRegistrada={handleRegistrada}
-          onError={() => {}}
+          onError={handleErrorEntrega}
         />
       )}
     </section>
