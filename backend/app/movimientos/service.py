@@ -7,6 +7,8 @@ from app.acceso.service import unidades_visibles
 from app.organizacion.model import Nivel, Unidad
 from app.organizacion.schema import UnidadPublic
 from app.organizacion.service import listar_ubicaciones
+from app.revision.repository import listar_revisiones
+from app.revision.schema import RevisionPublic
 
 from . import repository
 from .schema import (
@@ -170,6 +172,10 @@ def detalle(session: Session, cabecera: RowMapping) -> MovimientoPublic:
         bienes=[
             RenglonPublic.model_validate(renglon)
             for renglon in repository.listar_renglones(session, cabecera["id"])
+        ],
+        revisiones=[
+            RevisionPublic.model_validate(revision)
+            for revision in listar_revisiones(session, cabecera["id"])
         ],
     )
 
