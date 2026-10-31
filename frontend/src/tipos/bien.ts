@@ -22,3 +22,21 @@ export const tiposDeBien: Record<string, string> = {
   MOVIL: "Móvil",
   EQUIPO_COMUNICACIONES: "Equipo de comunicaciones",
 }
+
+export const areaDelTipo: Record<string, string> = {
+  ARMAMENTO: "Armamento y chalecos",
+  CHALECO: "Armamento y chalecos",
+  MOVIL: "Móviles y equipos de comunicaciones",
+  EQUIPO_COMUNICACIONES: "Móviles y equipos de comunicaciones",
+}
+
+export const areasDe = (bienes: FilaInventario[]) => [
+  ...new Set(bienes.map((b) => areaDelTipo[b.tipo_bien])),
+]
+
+export const motivoBloqueo = (bien: FilaInventario, unidadPropiaId?: number) => {
+  if (bien.unidad_id !== unidadPropiaId) return "Es de otra unidad"
+  if (bien.tenencia === "DOTACION") return "Asignado a un oficial"
+  if (bien.con_movimiento_pendiente) return "Tiene un movimiento pendiente"
+  return null
+}
