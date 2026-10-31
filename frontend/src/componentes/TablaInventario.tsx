@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-table"
 import { useMemo, useState } from "react"
 import { obtenerInventario } from "../api/inventario"
-import { tiposDeBien, type FilaInventario } from "../tipos/bien"
+import { motivoBloqueo, tiposDeBien, type FilaInventario } from "../tipos/bien"
 import { Boton } from "./Boton"
 
 const col = createColumnHelper<FilaInventario>()
@@ -60,9 +60,23 @@ const columnas = [
 
 const sinBienes: FilaInventario[] = []
 
-type TablaInventarioProps = { tipos: string[]; mostrarUnidad: boolean; unidadId?: number }
+type TablaInventarioProps = {
+  tipos: string[]
+  mostrarUnidad: boolean
+  unidadId?: number
+  unidadPropiaId?: number
+  seleccion: FilaInventario[]
+  onAlternar: (bien: FilaInventario) => void
+}
 
-export const TablaInventario = ({ tipos, mostrarUnidad, unidadId }: TablaInventarioProps) => {
+export const TablaInventario = ({
+  tipos,
+  mostrarUnidad,
+  unidadId,
+  unidadPropiaId,
+  seleccion,
+  onAlternar,
+}: TablaInventarioProps) => {
   const { data, isPending, isError, error, isFetching, refetch } = useQuery({
     queryKey: ["inventario", unidadId],
     queryFn: () => obtenerInventario(unidadId),
@@ -75,10 +89,37 @@ export const TablaInventario = ({ tipos, mostrarUnidad, unidadId }: TablaInventa
     const todos = data ?? sinBienes
     return tipos.length ? todos.filter((b) => tipos.includes(b.tipo_bien)) : todos
   }, [data, tipos])
+  const elegidos = useMemo(() => new Set(seleccion.map((b) => b.bien_id)), [seleccion])
+  const columnasConSeleccion = useMemo(
+    () => [
+      col.display({
+        id: "seleccion",
+        header: () => <span className="sr-only">Elegir</span>,
+        enableSorting: false,
+        cell: ({ row: { original: bien } }) => {
+          const motivo = motivoBloqueo(bien, unidadPropiaId)
+          return (
+            <label title={motivo ?? undefined} className="inline-flex size-6 items-center">
+              <input
+                type="checkbox"
+                checked={elegidos.has(bien.bien_id)}
+                disabled={motivo !== null}
+                onChange={() => onAlternar(bien)}
+                aria-label={motivo ?? `Elegir ${bien.identificacion}`}
+                className="size-4 accent-marca focus-visible:outline-3 focus-visible:outline-foco disabled:cursor-not-allowed"
+              />
+            </label>
+          )
+        },
+      }),
+      ...columnas,
+    ],
+    [elegidos, unidadPropiaId, onAlternar],
+  )
   const [sorting, setSorting] = useState<SortingState>([])
   const table = useReactTable({
     data: bienes,
-    columns: columnas,
+    columns: columnasConSeleccion,
     state: { sorting, columnVisibility: { unidad: mostrarUnidad } },
     onSortingChange: setSorting,
     getRowId: (bien) => String(bien.bien_id),
@@ -125,18 +166,21 @@ export const TablaInventario = ({ tipos, mostrarUnidad, unidadId }: TablaInventa
                     }
                     className="px-3 py-2 font-semibold whitespace-nowrap"
                   >
-                    {!header.isPlaceholder && (
-                      <button
-                        type="button"
-                        onClick={header.column.getToggleSortingHandler()}
-                        className="inline-flex items-center gap-1 hover:underline focus-visible:outline-3 focus-visible:outline-foco"
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        <span aria-hidden="true">
-                          {orden === "asc" ? "▲" : orden === "desc" ? "▼" : ""}
-                        </span>
-                      </button>
-                    )}
+                    {!header.isPlaceholder &&
+                      (header.column.getCanSort() ? (
+                        <button
+                          type="button"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="inline-flex items-center gap-1 hover:underline focus-visible:outline-3 focus-visible:outline-foco"
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          <span aria-hidden="true">
+                            {orden === "asc" ? "▲" : orden === "desc" ? "▼" : ""}
+                          </span>
+                        </button>
+                      ) : (
+                        flexRender(header.column.columnDef.header, header.getContext())
+                      ))}
                   </th>
                 )
               })}
@@ -147,7 +191,7 @@ export const TablaInventario = ({ tipos, mostrarUnidad, unidadId }: TablaInventa
           {table.getRowModel().rows.map((fila) => (
             <tr
               key={fila.id}
-              className={`border-b border-gray-200 ${fila.original.con_movimiento_pendiente ? "bg-pendiente/5" : ""}`}
+              className={`border-b border-gray-200 ${elegidos.has(fila.original.bien_id) ? "bg-marca/5" : fila.original.con_movimiento_pendiente ? "bg-pendiente/5" : ""}`}
             >
               {fila.getVisibleCells().map((celda) => (
                 <td key={celda.id} className="px-3 py-2 align-top">

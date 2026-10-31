@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
-import { useMemo, type ChangeEvent } from "react"
+import { useCallback, useMemo, useState, type ChangeEvent } from "react"
 import { useSearchParams } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerUnidades } from "../api/unidades"
+import { BarraSeleccion } from "../componentes/BarraSeleccion"
 import { TablaInventario } from "../componentes/TablaInventario"
-import { tiposDeBien } from "../tipos/bien"
+import { areasDe, tiposDeBien, type FilaInventario } from "../tipos/bien"
 
 export const InventarioPagina = () => {
   const { data: yo } = useQuery({ queryKey: ["yo"], queryFn: obtenerYo, retry: false })
@@ -25,6 +26,27 @@ export const InventarioPagina = () => {
     filtrar(tipos.includes(codigo) ? tipos.filter((t) => t !== codigo) : [...tipos, codigo], unidad)
 
   const handleElegirUnidad = (e: ChangeEvent<HTMLSelectElement>) => filtrar(tipos, e.target.value)
+
+  const [seleccion, setSeleccion] = useState<FilaInventario[]>([])
+  const [avisoArea, setAvisoArea] = useState(false)
+
+  const handleAlternar = useCallback((bien: FilaInventario) => {
+    setSeleccion((actual) =>
+      actual.some((b) => b.bien_id === bien.bien_id)
+        ? actual.filter((b) => b.bien_id !== bien.bien_id)
+        : [...actual, bien],
+    )
+    setAvisoArea(false)
+  }, [])
+
+  const handleLimpiar = () => {
+    setSeleccion([])
+    setAvisoArea(false)
+  }
+
+  const handleNuevaEntrega = () => {
+    if (areasDe(seleccion).length > 1) setAvisoArea(true)
+  }
 
   return (
     <section className="flex flex-col gap-6">
@@ -74,6 +96,15 @@ export const InventarioPagina = () => {
         tipos={tipos}
         mostrarUnidad={verUnidades}
         unidadId={Number(unidad) || undefined}
+        unidadPropiaId={yo?.unidad.id}
+        seleccion={seleccion}
+        onAlternar={handleAlternar}
+      />
+      <BarraSeleccion
+        seleccion={seleccion}
+        avisoArea={avisoArea}
+        onLimpiar={handleLimpiar}
+        onNuevaEntrega={handleNuevaEntrega}
       />
     </section>
   )
