@@ -4,8 +4,11 @@ import { useSearchParams } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerUnidades } from "../api/unidades"
 import { BarraSeleccion } from "../componentes/BarraSeleccion"
+import { ModalEntrega } from "../componentes/ModalEntrega"
 import { TablaInventario } from "../componentes/TablaInventario"
 import { areasDe, tiposDeBien, type FilaInventario } from "../tipos/bien"
+
+const sinBloqueados = new Map<number, string>()
 
 export const InventarioPagina = () => {
   const { data: yo } = useQuery({ queryKey: ["yo"], queryFn: obtenerYo, retry: false })
@@ -29,6 +32,7 @@ export const InventarioPagina = () => {
 
   const [seleccion, setSeleccion] = useState<FilaInventario[]>([])
   const [avisoArea, setAvisoArea] = useState(false)
+  const [modalAbierto, setModalAbierto] = useState(false)
 
   const handleAlternar = useCallback((bien: FilaInventario) => {
     setSeleccion((actual) =>
@@ -46,6 +50,17 @@ export const InventarioPagina = () => {
 
   const handleNuevaEntrega = () => {
     if (areasDe(seleccion).length > 1) setAvisoArea(true)
+    else setModalAbierto(true)
+  }
+
+  const handleQuitar = (bienId: number) =>
+    setSeleccion((actual) => actual.filter((b) => b.bien_id !== bienId))
+
+  const handleCerrarModal = () => setModalAbierto(false)
+
+  const handleRegistrada = () => {
+    setModalAbierto(false)
+    setSeleccion([])
   }
 
   return (
@@ -106,6 +121,18 @@ export const InventarioPagina = () => {
         onLimpiar={handleLimpiar}
         onNuevaEntrega={handleNuevaEntrega}
       />
+      {yo && (
+        <ModalEntrega
+          abierto={modalAbierto}
+          unidadOrigen={yo.unidad.nombre}
+          bienes={seleccion}
+          bloqueados={sinBloqueados}
+          onQuitar={handleQuitar}
+          onCerrar={handleCerrarModal}
+          onRegistrada={handleRegistrada}
+          onError={() => {}}
+        />
+      )}
     </section>
   )
 }

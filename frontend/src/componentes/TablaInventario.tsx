@@ -11,6 +11,7 @@ import { useMemo, useState } from "react"
 import { obtenerInventario } from "../api/inventario"
 import { motivoBloqueo, tiposDeBien, type FilaInventario } from "../tipos/bien"
 import { Boton } from "./Boton"
+import { Marca } from "./Marca"
 
 const col = createColumnHelper<FilaInventario>()
 
@@ -49,12 +50,7 @@ const columnas = [
   }),
   col.accessor("con_movimiento_pendiente", {
     header: "Movimiento",
-    cell: (info) =>
-      info.getValue() && (
-        <span className="inline-flex rounded-xs border border-pendiente bg-pendiente/10 px-2 py-0.5 text-xs font-semibold text-amber-800">
-          Pendiente
-        </span>
-      ),
+    cell: (info) => info.getValue() && <Marca>Pendiente</Marca>,
   }),
 ]
 
