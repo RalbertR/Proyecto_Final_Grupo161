@@ -5,3 +5,8 @@ export interface Unidad {
   nombre: string
   nivel: NivelUnidad
 }
+
+export interface Ubicacion {
+  id: number
+  nombre: string
+}

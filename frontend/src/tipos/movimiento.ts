@@ -1,4 +1,4 @@
-import type { Unidad } from "./unidad"
+import type { Ubicacion, Unidad } from "./unidad"
 
 export interface EntregaCreate {
   unidad_destino_id: number
@@ -34,4 +34,41 @@ export interface Movimiento {
   bienes: RenglonMovimiento[]
 }
 
+export type Recepcion =
+  | { resultado: "ACEPTADO"; ubicaciones: { bien_id: number; ubicacion_id: number }[] }
+  | { resultado: "RECHAZADO"; motivo_rechazo: string }
+
+export interface ControlBien {
+  controlado: boolean
+  conNovedad: boolean
+  ubicacionId?: number
+}
+
+export type ControlActa = Record<number, ControlBien>
+
 export const fechaLegible = (fecha: string) => fecha.split("-").reverse().join("/")
+
+export const cambiarControl = (
+  actual: ControlBien | undefined,
+  cambio: Partial<ControlBien>,
+): ControlBien => {
+  const nuevo = { controlado: false, conNovedad: false, ...actual, ...cambio }
+  if (cambio.conNovedad) nuevo.controlado = true
+  if (cambio.controlado === false) nuevo.conNovedad = false
+  return nuevo
+}
+
+const ubicacionDelTipo: Record<string, string> = {
+  ARMAMENTO: "Sala de Armas",
+  CHALECO: "Sala de Armas",
+  EQUIPO_COMUNICACIONES: "Depósito",
+  MOVIL: "Playón",
+}
+
+const normalizar = (texto: string) => texto.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
+
+export const ubicacionPorDefecto = (tipoBien: string, ubicaciones: Ubicacion[]) => {
+  const nombre = ubicacionDelTipo[tipoBien]
+  if (!nombre) return undefined
+  return ubicaciones.find((u) => normalizar(u.nombre) === normalizar(nombre))?.id
+}

@@ -1,10 +1,20 @@
 import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
 import { obtenerPorRecibir } from "../api/movimientos"
 import { Boton } from "../componentes/Boton"
+import { ModalRecepcion } from "../componentes/ModalRecepcion"
 import { areaDelTipo } from "../tipos/bien"
-import { fechaLegible } from "../tipos/movimiento"
+import {
+  cambiarControl,
+  fechaLegible,
+  type ControlActa,
+  type ControlBien,
+  type Movimiento,
+} from "../tipos/movimiento"
 
 const columnas = ["Acta", "Origen", "Fecha del hecho", "Bienes"]
+
+const sinControl: ControlActa = {}
 
 export const PorRecibirPagina = () => {
   const {
@@ -14,6 +24,30 @@ export const PorRecibirPagina = () => {
     error,
     refetch,
   } = useQuery({ queryKey: ["por-recibir"], queryFn: obtenerPorRecibir, retry: false })
+  const [abierta, setAbierta] = useState<Movimiento | null>(null)
+  const [controles, setControles] = useState<Record<number, ControlActa>>({})
+
+  const handleCambiar = (bienId: number, cambio: Partial<ControlBien>) => {
+    if (!abierta) return
+    const actaId = abierta.id
+    setControles((actual) => ({
+      ...actual,
+      [actaId]: { ...actual[actaId], [bienId]: cambiarControl(actual[actaId]?.[bienId], cambio) },
+    }))
+  }
+
+  const handleCerrar = () => setAbierta(null)
+
+  const handleTerminada = () => {
+    if (!abierta) return
+    const actaId = abierta.id
+    setControles((actual) => {
+      const resto = { ...actual }
+      delete resto[actaId]
+      return resto
+    })
+    setAbierta(null)
+  }
 
   return (
     <section className="flex flex-col gap-6">
@@ -64,7 +98,11 @@ export const PorRecibirPagina = () => {
                     {acta.bienes.length} · {areaDelTipo[acta.bienes[0]?.tipo_bien]}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <Boton variant="contorno" className="px-3 py-1.5 text-sm">
+                    <Boton
+                      variant="contorno"
+                      onClick={() => setAbierta(acta)}
+                      className="px-3 py-1.5 text-sm"
+                    >
                       Recibir
                     </Boton>
                   </td>
@@ -73,6 +111,16 @@ export const PorRecibirPagina = () => {
             </tbody>
           </table>
         </div>
+      )}
+      {abierta && (
+        <ModalRecepcion
+          key={abierta.id}
+          acta={abierta}
+          control={controles[abierta.id] ?? sinControl}
+          onCambiar={handleCambiar}
+          onCerrar={handleCerrar}
+          onTerminada={handleTerminada}
+        />
       )}
     </section>
   )
