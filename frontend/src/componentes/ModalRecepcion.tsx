@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useEffect, useRef, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { ErrorHttp } from "../api/http"
 import { recibirEntrega } from "../api/movimientos"
 import { obtenerUbicaciones } from "../api/unidades"
 import {
   fechaLegible,
+  motivoInicial,
   ubicacionPorDefecto,
   type ControlActa,
   type ControlBien,
@@ -35,6 +36,8 @@ export const ModalRecepcion = ({
   const dialogo = useRef<HTMLDialogElement>(null)
   const enviando = useRef(false)
   const queryClient = useQueryClient()
+  const [rechazando, setRechazando] = useState(false)
+  const [motivo, setMotivo] = useState("")
   const { data: ubicaciones, isError: sinUbicaciones } = useQuery({
     queryKey: ["ubicaciones"],
     queryFn: obtenerUbicaciones,
@@ -46,6 +49,7 @@ export const ModalRecepcion = ({
     isError,
     error,
     data: recibida,
+    reset,
   } = useMutation({
     mutationFn: (recepcion: Recepcion) => recibirEntrega(acta.id, recepcion),
     onSuccess: () => {
@@ -95,6 +99,36 @@ export const ModalRecepcion = ({
     enviar({ resultado: "ACEPTADO", ubicaciones: ubicacionesElegidas })
   }
 
+  const handleRechazar = () => {
+    reset()
+    setMotivo(motivoInicial(acta.bienes, control))
+    setRechazando(true)
+  }
+
+  const handleVolver = () => {
+    reset()
+    setRechazando(false)
+  }
+
+  const handleConfirmarRechazo = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const texto = motivo.trim()
+    if (!texto) return
+    enviar({ resultado: "RECHAZADO", motivo_rechazo: texto })
+  }
+
+  const avisoError = isError && (
+    <div role="alert" className={`${claseAviso} mt-4 border-error bg-error/5 text-error`}>
+      {error.message}
+    </div>
+  )
+
+  const volverALista = (
+    <Boton type="button" onClick={onTerminada} className="ml-auto">
+      Volver a la lista
+    </Boton>
+  )
+
   return (
     <dialog
       ref={dialogo}
@@ -109,7 +143,7 @@ export const ModalRecepcion = ({
         <div className="flex max-h-[90vh] flex-col">
           <header className="border-b border-gray-200 px-6 py-4">
             <h2 id="titulo-recepcion" className="text-lg font-semibold">
-              Acta recibida
+              {recibida.estado === "APLICADO" ? "Acta recibida" : "Acta rechazada"}
             </h2>
           </header>
           <div className="overflow-y-auto px-6 py-4">
@@ -119,6 +153,53 @@ export const ModalRecepcion = ({
             <Boton onClick={onTerminada}>Volver a la lista</Boton>
           </footer>
         </div>
+      ) : rechazando ? (
+        <form onSubmit={handleConfirmarRechazo} className="flex max-h-[90vh] flex-col">
+          <header className="flex items-baseline justify-between gap-4 border-b border-gray-200 px-6 py-4">
+            <h2 id="titulo-recepcion" className="text-lg font-semibold">
+              Rechazar acta <span className="font-mono">{acta.numero_acta}</span>
+            </h2>
+            <span className="text-sm text-gray-500">A {acta.unidad_origen?.nombre}</span>
+          </header>
+          {avisoError}
+          <div className="overflow-y-auto px-6 py-4">
+            <fieldset disabled={isPending || yaRecibida} className="min-w-0">
+              <label className="flex flex-col gap-2 text-sm font-semibold">
+                Motivo
+                <textarea
+                  required
+                  autoFocus
+                  maxLength={500}
+                  rows={4}
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  onFocus={(e) => {
+                    const fin = e.currentTarget.value.length
+                    e.currentTarget.setSelectionRange(fin, fin)
+                  }}
+                  className="min-h-11 rounded-xs border border-gray-300 bg-white px-3 py-2 font-normal hover:border-gray-500 focus-visible:outline-3 focus-visible:outline-foco"
+                />
+                <span className="text-xs font-normal text-gray-500">
+                  Contá qué no coincide con el acta en papel, hasta 500 caracteres
+                </span>
+              </label>
+            </fieldset>
+          </div>
+          <footer className="flex justify-end gap-2 border-t border-gray-200 px-6 py-3">
+            {yaRecibida ? (
+              volverALista
+            ) : (
+              <>
+                <Boton type="button" variant="contorno" onClick={handleVolver} disabled={isPending}>
+                  Volver
+                </Boton>
+                <Boton type="submit" variant="peligro" disabled={isPending || !motivo.trim()}>
+                  {isPending ? "Rechazando…" : "Confirmar rechazo"}
+                </Boton>
+              </>
+            )}
+          </footer>
+        </form>
       ) : (
         <form onSubmit={handleAceptar} className="flex max-h-[90vh] flex-col">
           <header className="flex items-baseline justify-between gap-4 border-b border-gray-200 px-6 py-4">
@@ -127,11 +208,7 @@ export const ModalRecepcion = ({
             </h2>
             <span className="text-sm text-gray-500">Desde {acta.unidad_origen?.nombre}</span>
           </header>
-          {isError && (
-            <div role="alert" className={`${claseAviso} mt-4 border-error bg-error/5 text-error`}>
-              {error.message}
-            </div>
-          )}
+          {avisoError}
           {sinUbicaciones && (
             <div role="alert" className={`${claseAviso} mt-4 border-error bg-error/5 text-error`}>
               No se pudieron cargar las ubicaciones
@@ -166,9 +243,7 @@ export const ModalRecepcion = ({
           )}
           <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-6 py-3">
             {yaRecibida ? (
-              <Boton type="button" onClick={onTerminada} className="ml-auto">
-                Volver a la lista
-              </Boton>
+              volverALista
             ) : (
               <>
                 <span className="text-sm text-gray-600">
@@ -179,7 +254,12 @@ export const ModalRecepcion = ({
                   <Boton type="button" variant="contorno" onClick={onCerrar} disabled={isPending}>
                     Cancelar
                   </Boton>
-                  <Boton type="button" variant="peligro" disabled={isPending}>
+                  <Boton
+                    type="button"
+                    variant="peligro"
+                    onClick={handleRechazar}
+                    disabled={isPending}
+                  >
                     Rechazar
                   </Boton>
                   <Boton type="submit" disabled={isPending || !puedeAceptar}>

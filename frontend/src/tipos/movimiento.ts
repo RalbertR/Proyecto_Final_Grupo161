@@ -1,3 +1,4 @@
+import { tiposDeBien } from "./bien"
 import type { Ubicacion, Unidad } from "./unidad"
 
 export interface EntregaCreate {
@@ -71,4 +72,13 @@ export const ubicacionPorDefecto = (tipoBien: string, ubicaciones: Ubicacion[]) 
   const nombre = ubicacionDelTipo[tipoBien]
   if (!nombre) return undefined
   return ubicaciones.find((u) => normalizar(u.nombre) === normalizar(nombre))?.id
+}
+
+export const motivoInicial = (bienes: RenglonMovimiento[], control: ControlActa) => {
+  const conNovedad = bienes.filter((b) => control[b.bien_id]?.conNovedad)
+  if (conNovedad.length === 0) return ""
+  const lista = conNovedad
+    .map((b) => `${tiposDeBien[b.tipo_bien] ?? b.tipo_bien} ${b.identificacion}`)
+    .join(", ")
+  return `Con novedad: ${lista}. `.slice(0, 500)
 }
