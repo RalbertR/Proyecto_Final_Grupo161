@@ -70,7 +70,8 @@ CAMBIAR_ESTADO = text("UPDATE movimiento SET estado = :estado WHERE id = :id")
 RENGLONES = text(
     "SELECT mb.bien_id, b.tipo_bien, "
     "COALESCE(b.numero_serie, ml.patente) AS identificacion, b.marca, b.modelo, "
-    "uo.nombre AS ubicacion_origen, ud.nombre AS ubicacion_destino "
+    "b.estado_operativo, uo.nombre AS ubicacion_origen, "
+    "ud.nombre AS ubicacion_destino "
     "FROM movimiento_bien mb "
     "JOIN bien b ON b.id = mb.bien_id "
     "LEFT JOIN movil ml ON ml.bien_id = b.id "

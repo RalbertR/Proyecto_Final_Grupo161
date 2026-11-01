@@ -46,6 +46,7 @@ class RenglonPublic(SQLModel):
     identificacion: str
     marca: str
     modelo: str
+    estado_operativo: str
     ubicacion_origen: str | None
     ubicacion_destino: str | None
 

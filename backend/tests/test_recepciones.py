@@ -192,6 +192,22 @@ def test_el_origen_no_tiene_actas_por_recibir(client, acta_pendiente):
     assert respuesta.json() == []
 
 
+def test_cada_renglon_trae_el_estado_operativo_del_bien(client, acta_pendiente):
+    with engine.begin() as conexion:
+        conexion.execute(
+            text("UPDATE bien SET estado_operativo = 'FUERA_DE_SERVICIO' WHERE id = 2")
+        )
+
+    respuesta = client.get("/api/movimientos/por-recibir", headers=con_token(5))
+
+    assert [
+        renglon["estado_operativo"] for renglon in respuesta.json()[0]["bienes"]
+    ] == [
+        "EN_SERVICIO",
+        "FUERA_DE_SERVICIO",
+    ]
+
+
 def test_las_ubicaciones_son_las_de_la_unidad_del_usuario(client, acta_pendiente):
     respuesta = client.get("/api/ubicaciones", headers=con_token(4))
 
