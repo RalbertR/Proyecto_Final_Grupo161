@@ -1,3 +1,5 @@
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 import pytest
@@ -139,6 +141,24 @@ def inventario(client, usuario_id):
     return client.get("/api/inventario", headers=con_token(usuario_id)).json()
 
 
+def abrir_conexiones_en_el_pool(cantidad):
+    conexiones = [engine.connect() for _ in range(cantidad)]
+    for conexion in conexiones:
+        conexion.close()
+
+
+def en_simultaneo(*pedidos):
+    abrir_conexiones_en_el_pool(len(pedidos))
+    barrera = threading.Barrier(len(pedidos))
+
+    def pedir(pedido):
+        barrera.wait()
+        return pedido()
+
+    with ThreadPoolExecutor(len(pedidos)) as hilos:
+        return list(hilos.map(pedir, pedidos, timeout=10))
+
+
 def test_una_entrega_de_a_a_b_queda_recibida_revisada_y_en_el_historial(
     client, unidades_con_bienes
 ):
@@ -183,4 +203,27 @@ def test_una_entrega_de_a_a_b_queda_recibida_revisada_y_en_el_historial(
     ) == [
         (1, 1, "ENTREGA", "APLICADO", "REVISADO", 4, 1, 5, 2),
         (2, 1, "ENTREGA", "APLICADO", "REVISADO", 4, 1, 5, 3),
+    ]
+
+
+def test_dos_entregas_simultaneas_del_mismo_bien_registran_una_sola(
+    client, unidades_con_bienes
+):
+    respuestas = en_simultaneo(
+        lambda: entregar(client, 4),
+        lambda: entregar(client, 7, numero_acta="0002/2026"),
+    )
+
+    assert sorted(respuesta.status_code for respuesta in respuestas) == [201, 409]
+    ganadora = next(r for r in respuestas if r.status_code == 201)
+    rechazada = next(r for r in respuestas if r.status_code == 409)
+    assert rechazada.json() == {
+        "detail": "Uno de los bienes ya tiene un movimiento pendiente"
+    }
+    assert consultar("SELECT id, estado FROM movimiento") == [
+        (ganadora.json()["id"], "PENDIENTE")
+    ]
+    assert consultar("SELECT bien_id FROM movimiento_bien ORDER BY bien_id") == [
+        (1,),
+        (2,),
     ]
