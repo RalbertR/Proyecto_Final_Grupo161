@@ -6,3 +6,5 @@ export const registrarEntrega = (entrega: EntregaCreate) =>
     method: "POST",
     body: JSON.stringify(entrega),
   })
+
+export const obtenerPorRecibir = () => http<Movimiento[]>("/api/movimientos/por-recibir")

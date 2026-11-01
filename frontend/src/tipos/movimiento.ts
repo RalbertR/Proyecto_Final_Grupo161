@@ -14,6 +14,7 @@ export interface RenglonMovimiento {
   identificacion: string
   marca: string
   modelo: string
+  estado_operativo: string
   ubicacion_origen: string | null
   ubicacion_destino: string | null
 }
@@ -32,3 +33,5 @@ export interface Movimiento {
   fecha_carga: string
   bienes: RenglonMovimiento[]
 }
+
+export const fechaLegible = (fecha: string) => fecha.split("-").reverse().join("/")

@@ -4,6 +4,7 @@ import { LayoutPrincipal } from "./layouts/LayoutPrincipal"
 import { InventarioPagina } from "./paginas/InventarioPagina"
 import { LoginPagina } from "./paginas/LoginPagina"
 import { NoEncontradaPagina } from "./paginas/NoEncontradaPagina"
+import { PorRecibirPagina } from "./paginas/PorRecibirPagina"
 
 export const App = () => (
   <Routes>
@@ -11,6 +12,7 @@ export const App = () => (
     <Route element={<RutaProtegida />}>
       <Route element={<LayoutPrincipal />}>
         <Route index element={<InventarioPagina />} />
+        <Route path="por-recibir" element={<PorRecibirPagina />} />
         <Route path="*" element={<NoEncontradaPagina />} />
       </Route>
     </Route>

@@ -1,13 +1,11 @@
 import { tiposDeBien } from "../tipos/bien"
-import type { Movimiento } from "../tipos/movimiento"
+import { fechaLegible, type Movimiento } from "../tipos/movimiento"
 import { Marca } from "./Marca"
 
 const textoRevision: Record<string, string> = {
   PENDIENTE: "Pendiente de la unidad superior",
   NO_APLICA: "No corresponde",
 }
-
-const fechaLegible = (fecha: string) => fecha.split("-").reverse().join("/")
 
 export const ResumenEntrega = ({ movimiento }: { movimiento: Movimiento }) => (
   <div className="flex flex-col gap-4">
