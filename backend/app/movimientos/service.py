@@ -7,7 +7,11 @@ from app.acceso.service import unidades_visibles
 from app.organizacion.model import Nivel, Unidad
 from app.organizacion.schema import UnidadPublic
 from app.organizacion.service import listar_ubicaciones
-from app.revision.repository import listar_revisiones
+from app.revision.repository import (
+    bloquear_movimiento,
+    cambiar_estado_revision,
+    listar_revisiones,
+)
 from app.revision.schema import RevisionPublic
 
 from . import repository
@@ -16,7 +20,9 @@ from .schema import (
     MovimientoPublic,
     RecepcionAceptada,
     RecepcionRechazada,
+    RectificacionCreate,
     RenglonPublic,
+    VersionPublic,
 )
 
 AREA_DEL_TIPO = {
@@ -164,6 +170,55 @@ def recibir_entrega(
     return detalle(session, repository.buscar_cabecera(session, movimiento_id))
 
 
+def listar_observados(
+    session: Session, usuario: UsuarioPublic
+) -> list[MovimientoPublic]:
+    return [
+        detalle(session, cabecera)
+        for cabecera in repository.listar_observados(session, usuario.unidad.id)
+    ]
+
+
+def rectificar_movimiento(
+    session: Session,
+    usuario: UsuarioPublic,
+    movimiento_id: int,
+    rectificacion: RectificacionCreate,
+) -> MovimientoPublic:
+    # Se bloquea antes de leer el estado: otra corrección espera acá y, con
+    # READ COMMITTED, al seguir numera su versión después de esta (ADR 0001).
+    movimiento = bloquear_movimiento(session, movimiento_id)
+    if movimiento is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="El movimiento no existe"
+        )
+    if movimiento["unidad_registrante_id"] != usuario.unidad.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo la unidad que registró el movimiento lo corrige",
+        )
+    if movimiento["estado"] != "APLICADO":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Solo se corrigen movimientos aplicados",
+        )
+    # El original no se modifica: la corrección es una versión nueva (RN-07).
+    repository.insertar_rectificacion(
+        session,
+        movimiento_id=movimiento_id,
+        fecha_hecho=rectificacion.fecha_hecho,
+        numero_acta=rectificacion.numero_acta,
+        descripcion=rectificacion.descripcion,
+        motivo=rectificacion.motivo,
+        usuario_id=usuario.id,
+    )
+    # Lo que registra Dirección no se revisa (RN-06).
+    if movimiento["estado_revision"] != "NO_APLICA":
+        cambiar_estado_revision(session, movimiento_id, "PENDIENTE")
+    session.commit()
+    return detalle(session, repository.buscar_cabecera(session, movimiento_id))
+
+
 def detalle(session: Session, cabecera: RowMapping) -> MovimientoPublic:
     return MovimientoPublic(
         **cabecera,
@@ -172,6 +227,10 @@ def detalle(session: Session, cabecera: RowMapping) -> MovimientoPublic:
         bienes=[
             RenglonPublic.model_validate(renglon)
             for renglon in repository.listar_renglones(session, cabecera["id"])
+        ],
+        versiones=[
+            VersionPublic.model_validate(version)
+            for version in repository.listar_versiones(session, cabecera["id"])
         ],
         revisiones=[
             RevisionPublic.model_validate(revision)

@@ -11,6 +11,7 @@ from .schema import (
     MovimientoPublic,
     RecepcionAceptada,
     RecepcionRechazada,
+    RectificacionCreate,
 )
 
 router = APIRouter(prefix="/movimientos", tags=["Movimientos"])
@@ -30,6 +31,11 @@ def listar_por_recibir(session: SessionDep, usuario: UsuarioActualDep):
     return service.listar_por_recibir(session, usuario)
 
 
+@router.get("/observados", response_model=list[MovimientoPublic])
+def listar_observados(session: SessionDep, usuario: UsuarioActualDep):
+    return service.listar_observados(session, usuario)
+
+
 @router.get("/{movimiento_id}", response_model=MovimientoPublic)
 def consultar_movimiento(
     session: SessionDep, usuario: UsuarioActualDep, movimiento_id: int
@@ -47,3 +53,17 @@ def recibir_entrega(
     ],
 ):
     return service.recibir_entrega(session, usuario, movimiento_id, recepcion)
+
+
+@router.post(
+    "/{movimiento_id}/rectificaciones",
+    response_model=MovimientoPublic,
+    status_code=status.HTTP_201_CREATED,
+)
+def rectificar_movimiento(
+    session: SessionDep,
+    usuario: UsuarioActualDep,
+    movimiento_id: int,
+    rectificacion: RectificacionCreate,
+):
+    return service.rectificar_movimiento(session, usuario, movimiento_id, rectificacion)

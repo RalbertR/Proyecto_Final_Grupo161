@@ -29,7 +29,7 @@ INSERTAR_RENGLON = text(
 CABECERA = text(
     "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
     "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
-    "u.nombre_usuario AS usuario, v.fecha_carga "
+    "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente "
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
     "WHERE v.id = :id"
 )
@@ -37,10 +37,38 @@ CABECERA = text(
 POR_RECIBIR = text(
     "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
     "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
-    "u.nombre_usuario AS usuario, v.fecha_carga "
+    "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente "
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
     "WHERE v.tipo = 'ENTREGA' AND v.estado = 'PENDIENTE' "
     "AND v.unidad_destino_id = :unidad_id ORDER BY v.id"
+)
+
+OBSERVADOS = text(
+    "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
+    "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
+    "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente "
+    "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
+    "WHERE v.estado = 'APLICADO' AND v.estado_revision = 'OBSERVADO' "
+    "AND v.unidad_registrante_id = :unidad_id ORDER BY v.id"
+)
+
+VERSIONES = text(
+    "SELECT 0 AS version, m.fecha_hecho, m.numero_acta, m.descripcion, "
+    "NULL AS motivo, u.nombre_usuario AS usuario, m.fecha_carga AS fecha "
+    "FROM movimiento m JOIN usuario u ON u.id = m.usuario_id WHERE m.id = :id "
+    "UNION ALL "
+    "SELECT r.version, r.fecha_hecho, r.numero_acta, r.descripcion, r.motivo, "
+    "u.nombre_usuario, r.fecha "
+    "FROM rectificacion r JOIN usuario u ON u.id = r.usuario_id "
+    "WHERE r.movimiento_id = :id ORDER BY version"
+)
+
+INSERTAR_RECTIFICACION = text(
+    "INSERT INTO rectificacion (movimiento_id, version, fecha_hecho, numero_acta, "
+    "descripcion, motivo, usuario_id) "
+    "SELECT :movimiento_id, COALESCE(MAX(version), 0) + 1, :fecha_hecho, "
+    ":numero_acta, :descripcion, :motivo, :usuario_id "
+    "FROM rectificacion WHERE movimiento_id = :movimiento_id"
 )
 
 BLOQUEAR_BIENES_DEL_MOVIMIENTO = text(
@@ -119,6 +147,18 @@ def listar_renglones(session: Session, movimiento_id: int) -> list[RowMapping]:
 
 def listar_por_recibir(session: Session, unidad_id: int) -> list[RowMapping]:
     return list(session.exec(POR_RECIBIR, params={"unidad_id": unidad_id}).mappings())
+
+
+def listar_observados(session: Session, unidad_id: int) -> list[RowMapping]:
+    return list(session.exec(OBSERVADOS, params={"unidad_id": unidad_id}).mappings())
+
+
+def listar_versiones(session: Session, movimiento_id: int) -> list[RowMapping]:
+    return list(session.exec(VERSIONES, params={"id": movimiento_id}).mappings())
+
+
+def insertar_rectificacion(session: Session, **valores) -> None:
+    session.exec(INSERTAR_RECTIFICACION, params=valores)
 
 
 def bloquear_bienes_del_movimiento(session: Session, movimiento_id: int) -> list[int]:
