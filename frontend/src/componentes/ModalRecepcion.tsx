@@ -70,6 +70,14 @@ export const ModalRecepcion = ({
     if (d && !d.open) d.showModal()
   }, [])
 
+  useEffect(() => {
+    const frenarEscape = (e: KeyboardEvent) => {
+      if (enviando.current && e.key === "Escape") e.preventDefault()
+    }
+    document.addEventListener("keydown", frenarEscape, true)
+    return () => document.removeEventListener("keydown", frenarEscape, true)
+  }, [])
+
   const yaRecibida =
     isError && error instanceof ErrorHttp && (error.status === 404 || error.status === 409)
   const total = acta.bienes.length
