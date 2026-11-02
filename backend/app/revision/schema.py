@@ -14,6 +14,9 @@ class RegistroBandejaPublic(SQLModel):
     usuario: str
     detalle: str | None
     version: int
+    numero_acta: str | None
+    unidad_origen: str | None
+    unidad_destino: str | None
 
 
 class RevisionRevisado(BaseModel):

@@ -4,10 +4,15 @@ from sqlmodel import Session, text
 BANDEJA = text(
     "SELECT b.registro, b.registro_id, b.evento, b.fecha, "
     "un.nombre AS unidad_registrante, us.nombre_usuario AS usuario, b.detalle, "
-    "b.version_vigente AS version "
+    "b.version_vigente AS version, m.numero_acta, uo.nombre AS unidad_origen, "
+    "ud.nombre AS unidad_destino "
     "FROM v_bandeja_revision b "
     "JOIN unidad un ON un.id = b.unidad_registrante_id "
     "JOIN usuario us ON us.id = b.usuario_id "
+    "LEFT JOIN v_movimiento_vigente m "
+    "ON b.registro = 'MOVIMIENTO' AND m.id = b.registro_id "
+    "LEFT JOIN unidad uo ON uo.id = m.unidad_origen_id "
+    "LEFT JOIN unidad ud ON ud.id = m.unidad_destino_id "
     "WHERE b.unidad_revisora_id = :unidad_id "
     "ORDER BY b.fecha, b.registro, b.registro_id"
 )
