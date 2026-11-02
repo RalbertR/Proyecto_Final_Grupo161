@@ -6,6 +6,7 @@ import { revisarMovimiento } from "../api/revisiones"
 import {
   controlVigente,
   datosActa,
+  motivoObservacion,
   type ControlRevision,
   type RevisionCreate,
 } from "../tipos/revision"
@@ -39,6 +40,8 @@ export const ModalRevision = ({
   const queryClient = useQueryClient()
   const [fallo, setFallo] = useState<Fallo | null>(null)
   const [corregida, setCorregida] = useState(false)
+  const [observando, setObservando] = useState(false)
+  const [motivo, setMotivo] = useState("")
   const {
     data: acta,
     isError: sinDetalle,
@@ -72,6 +75,7 @@ export const ModalRevision = ({
         const { data: nuevo } = await refetch()
         if (nuevo?.estado_revision === "PENDIENTE" && nuevo.version_vigente !== revision.version) {
           setCorregida(true)
+          setObservando(false)
           return
         }
         if (nuevo && nuevo.estado_revision !== "PENDIENTE") {
@@ -113,6 +117,25 @@ export const ModalRevision = ({
     <Boton type="button" onClick={onTerminada} className="ml-auto">
       Volver a la lista
     </Boton>
+  )
+
+  const avisos = (
+    <>
+      {corregida && (
+        <div
+          role="status"
+          className={`${claseAviso} border-pendiente bg-pendiente/10 text-amber-900`}
+        >
+          La unidad corrigió el acta mientras la revisabas. Volvé a controlarla con los datos
+          nuevos.
+        </div>
+      )}
+      {fallo && (
+        <div role="alert" className={`${claseAviso} border-error bg-error/5 text-error`}>
+          {fallo.mensaje}
+        </div>
+      )}
+    </>
   )
 
   const contenido = () => {
@@ -190,6 +213,74 @@ export const ModalRevision = ({
       enviar({ resultado: "REVISADO", version: acta.version_vigente })
     }
 
+    const handleObservar = () => {
+      setFallo(null)
+      if (!motivo) setMotivo(motivoObservacion(acta, control))
+      setObservando(true)
+    }
+
+    const handleVolver = () => {
+      setFallo(null)
+      setObservando(false)
+    }
+
+    const handleConfirmarObservacion = (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault()
+      const texto = motivo.trim()
+      if (!texto) return
+      enviar({ resultado: "OBSERVADO", motivo_observacion: texto, version: acta.version_vigente })
+    }
+
+    if (observando)
+      return (
+        <form onSubmit={handleConfirmarObservacion} className="flex max-h-[90vh] flex-col">
+          <header className="flex items-baseline justify-between gap-4 border-b border-gray-200 px-6 py-4">
+            <h2 id="titulo-revision" className="text-lg font-semibold">
+              Observar acta <span className="font-mono">{acta.numero_acta}</span>
+            </h2>
+            <span className="text-sm text-gray-500">{acta.unidad_origen?.nombre}</span>
+          </header>
+          {avisos}
+          <div className="overflow-y-auto px-6 py-4">
+            <fieldset disabled={isPending || terminada} className="min-w-0">
+              <label className="flex flex-col gap-2 text-sm font-semibold">
+                Motivo
+                <textarea
+                  required
+                  autoFocus
+                  maxLength={500}
+                  rows={4}
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  onFocus={(e) => {
+                    const fin = e.currentTarget.value.length
+                    e.currentTarget.setSelectionRange(fin, fin)
+                  }}
+                  className="min-h-11 rounded-xs border border-gray-300 bg-white px-3 py-2 font-normal hover:border-gray-500 focus-visible:outline-3 focus-visible:outline-foco"
+                />
+                <span className="text-xs font-normal text-gray-500">
+                  Contá qué no coincide con el acta que llegó por correo, hasta 500 caracteres
+                </span>
+              </label>
+            </fieldset>
+          </div>
+          <footer className="flex justify-end gap-2 border-t border-gray-200 px-6 py-3">
+            {terminada ? (
+              volverALista
+            ) : (
+              <>
+                <Boton type="button" variant="contorno" onClick={handleVolver} disabled={isPending}>
+                  Volver
+                </Boton>
+                <Boton type="submit" variant="peligro" disabled={isPending || !motivo.trim()}>
+                  {isPending ? "Enviando…" : "Observar"}
+                </Boton>
+              </>
+            )}
+          </footer>
+        </form>
+      )
+
     return (
       <form onSubmit={handleRevisado} className="flex max-h-[90vh] flex-col">
         <header className="flex flex-col gap-1 border-b border-gray-200 px-6 py-4">
@@ -203,20 +294,7 @@ export const ModalRevision = ({
             Compará cada dato con el acta escaneada que llegó por correo y tildá los que coinciden.
           </p>
         </header>
-        {corregida && (
-          <div
-            role="status"
-            className={`${claseAviso} border-pendiente bg-pendiente/10 text-amber-900`}
-          >
-            La unidad corrigió el acta mientras la revisabas. Volvé a controlarla con los datos
-            nuevos.
-          </div>
-        )}
-        {fallo && (
-          <div role="alert" className={`${claseAviso} border-error bg-error/5 text-error`}>
-            {fallo.mensaje}
-          </div>
-        )}
+        {avisos}
         <div className="overflow-y-auto px-6 py-4">
           <fieldset disabled={isPending || terminada} className="flex min-w-0 flex-col gap-4">
             <HistorialActa acta={acta} />
@@ -236,7 +314,12 @@ export const ModalRevision = ({
                 <Boton type="button" variant="contorno" onClick={onCerrar} disabled={isPending}>
                   Cancelar
                 </Boton>
-                <Boton type="button" variant="peligro" disabled={isPending}>
+                <Boton
+                  type="button"
+                  variant="peligro"
+                  onClick={handleObservar}
+                  disabled={isPending}
+                >
                   Observar
                 </Boton>
                 <Boton type="submit" disabled={isPending || !completo}>

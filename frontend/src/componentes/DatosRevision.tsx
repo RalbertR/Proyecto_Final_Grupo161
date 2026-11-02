@@ -1,18 +1,11 @@
 import type { ReactNode } from "react"
 import { fechaLegible, type Movimiento } from "../tipos/movimiento"
-import type { ControlRevision, DatoActa } from "../tipos/revision"
+import { nombreDato, type ControlRevision, type DatoActa } from "../tipos/revision"
 
 type DatosRevisionProps = {
   acta: Movimiento
   control: ControlRevision
   onCambiar: (control: ControlRevision) => void
-}
-
-const nombreFila: Record<DatoActa, string> = {
-  firmas: "firmas",
-  numero_acta: "número de acta",
-  fecha_hecho: "fecha del hecho",
-  unidades: "unidades",
 }
 
 const Anterior = ({
@@ -39,7 +32,7 @@ export const DatosRevision = ({ acta, control, onCambiar }: DatosRevisionProps) 
         onChange={(e) =>
           onCambiar({ ...control, datos: { ...control.datos, [dato]: e.target.checked } })
         }
-        aria-label={`Coincide con el acta: ${nombreFila[dato]}`}
+        aria-label={`Coincide con el acta: ${nombreDato[dato]}`}
         className="size-4 accent-marca focus-visible:outline-3 focus-visible:outline-foco"
       />
       {texto}
