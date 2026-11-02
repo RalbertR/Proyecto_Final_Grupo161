@@ -33,6 +33,27 @@ export interface Movimiento {
   usuario: string
   fecha_carga: string
   bienes: RenglonMovimiento[]
+  version_vigente: number
+  versiones: VersionMovimiento[]
+  revisiones: Revision[]
+}
+
+export interface VersionMovimiento {
+  version: number
+  fecha_hecho: string
+  numero_acta: string | null
+  descripcion: string | null
+  motivo: string | null
+  usuario: string
+  fecha: string
+}
+
+export interface Revision {
+  resultado: string
+  version_revisada: number
+  motivo_observacion: string | null
+  usuario: string
+  fecha: string
 }
 
 export type Recepcion =
@@ -48,6 +69,13 @@ export interface ControlBien {
 export type ControlActa = Record<number, ControlBien>
 
 export const fechaLegible = (fecha: string) => fecha.split("-").reverse().join("/")
+
+export const fechaHoraLegible = (fecha: string) =>
+  new Date(`${fecha}Z`).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
 
 export const cambiarControl = (
   actual: ControlBien | undefined,

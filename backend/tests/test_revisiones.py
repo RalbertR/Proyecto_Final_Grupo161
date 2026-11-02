@@ -1,5 +1,4 @@
 import threading
-from datetime import date
 
 import pytest
 from sqlmodel import Session, text
@@ -28,7 +27,7 @@ INSERTAR_ENTREGA = (
     "INSERT INTO movimiento (id, tipo, estado, estado_revision, numero_acta, "
     "fecha_hecho, descripcion, usuario_id, unidad_registrante_id, "
     "unidad_origen_id, unidad_destino_id) "
-    "VALUES (:id, 'ENTREGA', :estado, :estado_revision, :numero_acta, CURDATE(), "
+    "VALUES (:id, 'ENTREGA', :estado, :estado_revision, :numero_acta, '2026-10-28', "
     ":descripcion, :usuario_id, :origen, :origen, :destino)"
 )
 
@@ -38,11 +37,14 @@ EN_LA_BANDEJA = {
     "registro": "MOVIMIENTO",
     "registro_id": 1,
     "evento": "ENTREGA",
-    "fecha": date.today().isoformat(),
+    "fecha": "2026-10-28",
     "unidad_registrante": "Unidad Operacional A",
     "usuario": "aux.unidad_a",
     "detalle": DESCRIPCION,
     "version": 0,
+    "numero_acta": "0001/2026",
+    "unidad_origen": "Unidad Operacional A",
+    "unidad_destino": "Unidad Operacional B",
 }
 
 REVISAR = {"resultado": "REVISADO", "version": 0}

@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerPorRecibir } from "../api/movimientos"
+import { obtenerMovimientosARevisar } from "../api/revisiones"
 import { Boton } from "../componentes/Boton"
 import { Escudo } from "../componentes/Escudo"
 import { Marca } from "../componentes/Marca"
@@ -23,6 +24,13 @@ export const LayoutPrincipal = () => {
     queryKey: ["por-recibir"],
     queryFn: obtenerPorRecibir,
     enabled: !!yo,
+    retry: false,
+  })
+  const revisa = !!yo && yo.unidad.nivel !== "OPERACIONAL"
+  const { data: aRevisar } = useQuery({
+    queryKey: ["bandeja"],
+    queryFn: obtenerMovimientosARevisar,
+    enabled: revisa,
     retry: false,
   })
   const cerrar = useSesion((s) => s.cerrar)
@@ -66,6 +74,12 @@ export const LayoutPrincipal = () => {
             Por recibir
             {!!porRecibir?.length && <Marca>{porRecibir.length}</Marca>}
           </NavLink>
+          {revisa && (
+            <NavLink to="/revision" className={claseEnlace}>
+              Revisión
+              {!!aRevisar?.length && <Marca>{aRevisar.length}</Marca>}
+            </NavLink>
+          )}
         </div>
       </nav>
       <main className="mx-auto max-w-7xl px-6 py-8">
