@@ -14,3 +14,5 @@ export const recibirEntrega = (id: number, recepcion: Recepcion) =>
     method: "POST",
     body: JSON.stringify(recepcion),
   })
+
+export const obtenerMovimiento = (id: number) => http<Movimiento>(`/api/movimientos/${id}`)

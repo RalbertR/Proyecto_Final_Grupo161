@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
 import { Navigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerMovimientosARevisar } from "../api/revisiones"
 import { Boton } from "../componentes/Boton"
 import { Marca } from "../componentes/Marca"
+import { ModalRevision } from "../componentes/ModalRevision"
 import { fechaLegible } from "../tipos/movimiento"
-import { nombreEvento } from "../tipos/revision"
+import { nombreEvento, type ControlRevision } from "../tipos/revision"
 
 const columnas = ["Acta", "Movimiento", "Origen", "Destino", "Fecha del hecho", "Cargó"]
 
@@ -24,8 +26,28 @@ export const RevisionPagina = () => {
     enabled: !!yo && !operacional,
     retry: false,
   })
+  const [abierto, setAbierto] = useState<number | null>(null)
+  const [controles, setControles] = useState<Record<number, ControlRevision>>({})
 
   if (operacional) return <Navigate to="/" replace />
+
+  const handleCambiar = (control: ControlRevision) => {
+    if (abierto === null) return
+    setControles((actual) => ({ ...actual, [abierto]: control }))
+  }
+
+  const handleCerrar = () => setAbierto(null)
+
+  const handleTerminada = () => {
+    if (abierto === null) return
+    const id = abierto
+    setControles((actual) => {
+      const resto = { ...actual }
+      delete resto[id]
+      return resto
+    })
+    setAbierto(null)
+  }
 
   return (
     <section className="flex flex-col gap-6">
@@ -81,7 +103,11 @@ export const RevisionPagina = () => {
                   <td className="px-3 py-2 font-mono">{fechaLegible(registro.fecha)}</td>
                   <td className="px-3 py-2 font-mono">{registro.usuario}</td>
                   <td className="px-3 py-2 text-right">
-                    <Boton variant="contorno" className="px-3 py-1.5 text-sm">
+                    <Boton
+                      variant="contorno"
+                      onClick={() => setAbierto(registro.registro_id)}
+                      className="px-3 py-1.5 text-sm"
+                    >
                       Revisar
                     </Boton>
                   </td>
@@ -90,6 +116,16 @@ export const RevisionPagina = () => {
             </tbody>
           </table>
         </div>
+      )}
+      {abierto !== null && (
+        <ModalRevision
+          key={abierto}
+          movimientoId={abierto}
+          control={controles[abierto]}
+          onCambiar={handleCambiar}
+          onCerrar={handleCerrar}
+          onTerminada={handleTerminada}
+        />
       )}
     </section>
   )
