@@ -227,3 +227,26 @@ def test_dos_entregas_simultaneas_del_mismo_bien_registran_una_sola(
         (1,),
         (2,),
     ]
+
+
+def test_dos_recepciones_simultaneas_de_la_misma_acta_aplican_una_sola(
+    client, unidades_con_bienes
+):
+    acta_id = entregar(client).json()["id"]
+
+    respuestas = en_simultaneo(
+        lambda: recibir(client, acta_id, 5),
+        lambda: recibir(client, acta_id, 8),
+    )
+
+    assert sorted(respuesta.status_code for respuesta in respuestas) == [200, 409]
+    rechazada = next(r for r in respuestas if r.status_code == 409)
+    assert rechazada.json() == {"detail": "El acta no está pendiente de recepción"}
+    assert consultar("SELECT COUNT(*) FROM recepcion") == [(1,)]
+    assert consultar("SELECT bien_id, orden FROM movimiento_bien ORDER BY bien_id") == [
+        (1, 1),
+        (2, 1),
+    ]
+    assert consultar(
+        "SELECT id, unidad_id, ubicacion_id FROM bien WHERE id IN (1, 2) ORDER BY id"
+    ) == [(1, 5, 2), (2, 5, 3)]
