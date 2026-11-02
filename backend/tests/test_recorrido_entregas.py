@@ -1,6 +1,6 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from sqlmodel import text
@@ -30,6 +30,8 @@ BIENES = [
 ]
 
 HOY = date.today().isoformat()
+
+AYER = (date.today() - timedelta(days=1)).isoformat()
 
 ENTREGA = {
     "unidad_destino_id": 5,
@@ -250,3 +252,46 @@ def test_dos_recepciones_simultaneas_de_la_misma_acta_aplican_una_sola(
     assert consultar(
         "SELECT id, unidad_id, ubicacion_id FROM bien WHERE id IN (1, 2) ORDER BY id"
     ) == [(1, 5, 2), (2, 5, 3)]
+
+
+def test_la_revision_de_una_version_vieja_responde_409_y_el_acta_guarda_cada_version(
+    client, unidades_con_bienes
+):
+    acta_id = entregar(client).json()["id"]
+    recibir(client, acta_id)
+    observada = revisar(
+        client, acta_id, 0, "OBSERVADO", "La fecha no coincide con el acta firmada"
+    )
+    assert observada.status_code == 201
+
+    corregida = client.post(
+        f"/api/movimientos/{acta_id}/rectificaciones",
+        json={
+            "fecha_hecho": AYER,
+            "numero_acta": "0001/2026",
+            "descripcion": ENTREGA["descripcion"],
+            "motivo": "Se corrige la fecha según el acta firmada",
+        },
+        headers=con_token(4),
+    )
+    assert corregida.status_code == 201
+    assert corregida.json()["version_vigente"] == 1
+
+    vieja = revisar(client, acta_id, 0)
+    assert vieja.status_code == 409
+    assert vieja.json() == {"detail": "La revision no corresponde a la version vigente"}
+    assert consultar(
+        f"SELECT estado_revision FROM movimiento WHERE id = {acta_id}"
+    ) == [("PENDIENTE",)]
+    assert revisar(client, acta_id, 1).status_code == 201
+
+    acta = client.get(f"/api/movimientos/{acta_id}", headers=con_token(4)).json()
+    assert acta["estado_revision"] == "REVISADO"
+    assert [
+        (revision["resultado"], revision["version_revisada"])
+        for revision in acta["revisiones"]
+    ] == [("OBSERVADO", 0), ("REVISADO", 1)]
+    assert [
+        (version["version"], version["fecha_hecho"], version["motivo"])
+        for version in acta["versiones"]
+    ] == [(0, HOY, None), (1, AYER, "Se corrige la fecha según el acta firmada")]
