@@ -40,14 +40,41 @@ class RecepcionRechazada(BaseModel):
     ]
 
 
+class RectificacionCreate(BaseModel):
+    fecha_hecho: date
+    numero_acta: str = Field(pattern=r"^[0-9]{4}/[0-9]{4}$")
+    descripcion: str | None = Field(default=None, max_length=500)
+    motivo: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
+    ]
+
+    @field_validator("fecha_hecho")
+    @classmethod
+    def no_posterior_a_hoy(cls, fecha_hecho: date) -> date:
+        if fecha_hecho > date.today():
+            raise ValueError("La fecha del hecho no puede ser posterior a hoy")
+        return fecha_hecho
+
+
 class RenglonPublic(SQLModel):
     bien_id: int
     tipo_bien: str
     identificacion: str
     marca: str
     modelo: str
+    estado_operativo: str
     ubicacion_origen: str | None
     ubicacion_destino: str | None
+
+
+class VersionPublic(SQLModel):
+    version: int
+    fecha_hecho: date
+    numero_acta: str | None
+    descripcion: str | None
+    motivo: str | None
+    usuario: str
+    fecha: datetime
 
 
 class MovimientoPublic(SQLModel):
@@ -63,4 +90,6 @@ class MovimientoPublic(SQLModel):
     usuario: str
     fecha_carga: datetime
     bienes: list[RenglonPublic]
+    version_vigente: int
+    versiones: list[VersionPublic]
     revisiones: list[RevisionPublic]

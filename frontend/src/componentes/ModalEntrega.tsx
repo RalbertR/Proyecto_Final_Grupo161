@@ -76,6 +76,14 @@ export const ModalEntrega = ({
     if (!abierto && d?.open) d.close()
   }, [abierto])
 
+  useEffect(() => {
+    const frenarEscape = (e: KeyboardEvent) => {
+      if (enviando.current && e.key === "Escape") e.preventDefault()
+    }
+    document.addEventListener("keydown", frenarEscape, true)
+    return () => document.removeEventListener("keydown", frenarEscape, true)
+  }, [])
+
   const enviables = bienes.filter((b) => !bloqueados.has(b.bien_id))
 
   const cambiar =

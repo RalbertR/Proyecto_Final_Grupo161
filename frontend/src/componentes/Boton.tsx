@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from "react"
 
-type Variante = "primario" | "secundario" | "contorno" | "claro"
+type Variante = "primario" | "secundario" | "contorno" | "claro" | "peligro"
 
 type BotonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variante }
 
@@ -9,6 +9,7 @@ const clasesPorVariante: Record<Variante, string> = {
   secundario: "bg-secundario text-white",
   contorno: "border border-gray-500 bg-transparent hover:border-current",
   claro: "bg-white text-marca hover:bg-gray-100",
+  peligro: "border border-error bg-white text-error hover:bg-error/5",
 }
 
 export const Boton = ({ variant = "primario", className = "", ...props }: BotonProps) => (

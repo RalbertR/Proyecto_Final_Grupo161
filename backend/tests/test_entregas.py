@@ -71,6 +71,7 @@ ACTA_REGISTRADA = {
             "identificacion": "BT-1",
             "marca": "Bersa",
             "modelo": "TPR9",
+            "estado_operativo": "EN_SERVICIO",
             "ubicacion_origen": "Sala de Armas",
             "ubicacion_destino": None,
         },
@@ -80,9 +81,21 @@ ACTA_REGISTRADA = {
             "identificacion": "FM-1",
             "marca": "FM S.A.",
             "modelo": "RB3",
+            "estado_operativo": "EN_SERVICIO",
             "ubicacion_origen": "Sala de Armas",
             "ubicacion_destino": None,
         },
+    ],
+    "version_vigente": 0,
+    "versiones": [
+        {
+            "version": 0,
+            "fecha_hecho": HOY,
+            "numero_acta": "0016/2026",
+            "descripcion": "Refuerzo de armamento para la Unidad Operacional B",
+            "motivo": None,
+            "usuario": "aux.unidad_a",
+        }
     ],
     "revisiones": [],
 }
@@ -208,7 +221,8 @@ def test_registra_la_entrega_pendiente_de_recepcion(client, unidades_con_bienes)
     assert respuesta.status_code == 201
     acta = respuesta.json()
     assert acta.pop("id") == 2
-    assert acta.pop("fecha_carga")
+    fecha_carga = acta.pop("fecha_carga")
+    assert acta["versiones"][0].pop("fecha") == fecha_carga
     assert acta == ACTA_REGISTRADA
 
 
