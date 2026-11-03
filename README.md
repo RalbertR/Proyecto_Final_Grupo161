@@ -167,10 +167,48 @@ Cada contraseña y la clave JWT se generan con `openssl rand -hex 32`. La contra
 5. Abrir `https://<subdominio>/api/salud`, que tiene que responder `{"estado":"ok"}`, y después `https://<subdominio>` para ver el login.
 6. Para la demo, cargar los datos de prueba con `docker compose run --rm semillas`. Usa la `CONTRASENA_DEMO` del `.env`.
 
-Para actualizar a una versión nueva, correr `git pull` y `docker compose up -d --build`. Los scripts de migraciones solo corren con la base vacía, así que un script nuevo se aplica a mano:
+### Actualizar el servidor
+
+Para pasar a una versión nueva, correr `git pull` y `docker compose up -d --build`. Si el `git pull` trae un script nuevo en `database/migraciones`, hay que aplicarlo antes del `up`. MySQL solo corre esos scripts la primera vez, con el volumen vacío.
+
+Los scripts los aplica root, porque el usuario de la aplicación no puede cambiar el esquema. La contraseña de root ya está en el contenedor de MySQL, que la toma del `.env`, y la carpeta `database/migraciones` está montada en `/migraciones`, así que después del `git pull` el contenedor ya ve el script nuevo.
+
+1. Frenar el backend para que nadie escriba mientras cambia el esquema:
 
 ```bash
-docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" logistica_policial' < database/migraciones/002_ejemplo.sql
+docker compose stop backend
+```
+
+2. Guardar un respaldo de la base fuera del repositorio:
+
+```bash
+docker compose exec -T mysql sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --routines --triggers --databases logistica_policial' > ~/respaldo_$(date +%F).sql
+chmod 600 ~/respaldo_*.sql
+```
+
+3. Aplicar cada script nuevo, uno por vez y en orden de número:
+
+```bash
+docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" logistica_policial < /migraciones/002_entregas_y_revision.sql'
+```
+
+4. Levantar el backend con el código nuevo con `docker compose up -d --build` y verificar en `https://<subdominio>/api/salud` que responda.
+
+Cada script se aplica una sola vez. Si se corre uno que ya está aplicado, falla en la primera sentencia con un error como `Duplicate column name` y no cambia nada. Si un script falla en el medio, la base queda a medio cambiar, porque en MySQL los cambios de esquema no se pueden deshacer. En ese caso se restaura el respaldo:
+
+```bash
+docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE logistica_policial"'
+docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < ~/respaldo_<fecha>.sql
+```
+
+Los permisos del usuario de la aplicación no se pierden al borrar la base.
+
+Para volver los datos de demo al estado inicial, por ejemplo después de probar el recorrido de entregas, se recrea la base desde cero. Así corren todos los scripts y se cargan los datos de demo de nuevo. **Esto borra todo lo cargado en el servidor.**
+
+```bash
+docker compose down -v
+docker compose up -d --build
+docker compose run --rm semillas
 ```
 
 Los logs se ven con `docker compose logs -f backend`, o con el nombre de otro servicio.
