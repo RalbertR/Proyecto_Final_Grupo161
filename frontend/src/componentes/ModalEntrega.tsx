@@ -3,16 +3,10 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "r
 import { registrarEntrega } from "../api/movimientos"
 import { obtenerDestinos } from "../api/unidades"
 import type { FilaInventario } from "../tipos/bien"
+import { hoy } from "../tipos/movimiento"
 import { Boton } from "./Boton"
 import { ListaBienesEntrega } from "./ListaBienesEntrega"
 import { ResumenEntrega } from "./ResumenEntrega"
-
-const hoy = () => {
-  const ahora = new Date()
-  const mes = String(ahora.getMonth() + 1).padStart(2, "0")
-  const dia = String(ahora.getDate()).padStart(2, "0")
-  return `${ahora.getFullYear()}-${mes}-${dia}`
-}
 
 const datosIniciales = () => ({ destino: "", numeroActa: "", fechaHecho: "", descripcion: "" })
 

@@ -6,6 +6,7 @@ import { revisarMovimiento } from "../api/revisiones"
 import {
   controlVigente,
   datosActa,
+  historialActa,
   motivoObservacion,
   type ControlRevision,
   type RevisionCreate,
@@ -297,7 +298,7 @@ export const ModalRevision = ({
         {avisos}
         <div className="overflow-y-auto px-6 py-4">
           <fieldset disabled={isPending || terminada} className="flex min-w-0 flex-col gap-4">
-            <HistorialActa acta={acta} />
+            <HistorialActa eventos={historialActa(acta)} />
             <DatosRevision acta={acta} control={control} onCambiar={onCambiar} />
             <TablaRevision acta={acta} control={control} onCambiar={onCambiar} />
           </fieldset>

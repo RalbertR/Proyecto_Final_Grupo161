@@ -9,6 +9,20 @@ export interface EntregaCreate {
   bienes: number[]
 }
 
+export interface RectificacionCreate {
+  fecha_hecho: string
+  numero_acta: string
+  descripcion: string | null
+  motivo: string
+}
+
+export const hoy = () => {
+  const ahora = new Date()
+  const mes = String(ahora.getMonth() + 1).padStart(2, "0")
+  const dia = String(ahora.getDate()).padStart(2, "0")
+  return `${ahora.getFullYear()}-${mes}-${dia}`
+}
+
 export interface RenglonMovimiento {
   bien_id: number
   tipo_bien: string
@@ -55,6 +69,14 @@ export interface Revision {
   usuario: string
   fecha: string
 }
+
+export const ultimaObservacion = (acta: Movimiento): Revision | undefined =>
+  acta.revisiones
+    .filter((r) => r.resultado === "OBSERVADO")
+    .reduce<Revision | undefined>(
+      (ultima, r) => (ultima && ultima.fecha > r.fecha ? ultima : r),
+      undefined,
+    )
 
 export type Recepcion =
   | { resultado: "ACEPTADO"; ubicaciones: { bien_id: number; ubicacion_id: number }[] }
