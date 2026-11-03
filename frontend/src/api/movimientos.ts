@@ -16,3 +16,5 @@ export const recibirEntrega = (id: number, recepcion: Recepcion) =>
   })
 
 export const obtenerMovimiento = (id: number) => http<Movimiento>(`/api/movimientos/${id}`)
+
+export const obtenerObservados = () => http<Movimiento[]>("/api/movimientos/observados")

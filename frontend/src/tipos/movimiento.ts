@@ -56,6 +56,14 @@ export interface Revision {
   fecha: string
 }
 
+export const ultimaObservacion = (acta: Movimiento): Revision | undefined =>
+  acta.revisiones
+    .filter((r) => r.resultado === "OBSERVADO")
+    .reduce<Revision | undefined>(
+      (ultima, r) => (ultima && ultima.fecha > r.fecha ? ultima : r),
+      undefined,
+    )
+
 export type Recepcion =
   | { resultado: "ACEPTADO"; ubicaciones: { bien_id: number; ubicacion_id: number }[] }
   | { resultado: "RECHAZADO"; motivo_rechazo: string }
