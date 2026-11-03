@@ -1,8 +1,7 @@
-import { fechaHoraLegible, type Movimiento } from "../tipos/movimiento"
-import { historialActa } from "../tipos/revision"
+import { fechaHoraLegible } from "../tipos/movimiento"
+import type { EventoActa } from "../tipos/revision"
 
-export const HistorialActa = ({ acta }: { acta: Movimiento }) => {
-  const eventos = historialActa(acta)
+export const HistorialActa = ({ eventos }: { eventos: EventoActa[] }) => {
   if (eventos.length === 0) return null
   return (
     <ul className="flex flex-col gap-1.5 rounded-xs border border-secundario bg-slate-50 px-4 py-3 text-sm text-gray-700">

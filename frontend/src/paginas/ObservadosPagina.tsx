@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
 import { Navigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerObservados } from "../api/movimientos"
 import { Boton } from "../componentes/Boton"
 import { Marca } from "../componentes/Marca"
-import { fechaLegible, ultimaObservacion } from "../tipos/movimiento"
+import { ModalRectificacion } from "../componentes/ModalRectificacion"
+import { fechaLegible, ultimaObservacion, type Movimiento } from "../tipos/movimiento"
 import { nombreEvento } from "../tipos/revision"
 
 const columnas = [
@@ -31,6 +33,7 @@ export const ObservadosPagina = () => {
     enabled: !!yo && !direccion,
     retry: false,
   })
+  const [abierto, setAbierto] = useState<Movimiento | null>(null)
 
   if (direccion) return <Navigate to="/" replace />
 
@@ -92,7 +95,11 @@ export const ObservadosPagina = () => {
                       <p className="line-clamp-2">{observacion?.motivo_observacion}</p>
                     </td>
                     <td className="px-3 py-2 text-right">
-                      <Boton variant="contorno" className="px-3 py-1.5 text-sm">
+                      <Boton
+                        variant="contorno"
+                        onClick={() => setAbierto(acta)}
+                        className="px-3 py-1.5 text-sm"
+                      >
                         Corregir
                       </Boton>
                     </td>
@@ -102,6 +109,9 @@ export const ObservadosPagina = () => {
             </tbody>
           </table>
         </div>
+      )}
+      {abierto && (
+        <ModalRectificacion key={abierto.id} acta={abierto} onCerrar={() => setAbierto(null)} />
       )}
     </section>
   )
