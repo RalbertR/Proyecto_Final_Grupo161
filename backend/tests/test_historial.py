@@ -287,6 +287,15 @@ def test_la_unidad_que_hoy_tiene_el_bien_abre_las_actas_anteriores(client, bien_
     assert respuesta.json()["numero_acta"] == "0016/2026"
 
 
+def test_un_acta_rechazada_trae_el_motivo_del_rechazo(client, bien_de_a):
+    acta_id = entregar(client, 4, 5, "0016/2026")
+    rechazar(client, acta_id, 5)
+
+    respuesta = client.get(f"/api/movimientos/{acta_id}", headers=con_token(4))
+
+    assert respuesta.json()["motivo_rechazo"] == "No llegó el arma"
+
+
 def test_un_usuario_de_otra_regional_no_ve_el_historial(client, bien_de_a):
     assert historial(client, 6).status_code == 403
 

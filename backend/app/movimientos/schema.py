@@ -93,3 +93,4 @@ class MovimientoPublic(SQLModel):
     version_vigente: int
     versiones: list[VersionPublic]
     revisiones: list[RevisionPublic]
+    motivo_rechazo: str | None = None

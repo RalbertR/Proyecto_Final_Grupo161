@@ -98,6 +98,7 @@ ACTA_REGISTRADA = {
         }
     ],
     "revisiones": [],
+    "motivo_rechazo": None,
 }
 
 INSERTAR_ENTREGA_PENDIENTE = (

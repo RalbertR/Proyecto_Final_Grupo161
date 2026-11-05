@@ -52,5 +52,5 @@ const marcaPorRevision: Record<string, MarcaEvento> = {
   OBSERVADO: { texto: "Observado", tono: "error" },
 }
 
-export const marcaEvento = (evento: EventoHistorial): MarcaEvento =>
+export const marcaEvento = (evento: Pick<EventoHistorial, "estado" | "estado_revision">) =>
   marcaPorEstado[evento.estado ?? ""] ?? marcaPorRevision[evento.estado_revision]

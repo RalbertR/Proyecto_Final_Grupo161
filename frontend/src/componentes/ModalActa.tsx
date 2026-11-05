@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useRef } from "react"
 import { obtenerMovimiento } from "../api/movimientos"
+import { marcaEvento } from "../tipos/historial"
 import { fechaLegible, type Movimiento } from "../tipos/movimiento"
 import { historialActa, nombreEvento } from "../tipos/revision"
 import { BienesActa } from "./BienesActa"
@@ -9,20 +10,27 @@ import { Dato } from "./Dato"
 import { HistorialActa } from "./HistorialActa"
 import { Marca } from "./Marca"
 
-const DatosActa = ({ acta }: { acta: Movimiento }) => (
-  <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
-    <Dato etiqueta="Movimiento">{nombreEvento[acta.tipo] ?? acta.tipo}</Dato>
-    <Dato etiqueta="Fecha del hecho">
-      <span className="font-mono">{fechaLegible(acta.fecha_hecho)}</span>
-    </Dato>
-    <Dato etiqueta="Cargó">
-      <span className="font-mono">{acta.usuario}</span>
-    </Dato>
-    <Dato etiqueta="Origen">{acta.unidad_origen?.nombre ?? "No aplica"}</Dato>
-    <Dato etiqueta="Destino">{acta.unidad_destino?.nombre ?? "No aplica"}</Dato>
-    {acta.descripcion && <Dato etiqueta="Descripción">{acta.descripcion}</Dato>}
-  </dl>
-)
+const DatosActa = ({ acta }: { acta: Movimiento }) => {
+  const marca = marcaEvento(acta)
+  return (
+    <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+      <Dato etiqueta="Movimiento">{nombreEvento[acta.tipo] ?? acta.tipo}</Dato>
+      <Dato etiqueta="Fecha del hecho">
+        <span className="font-mono">{fechaLegible(acta.fecha_hecho)}</span>
+      </Dato>
+      <Dato etiqueta="Estado">
+        <Marca tono={marca.tono}>{marca.texto}</Marca>
+      </Dato>
+      <Dato etiqueta="Origen">{acta.unidad_origen?.nombre ?? "No aplica"}</Dato>
+      <Dato etiqueta="Destino">{acta.unidad_destino?.nombre ?? "No aplica"}</Dato>
+      <Dato etiqueta="Cargó">
+        <span className="font-mono">{acta.usuario}</span>
+      </Dato>
+      {acta.descripcion && <Dato etiqueta="Descripción">{acta.descripcion}</Dato>}
+      {acta.motivo_rechazo && <Dato etiqueta="Motivo del rechazo">{acta.motivo_rechazo}</Dato>}
+    </dl>
+  )
+}
 
 type ModalActaProps = {
   movimientoId: number

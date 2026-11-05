@@ -29,8 +29,10 @@ INSERTAR_RENGLON = text(
 CABECERA = text(
     "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
     "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
-    "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente "
+    "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente, "
+    "r.motivo_rechazo "
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
+    "LEFT JOIN recepcion r ON r.movimiento_id = v.id "
     "WHERE v.id = :id"
 )
 
