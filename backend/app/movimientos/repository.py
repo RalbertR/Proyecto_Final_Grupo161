@@ -95,6 +95,11 @@ INSERTAR_RECEPCION = text(
 
 CAMBIAR_ESTADO = text("UPDATE movimiento SET estado = :estado WHERE id = :id")
 
+UNIDADES_ACTUALES_DE_LOS_BIENES = text(
+    "SELECT DISTINCT b.unidad_id FROM movimiento_bien mb "
+    "JOIN bien b ON b.id = mb.bien_id WHERE mb.movimiento_id = :id"
+)
+
 RENGLONES = text(
     "SELECT mb.bien_id, b.tipo_bien, "
     "COALESCE(b.numero_serie, ml.patente) AS identificacion, b.marca, b.modelo, "
@@ -144,6 +149,14 @@ def buscar_cabecera(session: Session, movimiento_id: int) -> RowMapping | None:
 
 def listar_renglones(session: Session, movimiento_id: int) -> list[RowMapping]:
     return list(session.exec(RENGLONES, params={"id": movimiento_id}).mappings())
+
+
+def unidades_actuales_de_los_bienes(session: Session, movimiento_id: int) -> set[int]:
+    return set(
+        session.exec(
+            UNIDADES_ACTUALES_DE_LOS_BIENES, params={"id": movimiento_id}
+        ).scalars()
+    )
 
 
 def listar_por_recibir(session: Session, unidad_id: int) -> list[RowMapping]:

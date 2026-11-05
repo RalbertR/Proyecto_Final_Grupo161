@@ -71,7 +71,8 @@ def bien_de_a():
         conexion.execute(
             text(
                 "INSERT INTO ubicacion (id, unidad_id, nombre) VALUES "
-                "(1, 4, 'Sala de Armas'), (2, 5, 'Sala de Armas')"
+                "(1, 4, 'Sala de Armas'), (2, 5, 'Sala de Armas'), "
+                "(3, 6, 'Sala de Armas')"
             )
         )
         conexion.execute(
@@ -272,6 +273,18 @@ def test_un_cambio_de_estado_trae_el_estado_nuevo(client, bien_de_a):
     assert evento["estado_operativo_nuevo"] == "EN_SERVICIO"
     assert evento["detalle"] == "Se reemplazó el percutor"
     assert evento["unidad_duena"] is None
+
+
+def test_la_unidad_que_hoy_tiene_el_bien_abre_las_actas_anteriores(client, bien_de_a):
+    primera = entregar(client, 4, 5, "0016/2026")
+    recibir(client, primera, 5, 2)
+    segunda = entregar(client, 5, 6, "0017/2026")
+    recibir(client, segunda, 6, 3)
+
+    respuesta = client.get(f"/api/movimientos/{primera}", headers=con_token(6))
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["numero_acta"] == "0016/2026"
 
 
 def test_un_usuario_de_otra_regional_no_ve_el_historial(client, bien_de_a):
