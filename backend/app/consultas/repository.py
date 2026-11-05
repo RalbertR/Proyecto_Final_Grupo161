@@ -10,16 +10,27 @@ INVENTARIO = text(
 
 BIEN = text(
     "SELECT b.id, b.tipo_bien, COALESCE(b.numero_serie, m.patente) AS identificacion, "
-    "b.marca, b.modelo, b.unidad_id, u.nombre AS unidad "
+    "b.marca, b.modelo, b.unidad_id, u.nombre AS unidad, b.estado_operativo, "
+    "CASE WHEN b.oficial_id IS NOT NULL THEN 'DOTACION' ELSE 'DEPOSITO' END "
+    "AS tenencia, ub.nombre AS ubicacion, o.legajo AS oficial_legajo, "
+    "CONCAT(o.apellido, ', ', o.nombre) AS oficial, "
+    "EXISTS (SELECT 1 FROM movimiento_bien mb "
+    "JOIN movimiento mv ON mv.id = mb.movimiento_id "
+    "WHERE mb.bien_id = b.id AND mv.estado = 'PENDIENTE') "
+    "AS con_movimiento_pendiente "
     "FROM bien b JOIN unidad u ON u.id = b.unidad_id "
-    "LEFT JOIN movil m ON m.bien_id = b.id WHERE b.id = :id"
+    "LEFT JOIN movil m ON m.bien_id = b.id "
+    "LEFT JOIN ubicacion ub ON ub.id = b.ubicacion_id "
+    "LEFT JOIN oficial o ON o.id = b.oficial_id WHERE b.id = :id"
 )
 
 # Las actas rechazadas o pendientes no tienen orden (ADR 0006): van al final
 # por fecha de carga.
 HISTORIAL = text(
     "SELECT h.registro, h.registro_id, h.orden, h.evento, h.fecha, h.numero_acta, "
-    "h.estado, h.estado_revision, h.detalle, "
+    "h.estado, h.estado_revision, h.detalle, h.estado_operativo_nuevo, "
+    "CASE WHEN h.estado = 'APLICADO' THEN COALESCE(ud.nombre, uo.nombre) "
+    "ELSE COALESCE(uo.nombre, ud.nombre) END AS unidad_duena, "
     "NULLIF(CONCAT_WS(', ', uo.nombre, CONCAT(oo.apellido, ', ', oo.nombre), "
     "ubo.nombre), '') AS origen, "
     "NULLIF(CONCAT_WS(', ', ud.nombre, CONCAT(od.apellido, ', ', od.nombre), "
