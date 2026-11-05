@@ -5,6 +5,7 @@ import { obtenerHistorial } from "../api/bienes"
 import { Boton } from "../componentes/Boton"
 import { FichaBien } from "../componentes/FichaBien"
 import { Marca } from "../componentes/Marca"
+import { ModalActa } from "../componentes/ModalActa"
 import { TablaCambiosEstado } from "../componentes/TablaCambiosEstado"
 import { TablaMovimientosBien } from "../componentes/TablaMovimientosBien"
 import { tiposDeBien } from "../tipos/bien"
@@ -12,7 +13,7 @@ import { tiposDeBien } from "../tipos/bien"
 export const HistorialBienPagina = () => {
   const bienId = Number(useParams().id)
   const { state } = useLocation()
-  const [, setActaId] = useState<number | null>(null)
+  const [actaId, setActaId] = useState<number | null>(null)
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ["historial", bienId],
     queryFn: () => obtenerHistorial(bienId),
@@ -75,6 +76,7 @@ export const HistorialBienPagina = () => {
         <h2 className="text-lg font-semibold">Estado de servicio</h2>
         <TablaCambiosEstado eventos={eventos.filter((e) => e.registro === "CAMBIO_ESTADO")} />
       </div>
+      {actaId !== null && <ModalActa movimientoId={actaId} onCerrar={() => setActaId(null)} />}
     </section>
   )
 }

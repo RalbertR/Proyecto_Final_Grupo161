@@ -262,6 +262,10 @@ export const ModalRectificacion = ({ acta, onCerrar }: ModalRectificacionProps) 
               )}
             </label>
             <BienesActa acta={acta} />
+            <p className="-mt-2 text-xs text-gray-600">
+              Los bienes y las unidades no se corrigen. Si no coinciden con el acta, el superior
+              tiene que anularla.
+            </p>
           </fieldset>
         </div>
         <footer className="flex justify-end gap-2 border-t border-gray-200 px-6 py-3">
