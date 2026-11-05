@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom"
 import { RutaProtegida } from "./componentes/RutaProtegida"
 import { LayoutPrincipal } from "./layouts/LayoutPrincipal"
+import { HistorialBienPagina } from "./paginas/HistorialBienPagina"
 import { InventarioPagina } from "./paginas/InventarioPagina"
 import { LoginPagina } from "./paginas/LoginPagina"
 import { NoEncontradaPagina } from "./paginas/NoEncontradaPagina"
@@ -14,6 +15,7 @@ export const App = () => (
     <Route element={<RutaProtegida />}>
       <Route element={<LayoutPrincipal />}>
         <Route index element={<InventarioPagina />} />
+        <Route path="bienes/:id" element={<HistorialBienPagina />} />
         <Route path="por-recibir" element={<PorRecibirPagina />} />
         <Route path="observados" element={<ObservadosPagina />} />
         <Route path="revision" element={<RevisionPagina />} />
