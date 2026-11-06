@@ -8,10 +8,29 @@ import {
   type SortingState,
 } from "@tanstack/react-table"
 import { useMemo, useState } from "react"
+import { Link, useLocation } from "react-router-dom"
 import { obtenerInventario } from "../api/inventario"
-import { motivoBloqueo, tiposDeBien, type FilaInventario } from "../tipos/bien"
+import {
+  motivoBloqueo,
+  nombreEstadoOperativo,
+  tiposDeBien,
+  type FilaInventario,
+} from "../tipos/bien"
 import { Boton } from "./Boton"
 import { Marca } from "./Marca"
+
+const EnlaceBien = ({ bien }: { bien: FilaInventario }) => {
+  const { pathname, search } = useLocation()
+  return (
+    <Link
+      to={`/bienes/${bien.bien_id}`}
+      state={{ volver: `${pathname}${search}` }}
+      className="font-mono text-marca underline hover:text-marca-hover focus-visible:outline-3 focus-visible:outline-foco"
+    >
+      {bien.identificacion}
+    </Link>
+  )
+}
 
 const col = createColumnHelper<FilaInventario>()
 
@@ -23,13 +42,13 @@ const columnas = [
   }),
   col.accessor("identificacion", {
     header: "Identificación",
-    cell: (info) => <span className="font-mono">{info.getValue()}</span>,
+    cell: ({ row: { original: bien } }) => <EnlaceBien bien={bien} />,
   }),
   col.accessor("marca", { header: "Marca" }),
   col.accessor("modelo", { header: "Modelo" }),
   col.accessor("estado_operativo", {
     header: "Estado operativo",
-    cell: (info) => (info.getValue() === "EN_SERVICIO" ? "En servicio" : "Fuera de servicio"),
+    cell: (info) => nombreEstadoOperativo[info.getValue()],
   }),
   col.accessor("tenencia", {
     header: "Tenencia",

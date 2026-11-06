@@ -31,9 +31,5 @@ export const BienesActa = ({ acta }: { acta: Movimiento }) => (
         </tbody>
       </table>
     </div>
-    <p className="mt-2 text-xs text-gray-600">
-      Los bienes y las unidades no se corrigen. Si no coinciden con el acta, el superior tiene que
-      anularla.
-    </p>
   </details>
 )

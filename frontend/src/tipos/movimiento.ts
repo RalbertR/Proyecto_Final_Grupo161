@@ -50,6 +50,7 @@ export interface Movimiento {
   version_vigente: number
   versiones: VersionMovimiento[]
   revisiones: Revision[]
+  motivo_rechazo: string | null
 }
 
 export interface VersionMovimiento {

@@ -99,7 +99,12 @@ def consultar_movimiento(
             status_code=status.HTTP_404_NOT_FOUND, detail="El movimiento no existe"
         )
     visibles = {unidad.id for unidad in unidades_visibles(session, usuario)}
-    if not visibles & {cabecera["unidad_origen_id"], cabecera["unidad_destino_id"]}:
+    relacionadas = {
+        cabecera["unidad_origen_id"],
+        cabecera["unidad_destino_id"],
+        *repository.unidades_actuales_de_los_bienes(session, movimiento_id),
+    }
+    if not visibles & relacionadas:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No tiene acceso a ese movimiento",

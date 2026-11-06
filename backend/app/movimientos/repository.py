@@ -29,8 +29,10 @@ INSERTAR_RENGLON = text(
 CABECERA = text(
     "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
     "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
-    "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente "
+    "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente, "
+    "r.motivo_rechazo "
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
+    "LEFT JOIN recepcion r ON r.movimiento_id = v.id "
     "WHERE v.id = :id"
 )
 
@@ -95,6 +97,11 @@ INSERTAR_RECEPCION = text(
 
 CAMBIAR_ESTADO = text("UPDATE movimiento SET estado = :estado WHERE id = :id")
 
+UNIDADES_ACTUALES_DE_LOS_BIENES = text(
+    "SELECT DISTINCT b.unidad_id FROM movimiento_bien mb "
+    "JOIN bien b ON b.id = mb.bien_id WHERE mb.movimiento_id = :id"
+)
+
 RENGLONES = text(
     "SELECT mb.bien_id, b.tipo_bien, "
     "COALESCE(b.numero_serie, ml.patente) AS identificacion, b.marca, b.modelo, "
@@ -144,6 +151,14 @@ def buscar_cabecera(session: Session, movimiento_id: int) -> RowMapping | None:
 
 def listar_renglones(session: Session, movimiento_id: int) -> list[RowMapping]:
     return list(session.exec(RENGLONES, params={"id": movimiento_id}).mappings())
+
+
+def unidades_actuales_de_los_bienes(session: Session, movimiento_id: int) -> set[int]:
+    return set(
+        session.exec(
+            UNIDADES_ACTUALES_DE_LOS_BIENES, params={"id": movimiento_id}
+        ).scalars()
+    )
 
 
 def listar_por_recibir(session: Session, unidad_id: int) -> list[RowMapping]:

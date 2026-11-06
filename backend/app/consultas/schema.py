@@ -28,6 +28,12 @@ class BienHistorialPublic(SQLModel):
     marca: str
     modelo: str
     unidad: str
+    estado_operativo: EstadoOperativo
+    tenencia: Tenencia
+    ubicacion: str | None
+    oficial_legajo: str | None
+    oficial: str | None
+    con_movimiento_pendiente: bool
 
 
 class EventoHistorialPublic(SQLModel):
@@ -41,6 +47,8 @@ class EventoHistorialPublic(SQLModel):
     estado_revision: str
     origen: str | None
     destino: str | None
+    unidad_duena: str | None
+    estado_operativo_nuevo: EstadoOperativo | None
     detalle: str | None
 
 

@@ -1,3 +1,12 @@
+export type EstadoOperativo = "EN_SERVICIO" | "FUERA_DE_SERVICIO"
+
+export type Tenencia = "DEPOSITO" | "DOTACION"
+
+export const nombreEstadoOperativo: Record<EstadoOperativo, string> = {
+  EN_SERVICIO: "En servicio",
+  FUERA_DE_SERVICIO: "Fuera de servicio",
+}
+
 // Fila de GET /api/inventario
 export interface FilaInventario {
   unidad_id: number
@@ -7,8 +16,8 @@ export interface FilaInventario {
   identificacion: string
   marca: string
   modelo: string
-  estado_operativo: "EN_SERVICIO" | "FUERA_DE_SERVICIO"
-  tenencia: "DEPOSITO" | "DOTACION"
+  estado_operativo: EstadoOperativo
+  tenencia: Tenencia
   ubicacion: string | null
   oficial_legajo: string | null
   oficial: string | null

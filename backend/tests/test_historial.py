@@ -36,6 +36,12 @@ BIEN = {
     "marca": "Bersa",
     "modelo": "TPR9",
     "unidad": "Unidad Operacional A",
+    "estado_operativo": "EN_SERVICIO",
+    "tenencia": "DEPOSITO",
+    "ubicacion": "Sala de Armas",
+    "oficial_legajo": None,
+    "oficial": None,
+    "con_movimiento_pendiente": False,
 }
 
 
@@ -65,7 +71,8 @@ def bien_de_a():
         conexion.execute(
             text(
                 "INSERT INTO ubicacion (id, unidad_id, nombre) VALUES "
-                "(1, 4, 'Sala de Armas'), (2, 5, 'Sala de Armas')"
+                "(1, 4, 'Sala de Armas'), (2, 5, 'Sala de Armas'), "
+                "(3, 6, 'Sala de Armas')"
             )
         )
         conexion.execute(
@@ -148,6 +155,8 @@ def test_el_historial_trae_los_movimientos_en_el_orden_en_que_se_aplicaron(
                 "estado_revision": "PENDIENTE",
                 "origen": "Unidad Operacional A, Sala de Armas",
                 "destino": "Unidad Operacional B, Sala de Armas",
+                "unidad_duena": "Unidad Operacional B",
+                "estado_operativo_nuevo": None,
                 "detalle": DESCRIPCION,
             },
             {
@@ -161,6 +170,8 @@ def test_el_historial_trae_los_movimientos_en_el_orden_en_que_se_aplicaron(
                 "estado_revision": "PENDIENTE",
                 "origen": "Unidad Operacional B, Sala de Armas",
                 "destino": "Unidad Operacional A, Sala de Armas",
+                "unidad_duena": "Unidad Operacional A",
+                "estado_operativo_nuevo": None,
                 "detalle": DESCRIPCION,
             },
         ],
@@ -205,12 +216,84 @@ def test_las_actas_rechazadas_y_pendientes_aparecen_por_fecha_de_carga(
     eventos = historial(client, 4).json()["eventos"]
 
     assert [
-        (evento["registro_id"], evento["orden"], evento["estado"], evento["destino"])
+        (
+            evento["registro_id"],
+            evento["orden"],
+            evento["estado"],
+            evento["destino"],
+            evento["unidad_duena"],
+        )
         for evento in eventos
     ] == [
-        (rechazada, None, "RECHAZADO", "Unidad Operacional B"),
-        (pendiente, None, "PENDIENTE", "Unidad Operacional B"),
+        (rechazada, None, "RECHAZADO", "Unidad Operacional B", "Unidad Operacional A"),
+        (pendiente, None, "PENDIENTE", "Unidad Operacional B", "Unidad Operacional A"),
     ]
+
+
+def test_el_historial_trae_el_oficial_de_un_bien_en_dotacion(client, bien_de_a):
+    with engine.begin() as conexion:
+        conexion.execute(
+            text(
+                "INSERT INTO oficial (id, legajo, apellido, nombre, unidad_id) "
+                "VALUES (1, '50123', 'Gómez', 'Laura', 4)"
+            )
+        )
+        conexion.execute(
+            text("UPDATE bien SET oficial_id = 1, ubicacion_id = NULL WHERE id = 1")
+        )
+
+    bien = historial(client, 4).json()["bien"]
+
+    assert bien["tenencia"] == "DOTACION"
+    assert bien["ubicacion"] is None
+    assert bien["oficial_legajo"] == "50123"
+    assert bien["oficial"] == "Gómez, Laura"
+
+
+def test_el_historial_avisa_si_el_bien_tiene_un_movimiento_pendiente(client, bien_de_a):
+    entregar(client, 4, 5, "0016/2026")
+
+    assert historial(client, 4).json()["bien"]["con_movimiento_pendiente"] is True
+
+
+def test_un_cambio_de_estado_trae_el_estado_nuevo(client, bien_de_a):
+    with engine.begin() as conexion:
+        conexion.execute(
+            text(
+                "INSERT INTO cambio_estado_operativo (bien_id, estado_anterior, "
+                "estado_nuevo, observaciones, estado_revision, usuario_id, "
+                "unidad_registrante_id) VALUES (1, 'FUERA_DE_SERVICIO', "
+                "'EN_SERVICIO', 'Se reemplazó el percutor', 'PENDIENTE', 4, 4)"
+            )
+        )
+
+    [evento] = historial(client, 4).json()["eventos"]
+
+    assert evento["registro"] == "CAMBIO_ESTADO"
+    assert evento["estado_operativo_nuevo"] == "EN_SERVICIO"
+    assert evento["detalle"] == "Se reemplazó el percutor"
+    assert evento["unidad_duena"] is None
+
+
+def test_la_unidad_que_hoy_tiene_el_bien_abre_las_actas_anteriores(client, bien_de_a):
+    primera = entregar(client, 4, 5, "0016/2026")
+    recibir(client, primera, 5, 2)
+    segunda = entregar(client, 5, 6, "0017/2026")
+    recibir(client, segunda, 6, 3)
+
+    respuesta = client.get(f"/api/movimientos/{primera}", headers=con_token(6))
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["numero_acta"] == "0016/2026"
+
+
+def test_un_acta_rechazada_trae_el_motivo_del_rechazo(client, bien_de_a):
+    acta_id = entregar(client, 4, 5, "0016/2026")
+    rechazar(client, acta_id, 5)
+
+    respuesta = client.get(f"/api/movimientos/{acta_id}", headers=con_token(4))
+
+    assert respuesta.json()["motivo_rechazo"] == "No llegó el arma"
 
 
 def test_un_usuario_de_otra_regional_no_ve_el_historial(client, bien_de_a):

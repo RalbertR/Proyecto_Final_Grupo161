@@ -1,10 +1,11 @@
 import type { ReactNode } from "react"
 
-type Tono = "pendiente" | "secundario"
+export type Tono = "pendiente" | "secundario" | "error"
 
 const clasesPorTono: Record<Tono, string> = {
   pendiente: "border-pendiente bg-pendiente/10 text-amber-800",
   secundario: "border-secundario bg-secundario/10 text-slate-700",
+  error: "border-error bg-error/5 text-error",
 }
 
 export const Marca = ({ children, tono = "pendiente" }: { children: ReactNode; tono?: Tono }) => (
