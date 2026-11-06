@@ -20,4 +20,15 @@ BEGIN
   END IF;
 END//
 
+CREATE TRIGGER trg_rect_cambio_informe BEFORE INSERT ON rectificacion_cambio_estado
+FOR EACH ROW FOLLOWS trg_rect_cambio_bloqueo
+BEGIN
+  IF NEW.documento_id IS NULL
+     AND (SELECT estado_nuevo FROM cambio_estado_operativo
+          WHERE id = NEW.cambio_estado_id) = 'FUERA_DE_SERVICIO' THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Una rectificacion de un cambio a fuera de servicio debe conservar el informe tecnico';
+  END IF;
+END//
+
 DELIMITER ;

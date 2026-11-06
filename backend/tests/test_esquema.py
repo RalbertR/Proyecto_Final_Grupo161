@@ -307,13 +307,14 @@ def test_una_revision_de_una_version_que_no_existe_es_rechazada(session, organiz
         revisar(session, 1, movimiento_id=1)
 
 
-def rectificar_cambio_de_estado(session, cambio_estado_id, version):
+def rectificar_cambio_de_estado(session, cambio_estado_id, version, documento_id=None):
     session.exec(
         text(
             "INSERT INTO rectificacion_cambio_estado (cambio_estado_id, version, "
-            "observaciones, motivo, usuario_id) VALUES (:c, :v, "
-            "'Reparada y probada en el polígono', 'Se completa la observación', 1)"
-        ).bindparams(c=cambio_estado_id, v=version)
+            "observaciones, documento_id, motivo, usuario_id) VALUES (:c, :v, "
+            "'Reparada y probada en el polígono', :documento, "
+            "'Se completa la observación', 1)"
+        ).bindparams(c=cambio_estado_id, v=version, documento=documento_id)
     )
 
 
@@ -566,3 +567,61 @@ def test_cambiar_otro_dato_de_un_oficial_con_bienes_se_acepta(session, oficial_d
 
     activo = session.exec(text("SELECT activo FROM oficial WHERE id = 1"))
     assert activo.scalar_one() == 0
+
+
+def cargar_informe(session, id):
+    session.exec(
+        text(
+            "INSERT INTO documento (id, nombre_original, tipo_mime, tamano_bytes, "
+            "hash_sha256, ruta_almacenamiento, usuario_id) VALUES (:id, 'informe.pdf', "
+            "'application/pdf', 1024, SHA2(:id, 256), 'informes/x.pdf', 1)"
+        ).bindparams(id=id)
+    )
+
+
+def registrar_salida_de_servicio(session, cambio_id, bien_id, documento_id):
+    session.exec(
+        text(
+            "INSERT INTO cambio_estado_operativo (id, bien_id, estado_anterior, "
+            "estado_nuevo, observaciones, documento_id, estado_revision, usuario_id, "
+            "unidad_registrante_id) VALUES (:id, :bien_id, 'EN_SERVICIO', "
+            "'FUERA_DE_SERVICIO', 'Falla en el percutor', :documento, 'PENDIENTE', "
+            "1, 4)"
+        ).bindparams(id=cambio_id, bien_id=bien_id, documento=documento_id)
+    )
+
+
+def test_rectificar_una_salida_de_servicio_sin_informe_es_rechazado(
+    session, organizacion
+):
+    cargar_informe(session, 1)
+    registrar_salida_de_servicio(session, 1, 1, 1)
+
+    with pytest.raises(OperationalError, match="informe tecnico"):
+        rectificar_cambio_de_estado(session, 1, 1)
+
+
+def test_rectificar_una_salida_de_servicio_con_otro_informe_se_acepta(
+    session, organizacion
+):
+    cargar_informe(session, 1)
+    cargar_informe(session, 2)
+    registrar_salida_de_servicio(session, 1, 1, 1)
+
+    rectificar_cambio_de_estado(session, 1, 1, documento_id=2)
+
+    vigente = session.exec(
+        text("SELECT documento_id FROM v_cambio_estado_vigente WHERE id = 1")
+    )
+    assert vigente.scalar_one() == 2
+
+
+def test_rectificar_una_vuelta_a_servicio_sin_informe_se_acepta(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    rectificar_cambio_de_estado(session, 1, 1)
+
+    vigente = session.exec(
+        text("SELECT version_vigente FROM v_cambio_estado_vigente WHERE id = 1")
+    )
+    assert vigente.scalar_one() == 1

@@ -528,7 +528,7 @@ Las tablas **rectificacion** y **rectificacion_cambio_estado** guardan las corre
 | usuario_id | INT | FK a usuario. Autor de la corrección. |
 | fecha | DATETIME | |
 
-La tabla rectificacion_cambio_estado tiene la misma estructura, con cambio_estado_id, observaciones y documento_id en lugar de los datos del movimiento.
+La tabla rectificacion_cambio_estado tiene la misma estructura, con cambio_estado_id, observaciones y documento_id en lugar de los datos del movimiento. Si el cambio es a fuera de servicio, cada versión lleva informe técnico: puede ser otro documento, pero nunca queda vacío.
 
 La tabla **documento** guarda la copia digital de un acta o de un informe técnico.
 
