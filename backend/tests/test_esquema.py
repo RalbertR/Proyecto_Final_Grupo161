@@ -625,3 +625,83 @@ def test_rectificar_una_vuelta_a_servicio_sin_informe_se_acepta(session, organiz
         text("SELECT version_vigente FROM v_cambio_estado_vigente WHERE id = 1")
     )
     assert vigente.scalar_one() == 1
+
+
+def anular_cambio_de_estado(session, cambio_id):
+    session.exec(
+        text(
+            "UPDATE cambio_estado_operativo SET estado = 'ANULADO', "
+            "anulado_por_id = 1, fecha_anulacion = NOW(), "
+            "motivo_anulacion = 'Se cargó sobre el bien equivocado' WHERE id = :id"
+        ).bindparams(id=cambio_id)
+    )
+
+
+def test_anular_un_cambio_de_estado_conserva_el_registro(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    anular_cambio_de_estado(session, 1)
+
+    cambio = session.exec(
+        text(
+            "SELECT estado, observaciones, anulado_por_id, motivo_anulacion "
+            "FROM cambio_estado_operativo WHERE id = 1"
+        )
+    ).one()
+    assert tuple(cambio) == (
+        "ANULADO",
+        "Reparada por el armero",
+        1,
+        "Se cargó sobre el bien equivocado",
+    )
+
+
+def test_anular_un_cambio_de_estado_sin_motivo_es_rechazado(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="ck_cambio_anulacion"):
+        session.exec(
+            text(
+                "UPDATE cambio_estado_operativo SET estado = 'ANULADO', "
+                "anulado_por_id = 1, fecha_anulacion = NOW() WHERE id = 1"
+            )
+        )
+
+
+def test_un_cambio_aplicado_con_datos_de_anulacion_es_rechazado(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="ck_cambio_anulacion"):
+        session.exec(
+            text(
+                "UPDATE cambio_estado_operativo "
+                "SET motivo_anulacion = 'Sin anular' WHERE id = 1"
+            )
+        )
+
+
+def test_un_cambio_de_estado_anulado_sale_de_la_bandeja(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+    en_la_bandeja = text(
+        "SELECT COUNT(*) FROM v_bandeja_revision "
+        "WHERE registro = 'CAMBIO_ESTADO' AND registro_id = 1"
+    )
+    assert session.exec(en_la_bandeja).scalar_one() == 1
+
+    anular_cambio_de_estado(session, 1)
+
+    assert session.exec(en_la_bandeja).scalar_one() == 0
+
+
+def test_un_cambio_de_estado_anulado_sigue_en_el_historial(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    anular_cambio_de_estado(session, 1)
+
+    estado = session.exec(
+        text(
+            "SELECT estado FROM v_historial_bien "
+            "WHERE registro = 'CAMBIO_ESTADO' AND registro_id = 1"
+        )
+    )
+    assert estado.scalar_one() == "ANULADO"

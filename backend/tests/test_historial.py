@@ -270,6 +270,7 @@ def test_un_cambio_de_estado_trae_el_estado_nuevo(client, bien_de_a):
     [evento] = historial(client, 4).json()["eventos"]
 
     assert evento["registro"] == "CAMBIO_ESTADO"
+    assert evento["estado"] == "APLICADO"
     assert evento["estado_operativo_nuevo"] == "EN_SERVICIO"
     assert evento["detalle"] == "Se reemplazó el percutor"
     assert evento["unidad_duena"] is None

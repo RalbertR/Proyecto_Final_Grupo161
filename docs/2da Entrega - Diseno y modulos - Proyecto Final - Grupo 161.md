@@ -266,6 +266,10 @@ erDiagram
         INT unidad_registrante_id FK
         DATETIME fecha
         INT orden
+        ENUM estado
+        INT anulado_por_id FK
+        DATETIME fecha_anulacion
+        VARCHAR(500) motivo_anulacion
     }
     rectificacion_cambio_estado {
         INT id PK
@@ -333,7 +337,7 @@ erDiagram
     documento ||--o{ movimiento_documento : "se adjunta en"
     bien ||--o{ cambio_estado_operativo : "cambia de estado con"
     documento |o--o{ cambio_estado_operativo : respalda
-    usuario ||--o{ cambio_estado_operativo : registra
+    usuario ||--o{ cambio_estado_operativo : "registra o anula"
     unidad ||--o{ cambio_estado_operativo : registra
     cambio_estado_operativo ||--o{ rectificacion_cambio_estado : "se corrige con"
     documento |o--o{ rectificacion_cambio_estado : respalda
@@ -453,6 +457,9 @@ La tabla **cambio_estado_operativo** guarda el historial de estado de cada bien.
 | usuario_id, unidad_registrante_id | INT | FK a usuario y a unidad. Definen quién revisa. |
 | fecha | DATETIME | |
 | orden | INT | Número de orden de aplicación del bien. Lo asigna la base al registrar el cambio y no se repite para el mismo bien. |
+| estado | ENUM | APLICADO o ANULADO. Un cambio anulado no se borra, sigue en el historial y sale de la bandeja de revisión. |
+| anulado_por_id, fecha_anulacion | INT, DATETIME | FK a usuario y fecha. Opcionales, se completan si el cambio se anula. |
+| motivo_anulacion | VARCHAR(500) | Obligatorio si el cambio se anula |
 
 ### Movimientos
 
