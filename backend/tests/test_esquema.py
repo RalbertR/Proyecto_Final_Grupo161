@@ -447,3 +447,122 @@ def test_la_bandeja_muestra_la_version_vigente(session, organizacion):
     rectificar(session, 1, 1)
 
     assert session.exec(version_en_la_bandeja).scalar_one() == 1
+
+
+def insertar_oficial(session, id, unidad_id):
+    session.exec(
+        text(
+            "INSERT INTO oficial (id, legajo, apellido, nombre, unidad_id) "
+            "VALUES (:id, :legajo, 'Gómez', 'Laura', :unidad_id)"
+        ).bindparams(id=id, legajo=f"5012{id}", unidad_id=unidad_id)
+    )
+
+
+def asignar(session, bien_id, oficial_id):
+    session.exec(
+        text(
+            "UPDATE bien SET oficial_id = :oficial_id, ubicacion_id = NULL "
+            "WHERE id = :bien_id"
+        ).bindparams(oficial_id=oficial_id, bien_id=bien_id)
+    )
+
+
+def registrar_dotacion(session, movimiento_id, oficial_id):
+    session.exec(
+        text(
+            "INSERT INTO movimiento (id, tipo, estado, estado_revision, numero_acta, "
+            "fecha_hecho, usuario_id, unidad_registrante_id, unidad_origen_id, "
+            "unidad_destino_id, oficial_destino_id) VALUES (:id, 'ENTREGA', "
+            "'APLICADO', 'PENDIENTE', '0002/2026', CURDATE(), 1, 4, 4, 4, :oficial)"
+        ).bindparams(id=movimiento_id, oficial=oficial_id)
+    )
+
+
+def trasladar(session, id, oficial_id, origen, destino, estado="CONFIRMADO"):
+    session.exec(
+        text(
+            "INSERT INTO traslado_oficial (id, oficial_id, unidad_origen_id, "
+            "unidad_destino_id, estado, usuario_solicitante_id, "
+            "usuario_resolucion_id, fecha_resolucion) VALUES (:id, :oficial, "
+            ":origen, :destino, :estado, 1, IF(:estado = 'PENDIENTE', NULL, 1), "
+            "IF(:estado = 'PENDIENTE', NULL, NOW()))"
+        ).bindparams(
+            id=id, oficial=oficial_id, origen=origen, destino=destino, estado=estado
+        )
+    )
+
+
+def cambiar_unidad(session, oficial_id, unidad_id):
+    session.exec(
+        text("UPDATE oficial SET unidad_id = :unidad WHERE id = :id").bindparams(
+            unidad=unidad_id, id=oficial_id
+        )
+    )
+
+
+@pytest.fixture
+def oficial_de_a(session, organizacion):
+    insertar_oficial(session, 1, 4)
+
+
+def test_un_oficial_sin_bienes_ni_movimientos_cambia_de_unidad(session, oficial_de_a):
+    cambiar_unidad(session, 1, 5)
+
+    unidad = session.exec(text("SELECT unidad_id FROM oficial WHERE id = 1"))
+    assert unidad.scalar_one() == 5
+
+
+def test_un_oficial_con_bienes_no_cambia_de_unidad_sin_traslado(session, oficial_de_a):
+    asignar(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_oficial_con_movimientos_no_cambia_de_unidad_sin_traslado(
+    session, oficial_de_a
+):
+    registrar_dotacion(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_traslado_pendiente_no_habilita_el_cambio_de_unidad(session, oficial_de_a):
+    asignar(session, 1, 1)
+    trasladar(session, 1, 1, 4, 5, estado="PENDIENTE")
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_traslado_confirmado_cambia_la_unidad_y_mueve_sus_bienes(
+    session, oficial_de_a
+):
+    asignar(session, 1, 1)
+    trasladar(session, 1, 1, 4, 5)
+
+    cambiar_unidad(session, 1, 5)
+
+    unidad = session.exec(text("SELECT unidad_id FROM bien WHERE id = 1"))
+    assert unidad.scalar_one() == 5
+
+
+def test_un_traslado_viejo_no_habilita_un_cambio_directo(session, oficial_de_a):
+    asignar(session, 1, 1)
+    trasladar(session, 1, 1, 4, 5)
+    cambiar_unidad(session, 1, 5)
+    trasladar(session, 2, 1, 5, 4)
+    cambiar_unidad(session, 1, 4)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_cambiar_otro_dato_de_un_oficial_con_bienes_se_acepta(session, oficial_de_a):
+    asignar(session, 1, 1)
+
+    session.exec(text("UPDATE oficial SET activo = FALSE WHERE id = 1"))
+
+    activo = session.exec(text("SELECT activo FROM oficial WHERE id = 1"))
+    assert activo.scalar_one() == 0

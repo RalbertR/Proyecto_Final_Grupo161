@@ -384,7 +384,7 @@ En **oficial** está el personal que puede recibir dotaciones.
 | id | INT | PK |
 | legajo | VARCHAR(20) | Único |
 | apellido, nombre | VARCHAR(80) | |
-| unidad_id | INT | FK a unidad. Unidad donde revista actualmente. |
+| unidad_id | INT | FK a unidad. Unidad donde revista actualmente. Si el oficial tiene bienes o movimientos, solo cambia por un traslado confirmado. |
 | activo | BOOLEAN | |
 
 En **usuario** están las cuentas del personal logístico.
