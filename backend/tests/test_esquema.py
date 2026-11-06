@@ -479,16 +479,39 @@ def registrar_dotacion(session, movimiento_id, oficial_id):
     )
 
 
-def trasladar(session, id, oficial_id, origen, destino, estado="CONFIRMADO"):
+def registrar_movimiento_de_traslado(session, id, oficial_id, origen, destino, bienes):
+    session.exec(
+        text(
+            "INSERT INTO movimiento (id, tipo, estado, estado_revision, numero_acta, "
+            "fecha_hecho, usuario_id, unidad_registrante_id, unidad_origen_id, "
+            "oficial_origen_id, unidad_destino_id, oficial_destino_id) VALUES (:id, "
+            "'TRASLADO', 'APLICADO', 'PENDIENTE', '0003/2026', CURDATE(), 1, :origen, "
+            ":origen, :oficial, :destino, :oficial)"
+        ).bindparams(id=id, origen=origen, oficial=oficial_id, destino=destino)
+    )
+    insertar_renglones(session, id, bienes)
+
+
+def trasladar(session, id, oficial_id, origen, destino, estado="CONFIRMADO", bienes=()):
+    if bienes:
+        registrar_movimiento_de_traslado(
+            session, id, oficial_id, origen, destino, bienes
+        )
     session.exec(
         text(
             "INSERT INTO traslado_oficial (id, oficial_id, unidad_origen_id, "
-            "unidad_destino_id, estado, usuario_solicitante_id, "
+            "unidad_destino_id, movimiento_id, estado, usuario_solicitante_id, "
             "usuario_resolucion_id, fecha_resolucion) VALUES (:id, :oficial, "
-            ":origen, :destino, :estado, 1, IF(:estado = 'PENDIENTE', NULL, 1), "
+            ":origen, :destino, :movimiento, :estado, 1, "
+            "IF(:estado = 'PENDIENTE', NULL, 1), "
             "IF(:estado = 'PENDIENTE', NULL, NOW()))"
         ).bindparams(
-            id=id, oficial=oficial_id, origen=origen, destino=destino, estado=estado
+            id=id,
+            oficial=oficial_id,
+            origen=origen,
+            destino=destino,
+            movimiento=id if bienes else None,
+            estado=estado,
         )
     )
 
@@ -541,7 +564,7 @@ def test_un_traslado_confirmado_cambia_la_unidad_y_mueve_sus_bienes(
     session, oficial_de_a
 ):
     asignar(session, 1, 1)
-    trasladar(session, 1, 1, 4, 5)
+    trasladar(session, 1, 1, 4, 5, bienes=[1])
 
     cambiar_unidad(session, 1, 5)
 
@@ -551,10 +574,48 @@ def test_un_traslado_confirmado_cambia_la_unidad_y_mueve_sus_bienes(
 
 def test_un_traslado_viejo_no_habilita_un_cambio_directo(session, oficial_de_a):
     asignar(session, 1, 1)
+    trasladar(session, 1, 1, 4, 5, bienes=[1])
+    cambiar_unidad(session, 1, 5)
+    trasladar(session, 2, 1, 5, 4, bienes=[1])
+    cambiar_unidad(session, 1, 4)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_oficial_trasladado_no_vuelve_con_un_cambio_directo(session, oficial_de_a):
     trasladar(session, 1, 1, 4, 5)
     cambiar_unidad(session, 1, 5)
-    trasladar(session, 2, 1, 5, 4)
-    cambiar_unidad(session, 1, 4)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 4)
+
+
+def test_un_oficial_sin_dotaciones_cambia_por_un_traslado_sin_movimiento(
+    session, oficial_de_a
+):
+    trasladar(session, 1, 1, 4, 5)
+
+    cambiar_unidad(session, 1, 5)
+
+    unidad = session.exec(text("SELECT unidad_id FROM oficial WHERE id = 1"))
+    assert unidad.scalar_one() == 5
+
+
+def test_un_traslado_sin_movimiento_no_mueve_dotaciones(session, oficial_de_a):
+    trasladar(session, 1, 1, 4, 5)
+    asignar(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_traslado_no_mueve_un_bien_que_no_esta_en_su_movimiento(
+    session, oficial_de_a
+):
+    asignar(session, 1, 1)
+    trasladar(session, 1, 1, 4, 5, bienes=[1])
+    asignar(session, 2, 1)
 
     with pytest.raises(OperationalError, match="traslado confirmado"):
         cambiar_unidad(session, 1, 5)

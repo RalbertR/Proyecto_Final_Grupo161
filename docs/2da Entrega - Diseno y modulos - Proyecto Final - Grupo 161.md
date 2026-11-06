@@ -87,6 +87,7 @@ Las reglas principales que sostiene el esquema son estas:
 - La revisión la hace el superior inmediato después del hecho. Si observa un registro indica el motivo, y la corrección la hace el autor.
 - No se borra ningún registro. Las correcciones se guardan como versiones nuevas. Las anulaciones llevan un motivo y cubren siempre el acta completa. La Regional puede anular las actas de sus Unidades Operacionales y las propias, y Dirección las de los tres niveles.
 - Solo se anula un movimiento si ninguno de sus bienes tuvo movimientos posteriores. Si los tuvo, se anulan primero esos. Al anularse un movimiento aplicado, cada bien vuelve a la unidad, el oficial y la ubicación de origen.
+- Solo se anula un cambio de estado si el bien no tuvo cambios de estado posteriores vigentes. Si los tuvo, se anulan primero esos. Los movimientos posteriores no lo impiden. Al anularse, el bien vuelve a su estado anterior.
 - Una Unidad Operacional no puede retirar un traslado que solicitó. Si hay que cancelarlo, lo anula su Regional o Dirección.
 - Solo se da de baja un bien que está en depósito y no tiene movimientos pendientes.
 
@@ -388,7 +389,7 @@ En **oficial** está el personal que puede recibir dotaciones.
 | id | INT | PK |
 | legajo | VARCHAR(20) | Único |
 | apellido, nombre | VARCHAR(80) | |
-| unidad_id | INT | FK a unidad. Unidad donde revista actualmente. Si el oficial tiene bienes o movimientos, solo cambia por un traslado confirmado. |
+| unidad_id | INT | FK a unidad. Unidad donde revista actualmente. Si el oficial tiene bienes, movimientos o traslados confirmados, solo cambia por un traslado confirmado que incluya todos sus bienes. |
 | activo | BOOLEAN | |
 
 En **usuario** están las cuentas del personal logístico.
@@ -457,7 +458,7 @@ La tabla **cambio_estado_operativo** guarda el historial de estado de cada bien.
 | usuario_id, unidad_registrante_id | INT | FK a usuario y a unidad. Definen quién revisa. |
 | fecha | DATETIME | |
 | orden | INT | Número de orden de aplicación del bien. Lo asigna la base al registrar el cambio y no se repite para el mismo bien. |
-| estado | ENUM | APLICADO o ANULADO. Un cambio anulado no se borra, sigue en el historial y sale de la bandeja de revisión. |
+| estado | ENUM | APLICADO o ANULADO. Un cambio anulado no se borra, sigue en el historial y sale de la bandeja de revisión. Al anularlo, el bien vuelve a estado_anterior. |
 | anulado_por_id, fecha_anulacion | INT, DATETIME | FK a usuario y fecha. Opcionales, se completan si el cambio se anula. |
 | motivo_anulacion | VARCHAR(500) | Obligatorio si el cambio se anula |
 

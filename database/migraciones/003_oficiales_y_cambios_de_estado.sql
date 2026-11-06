@@ -7,16 +7,25 @@ BEGIN
   IF NEW.unidad_id <> OLD.unidad_id
      AND (EXISTS (SELECT 1 FROM bien WHERE oficial_id = OLD.id)
           OR EXISTS (SELECT 1 FROM movimiento
-                     WHERE oficial_origen_id = OLD.id OR oficial_destino_id = OLD.id))
+                     WHERE oficial_origen_id = OLD.id OR oficial_destino_id = OLD.id)
+          OR EXISTS (SELECT 1 FROM traslado_oficial
+                     WHERE oficial_id = OLD.id AND estado = 'CONFIRMADO'))
      AND NOT EXISTS (SELECT 1
                      FROM traslado_oficial t
                      WHERE t.id = (SELECT MAX(t2.id)
                                    FROM traslado_oficial t2
                                    WHERE t2.oficial_id = OLD.id AND t2.estado = 'CONFIRMADO')
                        AND t.unidad_origen_id = OLD.unidad_id
-                       AND t.unidad_destino_id = NEW.unidad_id) THEN
+                       AND t.unidad_destino_id = NEW.unidad_id
+                       AND NOT EXISTS (SELECT 1
+                                       FROM bien b
+                                       WHERE b.oficial_id = OLD.id
+                                         AND NOT EXISTS (SELECT 1
+                                                         FROM movimiento_bien mb
+                                                         WHERE mb.movimiento_id = t.movimiento_id
+                                                           AND mb.bien_id = b.id))) THEN
     SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'La unidad de un oficial con bienes o movimientos solo cambia por un traslado confirmado';
+      SET MESSAGE_TEXT = 'La unidad de un oficial con historial solo cambia por un traslado confirmado que incluya todos sus bienes';
   END IF;
 END//
 
