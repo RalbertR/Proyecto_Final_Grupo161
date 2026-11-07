@@ -2,7 +2,8 @@ from sqlalchemy import Row, RowMapping, bindparam
 from sqlmodel import Session, text
 
 BLOQUEAR_BIENES = text(
-    "SELECT id, tipo_bien, unidad_id, oficial_id, ubicacion_id, de_baja "
+    "SELECT id, tipo_bien, unidad_id, oficial_id, ubicacion_id, de_baja, "
+    "estado_operativo "
     "FROM bien WHERE id IN :bienes ORDER BY id FOR UPDATE"
 ).bindparams(bindparam("bienes", expanding=True))
 
@@ -22,6 +23,15 @@ INSERTAR_ENTREGA = text(
     ":unidad_destino_id)"
 )
 
+INSERTAR_DOTACION = text(
+    "INSERT INTO movimiento (tipo, estado, estado_revision, numero_acta, "
+    "fecha_hecho, descripcion, usuario_id, unidad_registrante_id, "
+    "unidad_origen_id, unidad_destino_id, oficial_destino_id) "
+    "VALUES ('ENTREGA', 'APLICADO', :estado_revision, :numero_acta, "
+    ":fecha_hecho, :descripcion, :usuario_id, :unidad_id, :unidad_id, "
+    ":unidad_id, :oficial_id)"
+)
+
 INSERTAR_RENGLON = text(
     "INSERT INTO movimiento_bien (movimiento_id, bien_id, ubicacion_origen_id) "
     "VALUES (:movimiento_id, :bien_id, :ubicacion_id)"
@@ -30,6 +40,7 @@ INSERTAR_RENGLON = text(
 CABECERA = text(
     "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
     "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
+    "v.oficial_origen_id, v.oficial_destino_id, "
     "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente, "
     "r.motivo AS motivo_rechazo "
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
@@ -40,6 +51,7 @@ CABECERA = text(
 POR_RECIBIR = text(
     "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
     "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
+    "v.oficial_origen_id, v.oficial_destino_id, "
     "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente "
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
     "WHERE v.tipo = 'ENTREGA' AND v.estado = 'PENDIENTE' "
@@ -49,6 +61,7 @@ POR_RECIBIR = text(
 DEVUELTAS = text(
     "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
     "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
+    "v.oficial_origen_id, v.oficial_destino_id, "
     "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente "
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
     "WHERE v.estado = 'DEVUELTO' AND v.unidad_origen_id = :unidad_id ORDER BY v.id"
@@ -57,6 +70,7 @@ DEVUELTAS = text(
 OBSERVADOS = text(
     "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
     "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
+    "v.oficial_origen_id, v.oficial_destino_id, "
     "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente "
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
     "WHERE v.estado = 'APLICADO' AND v.estado_revision = 'OBSERVADO' "
@@ -96,6 +110,13 @@ MOVER_BIENES = text(
     "UPDATE bien b JOIN movimiento_bien mb ON mb.bien_id = b.id "
     "JOIN movimiento m ON m.id = mb.movimiento_id "
     "SET b.unidad_id = m.unidad_destino_id, b.ubicacion_id = mb.ubicacion_destino_id "
+    "WHERE mb.movimiento_id = :id"
+)
+
+ASIGNAR_BIENES = text(
+    "UPDATE bien b JOIN movimiento_bien mb ON mb.bien_id = b.id "
+    "JOIN movimiento m ON m.id = mb.movimiento_id "
+    "SET b.oficial_id = m.oficial_destino_id, b.ubicacion_id = NULL "
     "WHERE mb.movimiento_id = :id"
 )
 
@@ -167,6 +188,10 @@ def alguno_con_movimiento_pendiente(
 
 def insertar_entrega(session: Session, **valores) -> int:
     return session.exec(INSERTAR_ENTREGA, params=valores).lastrowid
+
+
+def insertar_dotacion(session: Session, **valores) -> int:
+    return session.exec(INSERTAR_DOTACION, params=valores).lastrowid
 
 
 def insertar_renglon(
@@ -241,6 +266,10 @@ def ubicar_renglon(
 
 def mover_bienes(session: Session, movimiento_id: int) -> None:
     session.exec(MOVER_BIENES, params={"id": movimiento_id})
+
+
+def asignar_bienes(session: Session, movimiento_id: int) -> None:
+    session.exec(ASIGNAR_BIENES, params={"id": movimiento_id})
 
 
 def insertar_recepcion(session: Session, **valores) -> int:

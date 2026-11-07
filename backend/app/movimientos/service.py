@@ -4,6 +4,8 @@ from sqlmodel import Session
 
 from app.acceso.schema import UsuarioPublic
 from app.acceso.service import unidades_visibles
+from app.oficiales import repository as oficiales
+from app.oficiales.service import oficial_publico
 from app.organizacion.model import Nivel, Unidad
 from app.organizacion.schema import UnidadPublic
 from app.organizacion.service import listar_ubicaciones
@@ -16,7 +18,9 @@ from app.revision.schema import RevisionPublic
 
 from . import repository
 from .schema import (
+    ActaCreate,
     DesistimientoCreate,
+    DotacionCreate,
     EntregaCreate,
     MovimientoPublic,
     NovedadPublic,
@@ -53,7 +57,17 @@ def validar_entrega(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="La unidad de destino no existe",
         )
-    ids = sorted(set(entrega.bienes))
+    validar_bienes(session, unidad_id, entrega, bienes, excluir)
+
+
+def validar_bienes(
+    session: Session,
+    unidad_id: int,
+    acta: ActaCreate,
+    bienes: list[Row],
+    excluir: int = 0,
+) -> None:
+    ids = sorted(set(acta.bienes))
     if len(bienes) < len(ids) or any(bien.unidad_id != unidad_id for bien in bienes):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -99,6 +113,57 @@ def registrar_entrega(
     )
     for bien in bienes:
         repository.insertar_renglon(session, movimiento_id, bien.id, bien.ubicacion_id)
+    session.commit()
+    return detalle(session, repository.buscar_cabecera(session, movimiento_id))
+
+
+def validar_oficial(session: Session, unidad_id: int, oficial_id: int) -> None:
+    oficial = oficiales.buscar(session, oficial_id)
+    if oficial is None or oficial["unidad_id"] != unidad_id or not oficial["activo"]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="El oficial tiene que ser activo y de su unidad",
+        )
+
+
+def registrar_dotacion(
+    session: Session, usuario: UsuarioPublic, dotacion: DotacionCreate
+) -> MovimientoPublic:
+    unidad_id = usuario.unidad.id
+    # Se bloquean antes de validar: otra operación sobre los mismos bienes espera
+    # acá y, con READ COMMITTED, al seguir ve su resultado (ADR 0001).
+    bienes = repository.bloquear_bienes(session, sorted(set(dotacion.bienes)))
+    validar_oficial(session, unidad_id, dotacion.oficial_id)
+    validar_bienes(session, unidad_id, dotacion, bienes)
+    # RN-08: un bien fuera de servicio no se asigna en dotación.
+    if any(bien.estado_operativo == "FUERA_DE_SERVICIO" for bien in bienes):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Uno de los bienes está fuera de servicio",
+        )
+    # RN-10: un oficial con un traslado pendiente no recibe dotaciones.
+    if oficiales.tiene_traslado_pendiente(session, dotacion.oficial_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El oficial tiene un traslado pendiente",
+        )
+    # RN-11: se aplica en el acto, sin recepción. Los renglones se insertan con el
+    # acta ya aplicada, así trg_mb_orden les da su número de orden (ADR 0006).
+    movimiento_id = repository.insertar_dotacion(
+        session,
+        estado_revision=(
+            "NO_APLICA" if usuario.unidad.nivel == Nivel.DIRECCION else "PENDIENTE"
+        ),
+        numero_acta=dotacion.numero_acta,
+        fecha_hecho=dotacion.fecha_hecho,
+        descripcion=dotacion.descripcion,
+        usuario_id=usuario.id,
+        unidad_id=unidad_id,
+        oficial_id=dotacion.oficial_id,
+    )
+    for bien in bienes:
+        repository.insertar_renglon(session, movimiento_id, bien.id, bien.ubicacion_id)
+    repository.asignar_bienes(session, movimiento_id)
     session.commit()
     return detalle(session, repository.buscar_cabecera(session, movimiento_id))
 
@@ -343,6 +408,8 @@ def detalle(session: Session, cabecera: RowMapping) -> MovimientoPublic:
         **cabecera,
         unidad_origen=unidad_publica(session, cabecera["unidad_origen_id"]),
         unidad_destino=unidad_publica(session, cabecera["unidad_destino_id"]),
+        oficial_origen=oficial_publico(session, cabecera["oficial_origen_id"]),
+        oficial_destino=oficial_publico(session, cabecera["oficial_destino_id"]),
         bienes=[
             RenglonPublic.model_validate(renglon)
             for renglon in repository.listar_renglones(session, cabecera["id"])

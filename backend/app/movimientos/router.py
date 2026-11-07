@@ -8,6 +8,7 @@ from app.core.database import SessionDep
 from . import service
 from .schema import (
     DesistimientoCreate,
+    DotacionCreate,
     EntregaCreate,
     MovimientoPublic,
     RecepcionAceptada,
@@ -25,6 +26,15 @@ def registrar_entrega(
     session: SessionDep, usuario: UsuarioActualDep, entrega: EntregaCreate
 ):
     return service.registrar_entrega(session, usuario, entrega)
+
+
+@router.post(
+    "/dotaciones", response_model=MovimientoPublic, status_code=status.HTTP_201_CREATED
+)
+def registrar_dotacion(
+    session: SessionDep, usuario: UsuarioActualDep, dotacion: DotacionCreate
+):
+    return service.registrar_dotacion(session, usuario, dotacion)
 
 
 @router.get("/por-recibir", response_model=list[MovimientoPublic])
