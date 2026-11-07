@@ -7,10 +7,11 @@ from app.core.database import SessionDep
 
 from . import service
 from .schema import (
+    DesistimientoCreate,
     EntregaCreate,
     MovimientoPublic,
     RecepcionAceptada,
-    RecepcionRechazada,
+    RecepcionDevuelta,
     RectificacionCreate,
 )
 
@@ -31,6 +32,11 @@ def listar_por_recibir(session: SessionDep, usuario: UsuarioActualDep):
     return service.listar_por_recibir(session, usuario)
 
 
+@router.get("/devueltas", response_model=list[MovimientoPublic])
+def listar_devueltas(session: SessionDep, usuario: UsuarioActualDep):
+    return service.listar_devueltas(session, usuario)
+
+
 @router.get("/observados", response_model=list[MovimientoPublic])
 def listar_observados(session: SessionDep, usuario: UsuarioActualDep):
     return service.listar_observados(session, usuario)
@@ -43,16 +49,38 @@ def consultar_movimiento(
     return service.consultar_movimiento(session, usuario, movimiento_id)
 
 
+@router.put("/{movimiento_id}", response_model=MovimientoPublic)
+def corregir_entrega(
+    session: SessionDep,
+    usuario: UsuarioActualDep,
+    movimiento_id: int,
+    entrega: EntregaCreate,
+):
+    return service.corregir_entrega(session, usuario, movimiento_id, entrega)
+
+
 @router.post("/{movimiento_id}/recepcion", response_model=MovimientoPublic)
 def recibir_entrega(
     session: SessionDep,
     usuario: UsuarioActualDep,
     movimiento_id: int,
     recepcion: Annotated[
-        RecepcionAceptada | RecepcionRechazada, Body(discriminator="resultado")
+        RecepcionAceptada | RecepcionDevuelta, Body(discriminator="resultado")
     ],
 ):
     return service.recibir_entrega(session, usuario, movimiento_id, recepcion)
+
+
+@router.post("/{movimiento_id}/desistimiento", response_model=MovimientoPublic)
+def desistir_de_la_entrega(
+    session: SessionDep,
+    usuario: UsuarioActualDep,
+    movimiento_id: int,
+    desistimiento: DesistimientoCreate,
+):
+    return service.desistir_de_la_entrega(
+        session, usuario, movimiento_id, desistimiento
+    )
 
 
 @router.post(

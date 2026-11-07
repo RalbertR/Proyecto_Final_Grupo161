@@ -766,3 +766,77 @@ def test_un_cambio_de_estado_anulado_sigue_en_el_historial(session, organizacion
         )
     )
     assert estado.scalar_one() == "ANULADO"
+
+
+def recibir_acta(session, movimiento_id, resultado, motivo=None):
+    session.exec(
+        text(
+            "INSERT INTO recepcion (movimiento_id, resultado, motivo, usuario_id) "
+            "VALUES (:m, :resultado, :motivo, 1)"
+        ).bindparams(m=movimiento_id, resultado=resultado, motivo=motivo)
+    )
+
+
+def test_un_acta_devuelta_bloquea_sus_bienes_para_otro_movimiento(
+    session, organizacion
+):
+    entregar(session, 1, [1], estado="DEVUELTO")
+
+    with pytest.raises(OperationalError, match="no admite otro"):
+        entregar(session, 2, [1])
+
+
+def test_un_acta_devuelta_no_bloquea_otros_bienes(session, organizacion):
+    entregar(session, 1, [1], estado="DEVUELTO")
+
+    entregar(session, 2, [2])
+
+
+def test_solo_una_entrega_entre_unidades_puede_quedar_devuelta(session, organizacion):
+    entregar(session, 1, [1], estado="DEVUELTO")
+    reubicar(session, 2, [2])
+
+    with pytest.raises(OperationalError, match="ck_mov_devuelto"):
+        pasar_a(session, 2, "DEVUELTO")
+
+
+def test_un_acta_se_puede_devolver_varias_veces(session, organizacion):
+    entregar(session, 1, [1])
+
+    recibir_acta(session, 1, "DEVUELTO", "No coincide")
+    recibir_acta(session, 1, "DEVUELTO", "Sigue sin coincidir")
+
+    assert session.exec(text("SELECT COUNT(*) FROM recepcion")).scalar_one() == 2
+
+
+@pytest.mark.parametrize("final", ["ACEPTADO", "RECHAZADO"])
+def test_un_acta_devuelta_se_resuelve_una_sola_vez(session, organizacion, final):
+    entregar(session, 1, [1])
+    recibir_acta(session, 1, "DEVUELTO", "No coincide")
+    recibir_acta(session, 1, final, "Desistió" if final == "RECHAZADO" else None)
+
+    with pytest.raises(IntegrityError):
+        recibir_acta(session, 1, "ACEPTADO")
+
+
+@pytest.mark.parametrize(
+    ("resultado", "motivo"),
+    [("DEVUELTO", None), ("RECHAZADO", None), ("ACEPTADO", "No corresponde")],
+    ids=["devuelto_sin_motivo", "rechazado_sin_motivo", "aceptado_con_motivo"],
+)
+def test_el_motivo_de_la_recepcion_va_con_devuelto_y_rechazado(
+    session, organizacion, resultado, motivo
+):
+    entregar(session, 1, [1])
+
+    with pytest.raises(OperationalError, match="ck_recepcion_motivo"):
+        recibir_acta(session, 1, resultado, motivo)
+
+
+def test_una_novedad_no_se_repite_en_la_misma_recepcion(session, organizacion):
+    entregar(session, 1, [1])
+    recibir_acta(session, 1, "DEVUELTO", "No coincide")
+    session.exec(text("INSERT INTO recepcion_novedad VALUES (1, 1)"))
+
+    with pytest.raises(IntegrityError):
+        session.exec(text("INSERT INTO recepcion_novedad VALUES (1, 1)"))

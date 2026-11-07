@@ -9,7 +9,8 @@ BLOQUEAR_BIENES = text(
 ALGUNO_CON_MOVIMIENTO_PENDIENTE = text(
     "SELECT EXISTS (SELECT 1 FROM movimiento_bien mb "
     "JOIN movimiento m ON m.id = mb.movimiento_id "
-    "WHERE mb.bien_id IN :bienes AND m.estado = 'PENDIENTE')"
+    "WHERE mb.bien_id IN :bienes AND m.estado IN ('PENDIENTE', 'DEVUELTO') "
+    "AND m.id <> :excluir)"
 ).bindparams(bindparam("bienes", expanding=True))
 
 INSERTAR_ENTREGA = text(
@@ -30,9 +31,9 @@ CABECERA = text(
     "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
     "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
     "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente, "
-    "r.motivo_rechazo "
+    "r.motivo AS motivo_rechazo "
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
-    "LEFT JOIN recepcion r ON r.movimiento_id = v.id "
+    "LEFT JOIN recepcion r ON r.movimiento_id = v.id AND r.resultado = 'RECHAZADO' "
     "WHERE v.id = :id"
 )
 
@@ -43,6 +44,14 @@ POR_RECIBIR = text(
     "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
     "WHERE v.tipo = 'ENTREGA' AND v.estado = 'PENDIENTE' "
     "AND v.unidad_destino_id = :unidad_id ORDER BY v.id"
+)
+
+DEVUELTAS = text(
+    "SELECT v.id, v.tipo, v.estado, v.estado_revision, v.numero_acta, "
+    "v.fecha_hecho, v.descripcion, v.unidad_origen_id, v.unidad_destino_id, "
+    "u.nombre_usuario AS usuario, v.fecha_carga, v.version_vigente "
+    "FROM v_movimiento_vigente v JOIN usuario u ON u.id = v.usuario_id "
+    "WHERE v.estado = 'DEVUELTO' AND v.unidad_origen_id = :unidad_id ORDER BY v.id"
 )
 
 OBSERVADOS = text(
@@ -91,8 +100,30 @@ MOVER_BIENES = text(
 )
 
 INSERTAR_RECEPCION = text(
-    "INSERT INTO recepcion (movimiento_id, resultado, motivo_rechazo, usuario_id) "
-    "VALUES (:movimiento_id, :resultado, :motivo_rechazo, :usuario_id)"
+    "INSERT INTO recepcion (movimiento_id, resultado, motivo, usuario_id) "
+    "VALUES (:movimiento_id, :resultado, :motivo, :usuario_id)"
+)
+
+INSERTAR_NOVEDAD = text(
+    "INSERT INTO recepcion_novedad (recepcion_id, bien_id) "
+    "VALUES (:recepcion_id, :bien_id)"
+)
+
+RECEPCIONES = text(
+    "SELECT r.id, r.resultado, r.motivo, u.nombre_usuario AS usuario, r.fecha "
+    "FROM recepcion r JOIN usuario u ON u.id = r.usuario_id "
+    "WHERE r.movimiento_id = :id ORDER BY r.id"
+)
+
+NOVEDADES = text(
+    "SELECT bien_id FROM recepcion_novedad WHERE recepcion_id = :id ORDER BY bien_id"
+)
+
+QUITAR_RENGLONES = text("DELETE FROM movimiento_bien WHERE movimiento_id = :id")
+
+REENVIAR_ENTREGA = text(
+    "UPDATE movimiento SET estado = 'PENDIENTE', "
+    "unidad_destino_id = :unidad_destino_id WHERE id = :id"
 )
 
 CAMBIAR_ESTADO = text("UPDATE movimiento SET estado = :estado WHERE id = :id")
@@ -120,10 +151,13 @@ def bloquear_bienes(session: Session, bienes: list[int]) -> list[Row]:
     return list(session.exec(BLOQUEAR_BIENES, params={"bienes": bienes}))
 
 
-def alguno_con_movimiento_pendiente(session: Session, bienes: list[int]) -> bool:
+def alguno_con_movimiento_pendiente(
+    session: Session, bienes: list[int], excluir: int = 0
+) -> bool:
     return bool(
         session.exec(
-            ALGUNO_CON_MOVIMIENTO_PENDIENTE, params={"bienes": bienes}
+            ALGUNO_CON_MOVIMIENTO_PENDIENTE,
+            params={"bienes": bienes, "excluir": excluir},
         ).scalar_one()
     )
 
@@ -165,6 +199,10 @@ def listar_por_recibir(session: Session, unidad_id: int) -> list[RowMapping]:
     return list(session.exec(POR_RECIBIR, params={"unidad_id": unidad_id}).mappings())
 
 
+def listar_devueltas(session: Session, unidad_id: int) -> list[RowMapping]:
+    return list(session.exec(DEVUELTAS, params={"unidad_id": unidad_id}).mappings())
+
+
 def listar_observados(session: Session, unidad_id: int) -> list[RowMapping]:
     return list(session.exec(OBSERVADOS, params={"unidad_id": unidad_id}).mappings())
 
@@ -202,8 +240,35 @@ def mover_bienes(session: Session, movimiento_id: int) -> None:
     session.exec(MOVER_BIENES, params={"id": movimiento_id})
 
 
-def insertar_recepcion(session: Session, **valores) -> None:
-    session.exec(INSERTAR_RECEPCION, params=valores)
+def insertar_recepcion(session: Session, **valores) -> int:
+    return session.exec(INSERTAR_RECEPCION, params=valores).lastrowid
+
+
+def insertar_novedad(session: Session, recepcion_id: int, bien_id: int) -> None:
+    session.exec(
+        INSERTAR_NOVEDAD, params={"recepcion_id": recepcion_id, "bien_id": bien_id}
+    )
+
+
+def listar_recepciones(session: Session, movimiento_id: int) -> list[RowMapping]:
+    return list(session.exec(RECEPCIONES, params={"id": movimiento_id}).mappings())
+
+
+def listar_novedades(session: Session, recepcion_id: int) -> list[int]:
+    return list(session.exec(NOVEDADES, params={"id": recepcion_id}).scalars())
+
+
+def quitar_renglones(session: Session, movimiento_id: int) -> None:
+    session.exec(QUITAR_RENGLONES, params={"id": movimiento_id})
+
+
+def reenviar_entrega(
+    session: Session, movimiento_id: int, unidad_destino_id: int
+) -> None:
+    session.exec(
+        REENVIAR_ENTREGA,
+        params={"id": movimiento_id, "unidad_destino_id": unidad_destino_id},
+    )
 
 
 def cambiar_estado(session: Session, movimiento_id: int, estado: str) -> None:

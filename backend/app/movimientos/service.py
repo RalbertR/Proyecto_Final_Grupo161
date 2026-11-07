@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from sqlalchemy import RowMapping
+from sqlalchemy import Row, RowMapping
 from sqlmodel import Session
 
 from app.acceso.schema import UsuarioPublic
@@ -16,10 +16,12 @@ from app.revision.schema import RevisionPublic
 
 from . import repository
 from .schema import (
+    DesistimientoCreate,
     EntregaCreate,
     MovimientoPublic,
     RecepcionAceptada,
-    RecepcionRechazada,
+    RecepcionDevuelta,
+    RecepcionPublic,
     RectificacionCreate,
     RenglonPublic,
     VersionPublic,
@@ -33,10 +35,13 @@ AREA_DEL_TIPO = {
 }
 
 
-def registrar_entrega(
-    session: Session, usuario: UsuarioPublic, entrega: EntregaCreate
-) -> MovimientoPublic:
-    unidad_id = usuario.unidad.id
+def validar_entrega(
+    session: Session,
+    unidad_id: int,
+    entrega: EntregaCreate,
+    bienes: list[Row],
+    excluir: int = 0,
+) -> None:
     if entrega.unidad_destino_id == unidad_id:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -47,10 +52,7 @@ def registrar_entrega(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="La unidad de destino no existe",
         )
-    # Se bloquean antes de validar: otra entrega de los mismos bienes espera acá
-    # y, con READ COMMITTED, al seguir ve el movimiento pendiente (ADR 0001).
     ids = sorted(set(entrega.bienes))
-    bienes = repository.bloquear_bienes(session, ids)
     if len(bienes) < len(ids) or any(bien.unidad_id != unidad_id for bien in bienes):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -67,11 +69,21 @@ def registrar_entrega(
             status_code=status.HTTP_409_CONFLICT,
             detail="Uno de los bienes no está en depósito",
         )
-    if repository.alguno_con_movimiento_pendiente(session, ids):
+    if repository.alguno_con_movimiento_pendiente(session, ids, excluir):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Uno de los bienes ya tiene un movimiento pendiente",
         )
+
+
+def registrar_entrega(
+    session: Session, usuario: UsuarioPublic, entrega: EntregaCreate
+) -> MovimientoPublic:
+    unidad_id = usuario.unidad.id
+    # Se bloquean antes de validar: otra entrega de los mismos bienes espera acá
+    # y, con READ COMMITTED, al seguir ve el movimiento pendiente (ADR 0001).
+    bienes = repository.bloquear_bienes(session, sorted(set(entrega.bienes)))
+    validar_entrega(session, unidad_id, entrega, bienes)
     movimiento_id = repository.insertar_entrega(
         session,
         estado_revision=(
@@ -125,7 +137,7 @@ def recibir_entrega(
     session: Session,
     usuario: UsuarioPublic,
     movimiento_id: int,
-    recepcion: RecepcionAceptada | RecepcionRechazada,
+    recepcion: RecepcionAceptada | RecepcionDevuelta,
 ) -> MovimientoPublic:
     # Se bloquean antes de leer el acta: otra recepción espera acá y, con
     # READ COMMITTED, al seguir ve el acta recibida (ADR 0001).
@@ -159,18 +171,114 @@ def recibir_entrega(
         for bien_id, ubicacion_id in destinos.items():
             repository.ubicar_renglon(session, movimiento_id, bien_id, ubicacion_id)
         repository.mover_bienes(session, movimiento_id)
-        estado, motivo_rechazo = "APLICADO", None
+        estado, motivo, novedades = "APLICADO", None, set()
     else:
-        estado, motivo_rechazo = "RECHAZADO", recepcion.motivo_rechazo
-    repository.insertar_recepcion(
+        novedades = set(recepcion.bienes_con_novedad)
+        if not novedades <= set(bienes):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Las novedades tienen que ser de bienes del acta",
+            )
+        estado, motivo = "DEVUELTO", recepcion.motivo
+    recepcion_id = repository.insertar_recepcion(
         session,
         movimiento_id=movimiento_id,
         resultado=recepcion.resultado,
-        motivo_rechazo=motivo_rechazo,
+        motivo=motivo,
         usuario_id=usuario.id,
     )
+    for bien_id in sorted(novedades):
+        repository.insertar_novedad(session, recepcion_id, bien_id)
     # Al pasar a aplicada, trg_mov_orden numera los renglones (ADR 0006).
     repository.cambiar_estado(session, movimiento_id, estado)
+    session.commit()
+    return detalle(session, repository.buscar_cabecera(session, movimiento_id))
+
+
+def listar_devueltas(
+    session: Session, usuario: UsuarioPublic
+) -> list[MovimientoPublic]:
+    return [
+        detalle(session, cabecera)
+        for cabecera in repository.listar_devueltas(session, usuario.unidad.id)
+    ]
+
+
+def validar_acta_devuelta(
+    session: Session, usuario: UsuarioPublic, movimiento_id: int, sin_permiso: str
+) -> None:
+    cabecera = repository.buscar_cabecera(session, movimiento_id)
+    if cabecera is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="El movimiento no existe"
+        )
+    if cabecera["unidad_origen_id"] != usuario.unidad.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=sin_permiso)
+    if cabecera["estado"] != "DEVUELTO":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="El acta no está devuelta"
+        )
+
+
+def corregir_entrega(
+    session: Session,
+    usuario: UsuarioPublic,
+    movimiento_id: int,
+    entrega: EntregaCreate,
+) -> MovimientoPublic:
+    ids = set(entrega.bienes)
+    actuales = {
+        renglon["bien_id"]
+        for renglon in repository.listar_renglones(session, movimiento_id)
+    }
+    # Se bloquean los que entran y los que salen antes de leer el estado: otra
+    # operación sobre el acta espera acá y, con READ COMMITTED, al seguir ve el
+    # acta reenviada o rechazada (ADR 0001). Los renglones solo cambian al salir
+    # de devuelta, así que los leídos antes siguen valiendo si el estado se confirma.
+    bloqueados = repository.bloquear_bienes(session, sorted(ids | actuales))
+    validar_acta_devuelta(
+        session, usuario, movimiento_id, "Solo la unidad de origen corrige el acta"
+    )
+    bienes = [bien for bien in bloqueados if bien.id in ids]
+    validar_entrega(session, usuario.unidad.id, entrega, bienes, movimiento_id)
+    repository.quitar_renglones(session, movimiento_id)
+    for bien in bienes:
+        repository.insertar_renglon(session, movimiento_id, bien.id, bien.ubicacion_id)
+    # El original no se modifica: la corrección es una versión nueva (ADR 0010).
+    repository.insertar_rectificacion(
+        session,
+        movimiento_id=movimiento_id,
+        fecha_hecho=entrega.fecha_hecho,
+        numero_acta=entrega.numero_acta,
+        descripcion=entrega.descripcion,
+        motivo=repository.listar_recepciones(session, movimiento_id)[-1]["motivo"],
+        usuario_id=usuario.id,
+    )
+    repository.reenviar_entrega(session, movimiento_id, entrega.unidad_destino_id)
+    session.commit()
+    return detalle(session, repository.buscar_cabecera(session, movimiento_id))
+
+
+def desistir_de_la_entrega(
+    session: Session,
+    usuario: UsuarioPublic,
+    movimiento_id: int,
+    desistimiento: DesistimientoCreate,
+) -> MovimientoPublic:
+    # Se bloquean antes de leer el estado: otra operación sobre el acta espera acá
+    # y, con READ COMMITTED, al seguir ve el acta reenviada (ADR 0001).
+    repository.bloquear_bienes_del_movimiento(session, movimiento_id)
+    validar_acta_devuelta(
+        session, usuario, movimiento_id, "Solo la unidad de origen desiste del acta"
+    )
+    repository.insertar_recepcion(
+        session,
+        movimiento_id=movimiento_id,
+        resultado="RECHAZADO",
+        motivo=desistimiento.motivo,
+        usuario_id=usuario.id,
+    )
+    repository.cambiar_estado(session, movimiento_id, "RECHAZADO")
     session.commit()
     return detalle(session, repository.buscar_cabecera(session, movimiento_id))
 
@@ -240,6 +348,15 @@ def detalle(session: Session, cabecera: RowMapping) -> MovimientoPublic:
         revisiones=[
             RevisionPublic.model_validate(revision)
             for revision in listar_revisiones(session, cabecera["id"])
+        ],
+        recepciones=[
+            RecepcionPublic(
+                **recepcion,
+                bienes_con_novedad=repository.listar_novedades(
+                    session, recepcion["id"]
+                ),
+            )
+            for recepcion in repository.listar_recepciones(session, cabecera["id"])
         ],
     )
 
