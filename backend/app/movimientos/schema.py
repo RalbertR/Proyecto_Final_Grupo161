@@ -7,6 +7,10 @@ from sqlmodel import SQLModel
 from app.organizacion.schema import UnidadPublic
 from app.revision.schema import RevisionPublic
 
+Motivo = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
+]
+
 
 class EntregaCreate(BaseModel):
     unidad_destino_id: int
@@ -33,20 +37,21 @@ class RecepcionAceptada(BaseModel):
     ubicaciones: list[UbicacionDestino]
 
 
-class RecepcionRechazada(BaseModel):
-    resultado: Literal["RECHAZADO"]
-    motivo_rechazo: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
-    ]
+class RecepcionDevuelta(BaseModel):
+    resultado: Literal["DEVUELTO"]
+    motivo: Motivo
+    bienes_con_novedad: list[int] = []
+
+
+class DesistimientoCreate(BaseModel):
+    motivo: Motivo
 
 
 class RectificacionCreate(BaseModel):
     fecha_hecho: date
     numero_acta: str = Field(pattern=r"^[0-9]{4}/[0-9]{4}$")
     descripcion: str | None = Field(default=None, max_length=500)
-    motivo: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
-    ]
+    motivo: Motivo
 
     @field_validator("fecha_hecho")
     @classmethod
@@ -77,6 +82,19 @@ class VersionPublic(SQLModel):
     fecha: datetime
 
 
+class NovedadPublic(SQLModel):
+    bien_id: int
+    identificacion: str
+
+
+class RecepcionPublic(SQLModel):
+    resultado: str
+    motivo: str | None
+    bienes_con_novedad: list[NovedadPublic]
+    usuario: str
+    fecha: datetime
+
+
 class MovimientoPublic(SQLModel):
     id: int
     tipo: str
@@ -93,4 +111,5 @@ class MovimientoPublic(SQLModel):
     version_vigente: int
     versiones: list[VersionPublic]
     revisiones: list[RevisionPublic]
+    recepciones: list[RecepcionPublic]
     motivo_rechazo: str | None = None

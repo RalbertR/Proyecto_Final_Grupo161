@@ -16,7 +16,7 @@ BIEN = text(
     "CONCAT(o.apellido, ', ', o.nombre) AS oficial, "
     "EXISTS (SELECT 1 FROM movimiento_bien mb "
     "JOIN movimiento mv ON mv.id = mb.movimiento_id "
-    "WHERE mb.bien_id = b.id AND mv.estado = 'PENDIENTE') "
+    "WHERE mb.bien_id = b.id AND mv.estado IN ('PENDIENTE', 'DEVUELTO')) "
     "AS con_movimiento_pendiente "
     "FROM bien b JOIN unidad u ON u.id = b.unidad_id "
     "LEFT JOIN movil m ON m.bien_id = b.id "

@@ -61,7 +61,7 @@ Todo lo que cambia la tenencia de un bien se registra como un movimiento. Los ca
 | Tipo | Origen y destino | Recepción | Acta | Revisión | Efecto sobre el bien |
 |---|---|---|---|---|---|
 | ALTA | Sin origen. El destino es una ubicación de Dirección. | No corresponde | Opcional | No corresponde | Se crea el bien con su ficha, en servicio. |
-| ENTREGA entre unidades | De una unidad a otra | Queda pendiente y el destino acepta o rechaza el acta completa | Obligatoria | Sí | Al recibirse cambian la unidad dueña y la ubicación. |
+| ENTREGA entre unidades | De una unidad a otra | Queda pendiente y el destino acepta el acta completa o la devuelve al origen, que la corrige y la reenvía, o desiste | Obligatoria | Sí | Al recibirse cambian la unidad dueña y la ubicación. |
 | ENTREGA de dotación | De la unidad a uno de sus oficiales | Se aplica en el acto | Obligatoria | Sí | El oficial pasa a ser el responsable y la unidad sigue siendo la dueña. |
 | ENTREGA de devolución | Del oficial a su unidad | Se aplica en el acto | Obligatoria | Sí | El bien vuelve a una ubicación de la unidad. |
 | REUBICACION | Entre dos ubicaciones de la misma unidad | Se aplica en el acto | No | No | Cambia la ubicación. |
@@ -85,7 +85,7 @@ Las reglas principales que sostiene el esquema son estas:
 - Mientras una entrega o un traslado está pendiente, el responsable sigue siendo el origen y el bien no admite otro movimiento.
 - Cada acta incluye bienes de una sola área: armamento y chalecos, o móviles y equipos de comunicaciones.
 - La revisión la hace el superior inmediato después del hecho. Si observa un registro indica el motivo, y la corrección la hace el autor.
-- No se borra ningún registro. Las correcciones se guardan como versiones nuevas. Las anulaciones llevan un motivo y cubren siempre el acta completa. La Regional puede anular las actas de sus Unidades Operacionales y las propias, y Dirección las de los tres niveles.
+- No se borra ningún registro. Las correcciones se guardan como versiones nuevas. La excepción son los renglones de un acta devuelta, que se reemplazan al corregirla. Las anulaciones llevan un motivo y cubren siempre el acta completa. La Regional puede anular las actas de sus Unidades Operacionales y las propias, y Dirección las de los tres niveles.
 - Solo se anula un movimiento si ninguno de sus bienes tuvo movimientos posteriores. Si los tuvo, se anulan primero esos. Al anularse un movimiento aplicado, cada bien vuelve a la unidad, el oficial y la ubicación de origen.
 - Solo se anula un cambio de estado si el bien no tuvo cambios de estado posteriores vigentes. Si los tuvo, se anulan primero esos. Los movimientos posteriores no lo impiden. Al anularse, el bien vuelve a su estado anterior.
 - Una Unidad Operacional no puede retirar un traslado que solicitó. Si hay que cancelarlo, lo anula su Regional o Dirección.
@@ -234,11 +234,16 @@ erDiagram
     }
     recepcion {
         INT id PK
-        INT movimiento_id FK, UK
+        INT movimiento_id FK
         ENUM resultado
-        VARCHAR(500) motivo_rechazo
+        VARCHAR(500) motivo
+        INT movimiento_resuelto_id UK
         INT usuario_id FK
         DATETIME fecha
+    }
+    recepcion_novedad {
+        INT recepcion_id PK, FK
+        INT bien_id PK, FK
     }
     rectificacion {
         INT id PK
@@ -330,8 +335,10 @@ erDiagram
     movimiento ||--|{ movimiento_bien : incluye
     bien ||--o{ movimiento_bien : "figura en"
     ubicacion |o--o{ movimiento_bien : "es origen o destino"
-    movimiento ||--o| recepcion : "se recibe con"
+    movimiento ||--o{ recepcion : "se recibe con"
     usuario ||--o{ recepcion : responde
+    recepcion ||--o{ recepcion_novedad : "señala"
+    bien ||--o{ recepcion_novedad : "tiene novedad en"
     movimiento ||--o{ rectificacion : "se corrige con"
     usuario ||--o{ rectificacion : corrige
     movimiento ||--o{ movimiento_documento : adjunta
@@ -470,7 +477,7 @@ La tabla **movimiento** es la cabecera y representa una operación logística. S
 |---|---|---|
 | id | INT | PK |
 | tipo | ENUM | ALTA, ENTREGA, REUBICACION, TRASLADO o BAJA |
-| estado | ENUM | PENDIENTE, APLICADO, RECHAZADO o ANULADO |
+| estado | ENUM | PENDIENTE, APLICADO, RECHAZADO, ANULADO o DEVUELTO. Una entrega devuelta vuelve al origen para corregirse: sus bienes siguen en el origen y bloqueados, igual que en una pendiente. |
 | estado_revision | ENUM | NO_APLICA, PENDIENTE, REVISADO u OBSERVADO |
 | numero_acta | VARCHAR(30) | Obligatorio en entregas, traslados y bajas. Opcional en altas y no se usa en reubicaciones. |
 | fecha_hecho | DATE | Día en que ocurrió |
@@ -494,18 +501,21 @@ La tabla **movimiento_bien** es el detalle, con un renglón por cada bien del mo
 
 Usamos el número de orden para saber en qué orden se aplicaron los movimientos y los cambios de estado de cada bien, porque la fecha del hecho guarda solo el día.
 
-La tabla **recepcion** registra la respuesta de la unidad de destino, una sola vez por movimiento. Solo existe en las entregas entre unidades y en los traslados, que son los movimientos que quedan pendientes. El destino acepta o rechaza el acta completa. En un traslado, la recepción es la confirmación de la unidad de destino.
+La tabla **recepcion** registra cada respuesta sobre un movimiento que quedó pendiente: las entregas entre unidades y los traslados. El destino acepta el acta completa o la devuelve al origen. Una entrega devuelta puede tener varias recepciones, una por cada devolución, y termina con una sola definitiva: la aceptación del destino o el desistimiento del origen, que queda como RECHAZADO. En un traslado, la recepción es la confirmación de la unidad de destino.
 
 | Columna | Tipo | Descripción |
 |---|---|---|
 | id | INT | PK |
-| movimiento_id | INT | FK a movimiento. Único. |
-| resultado | ENUM | ACEPTADO o RECHAZADO |
-| motivo_rechazo | VARCHAR(500) | Obligatorio si se rechaza |
-| usuario_id | INT | FK a usuario. Quién respondió por la unidad de destino. |
+| movimiento_id | INT | FK a movimiento. |
+| resultado | ENUM | ACEPTADO, RECHAZADO o DEVUELTO |
+| motivo | VARCHAR(500) | Obligatorio si el resultado no es ACEPTADO: por qué se devuelve o se rechaza. |
+| movimiento_resuelto_id | INT | Columna calculada: es movimiento_id salvo en una devolución, donde es nulo. Su restricción de unicidad impide dos recepciones definitivas del mismo movimiento. |
+| usuario_id | INT | FK a usuario. Quién respondió: el destino al aceptar o devolver, el origen al desistir. |
 | fecha | DATETIME | |
 
-Al aceptar una entrega, la unidad de destino indica en movimiento_bien la ubicación donde queda cada bien. Si la rechaza, los bienes quedan en el origen.
+La tabla **recepcion_novedad** guarda los bienes con novedad de una devolución. Su PK es (recepcion_id, bien_id), con FK a recepcion y a bien. Apunta al bien y no al renglón del acta, así que la novedad se conserva aunque el origen quite ese bien al corregir.
+
+Al aceptar una entrega, la unidad de destino indica en movimiento_bien la ubicación donde queda cada bien. Si la devuelve, los bienes quedan en el origen y bloqueados hasta que el origen la reenvíe o desista. El origen corrige el acta con una rectificación, que conserva el original y guarda como motivo el de la última devolución. La corrección también puede cambiar los bienes y la unidad de destino del acta, que no tienen versiones: del estado anterior solo queda lo que cuentan las devoluciones.
 
 La tabla **revision** guarda cada revisión del superior. Un registro observado se corrige y vuelve a revisión, así que puede tener varias revisiones. La última define su estado_revision.
 
@@ -576,7 +586,7 @@ El backend lo vamos a desarrollar en Python con FastAPI, que vimos en Programaci
 | 2 | Organización | Unidades y jerarquía, ubicaciones, oficiales y catálogos. | unidad, ubicacion, oficial, tipo_bien, tipo_vehiculo, tipo_tarea | 1 |
 | 3 | Bienes | Alta de bienes con su ficha, que solo hace Dirección, consulta de fichas y cambios de estado operativo. | bien, armamento, chaleco, movil, equipo_comunicaciones, cambio_estado_operativo | 2 y 4 |
 | 4 | Documentos | Carga de actas e informes técnicos, cálculo del hash y reemplazo de archivos. | documento, movimiento_documento | 1 |
-| 5 | Movimientos | Entregas con su recepción, dotaciones, devoluciones, reubicaciones y bajas. | movimiento, movimiento_bien, recepcion | 3 y 4 |
+| 5 | Movimientos | Entregas con su recepción y devolución, dotaciones, devoluciones, reubicaciones y bajas. | movimiento, movimiento_bien, recepcion, recepcion_novedad | 3 y 4 |
 | 6 | Traslados de oficiales | Solicitud con todas las dotaciones, resumen para la unidad de destino, confirmación, rechazo y anulación. | traslado_oficial | 5 |
 | 7 | Revisión y correcciones | Bandeja del superior con movimientos y cambios de estado, revisión, correcciones y anulaciones. | revision, rectificacion, rectificacion_cambio_estado | 3 y 5 |
 | 8 | Consultas y reportes | Inventario por unidad y consolidado por Regional o nacional, dotaciones por oficial, historial de cada bien y reportes que reemplazan las planillas. | Consulta las tablas de los módulos anteriores | 5 |

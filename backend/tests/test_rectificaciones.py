@@ -200,13 +200,14 @@ def test_otra_unidad_no_corrige_el_movimiento(client, entrega_observada, usuario
     "estado",
     [
         "estado = 'PENDIENTE'",
+        "estado = 'DEVUELTO'",
         "estado = 'RECHAZADO'",
         (
             "estado = 'ANULADO', anulado_por_id = 2, fecha_anulacion = NOW(), "
             "motivo_anulacion = 'Se cargó un bien equivocado'"
         ),
     ],
-    ids=["pendiente_de_recepcion", "rechazado", "anulado"],
+    ids=["pendiente_de_recepcion", "devuelto", "rechazado", "anulado"],
 )
 def test_solo_se_corrigen_movimientos_aplicados(client, entrega_observada, estado):
     with engine.begin() as conexion:

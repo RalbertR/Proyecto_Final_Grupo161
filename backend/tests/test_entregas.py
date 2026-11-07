@@ -98,6 +98,7 @@ ACTA_REGISTRADA = {
         }
     ],
     "revisiones": [],
+    "recepciones": [],
     "motivo_rechazo": None,
 }
 

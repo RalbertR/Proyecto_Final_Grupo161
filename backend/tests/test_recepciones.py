@@ -1,5 +1,4 @@
 import threading
-from datetime import date
 
 import pytest
 from sqlmodel import Session, text
@@ -52,9 +51,10 @@ ACEPTAR = {
     ],
 }
 
-RECHAZAR = {
-    "resultado": "RECHAZADO",
-    "motivo_rechazo": "Llegó un solo chaleco y el acta dice dos",
+DEVOLVER = {
+    "resultado": "DEVUELTO",
+    "motivo": "Llegó un solo chaleco y el acta dice dos",
+    "bienes_con_novedad": [2],
 }
 
 
@@ -258,34 +258,12 @@ def test_sin_una_ubicacion_propia_para_cada_bien_responde_422(
     assert consultar("SELECT * FROM recepcion") == []
 
 
-def test_al_rechazar_los_bienes_siguen_en_el_origen_y_libres(client, acta_pendiente):
-    respuesta = recibir(client, RECHAZAR)
-
-    assert respuesta.status_code == 200
-    assert respuesta.json()["estado"] == "RECHAZADO"
-    assert tenencia_de_los_bienes() == [(1, 4, 1), (2, 4, 1)]
-    assert consultar("SELECT resultado, motivo_rechazo FROM recepcion") == [
-        ("RECHAZADO", RECHAZAR["motivo_rechazo"])
-    ]
-    otra_entrega = client.post(
-        "/api/movimientos/entregas",
-        json={
-            "unidad_destino_id": 5,
-            "numero_acta": "0002/2026",
-            "fecha_hecho": date.today().isoformat(),
-            "bienes": [1, 2],
-        },
-        headers=con_token(4),
-    )
-    assert otra_entrega.status_code == 201
-
-
 @pytest.mark.parametrize(
     "recepcion",
-    [{"resultado": "RECHAZADO"}, RECHAZAR | {"motivo_rechazo": "  "}],
+    [{"resultado": "DEVUELTO"}, DEVOLVER | {"motivo": "  "}],
     ids=["sin_motivo", "motivo_en_blanco"],
 )
-def test_un_rechazo_sin_motivo_responde_422(client, acta_pendiente, recepcion):
+def test_una_devolucion_sin_motivo_responde_422(client, acta_pendiente, recepcion):
     respuesta = recibir(client, recepcion)
 
     assert respuesta.status_code == 422
@@ -294,17 +272,17 @@ def test_un_rechazo_sin_motivo_responde_422(client, acta_pendiente, recepcion):
 
 @pytest.mark.parametrize("usuario_id", [4, 6], ids=["origen", "otra_unidad"])
 def test_solo_la_unidad_de_destino_recibe_el_acta(client, acta_pendiente, usuario_id):
-    respuesta = recibir(client, RECHAZAR, usuario_id=usuario_id)
+    respuesta = recibir(client, DEVOLVER, usuario_id=usuario_id)
 
     assert respuesta.status_code == 403
     assert respuesta.json() == {"detail": "Solo la unidad de destino recibe el acta"}
 
 
-@pytest.mark.parametrize("primera", [ACEPTAR, RECHAZAR], ids=["aceptada", "rechazada"])
+@pytest.mark.parametrize("primera", [ACEPTAR, DEVOLVER], ids=["aceptada", "devuelta"])
 def test_un_acta_ya_recibida_responde_409(client, acta_pendiente, primera):
     recibir(client, primera)
 
-    respuesta = recibir(client, RECHAZAR)
+    respuesta = recibir(client, DEVOLVER)
 
     assert respuesta.status_code == 409
     assert respuesta.json() == {"detail": "El acta no está pendiente de recepción"}
@@ -318,7 +296,7 @@ def test_un_traslado_no_se_recibe_como_una_entrega(client, acta_pendiente):
             {"movimiento_id": 2, "bien_id": 3, "ubicacion_id": None},
         )
 
-    respuesta = recibir(client, RECHAZAR, movimiento_id=2)
+    respuesta = recibir(client, DEVOLVER, movimiento_id=2)
 
     assert respuesta.status_code == 409
     assert respuesta.json() == {"detail": "El acta no está pendiente de recepción"}
@@ -327,7 +305,7 @@ def test_un_traslado_no_se_recibe_como_una_entrega(client, acta_pendiente):
 
 
 def test_un_acta_inexistente_responde_404(client, acta_pendiente):
-    assert recibir(client, RECHAZAR, movimiento_id=99).status_code == 404
+    assert recibir(client, DEVOLVER, movimiento_id=99).status_code == 404
 
 
 def test_al_aceptar_cada_bien_toma_un_orden_nuevo_y_queda_para_revision(
@@ -375,7 +353,7 @@ def test_una_recepcion_espera_a_otra_en_curso_y_responde_409(client, acta_pendie
         otra.exec(text("SELECT id FROM bien WHERE id = 1 FOR UPDATE"))
         otra.exec(
             text(
-                "INSERT INTO recepcion (movimiento_id, resultado, motivo_rechazo, "
+                "INSERT INTO recepcion (movimiento_id, resultado, motivo, "
                 "usuario_id) VALUES (1, 'RECHAZADO', 'No llegó', 5)"
             )
         )
@@ -384,7 +362,7 @@ def test_una_recepcion_espera_a_otra_en_curso_y_responde_409(client, acta_pendie
         client.get("/api/movimientos/1", headers=con_token(5))
 
         hilo = threading.Thread(
-            target=lambda: resultado.update(respuesta=recibir(client, RECHAZAR))
+            target=lambda: resultado.update(respuesta=recibir(client, DEVOLVER))
         )
         hilo.start()
         hilo.join(timeout=2)

@@ -117,10 +117,17 @@ def recibir(client, acta_id, usuario_id, ubicacion_id):
 
 
 def rechazar(client, acta_id, usuario_id):
-    respuesta = client.post(
+    # El destino la devuelve y el origen desiste, que es como queda rechazada.
+    devuelta = client.post(
         f"/api/movimientos/{acta_id}/recepcion",
-        json={"resultado": "RECHAZADO", "motivo_rechazo": "No llegó el arma"},
+        json={"resultado": "DEVUELTO", "motivo": "No llegó el arma"},
         headers=con_token(usuario_id),
+    )
+    assert devuelta.status_code == 200
+    respuesta = client.post(
+        f"/api/movimientos/{acta_id}/desistimiento",
+        json={"motivo": "No llegó el arma"},
+        headers=con_token(4),
     )
     assert respuesta.status_code == 200
 
