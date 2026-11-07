@@ -1,3 +1,5 @@
+import type { RenglonMovimiento } from "./movimiento"
+
 export type EstadoOperativo = "EN_SERVICIO" | "FUERA_DE_SERVICIO"
 
 export type Tenencia = "DEPOSITO" | "DOTACION"
@@ -39,9 +41,37 @@ export const areaDelTipo: Record<string, string> = {
   EQUIPO_COMUNICACIONES: "Móviles y equipos de comunicaciones",
 }
 
-export const areasDe = (bienes: FilaInventario[]) => [
+export const areasDe = (bienes: Pick<FilaInventario, "tipo_bien">[]) => [
   ...new Set(bienes.map((b) => areaDelTipo[b.tipo_bien])),
 ]
+
+export const motivoParaSumar = (
+  bien: FilaInventario,
+  unidadId: number,
+  enLista: BienActa[],
+  propios: Set<number>,
+) => {
+  const bloqueo = motivoBloqueo(bien, unidadId)
+  if (bloqueo && !(bloqueo === "Tiene un movimiento pendiente" && propios.has(bien.bien_id)))
+    return bloqueo
+  const area = areasDe(enLista)[0]
+  if (area && areaDelTipo[bien.tipo_bien] !== area) return "Es de otra área"
+  return null
+}
+
+export type BienActa = Pick<
+  FilaInventario,
+  "bien_id" | "tipo_bien" | "identificacion" | "marca" | "modelo" | "ubicacion"
+>
+
+export const bienDelRenglon = (renglon: RenglonMovimiento): BienActa => ({
+  bien_id: renglon.bien_id,
+  tipo_bien: renglon.tipo_bien,
+  identificacion: renglon.identificacion,
+  marca: renglon.marca,
+  modelo: renglon.modelo,
+  ubicacion: renglon.ubicacion_origen,
+})
 
 export const motivoBloqueo = (bien: FilaInventario, unidadPropiaId?: number) => {
   if (bien.unidad_id !== unidadPropiaId) return "Es de otra unidad"

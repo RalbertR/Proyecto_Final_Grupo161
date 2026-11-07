@@ -19,6 +19,20 @@ export const obtenerMovimiento = (id: number) => http<Movimiento>(`/api/movimien
 
 export const obtenerObservados = () => http<Movimiento[]>("/api/movimientos/observados")
 
+export const obtenerDevueltas = () => http<Movimiento[]>("/api/movimientos/devueltas")
+
+export const corregirEntrega = (id: number, entrega: EntregaCreate) =>
+  http<Movimiento>(`/api/movimientos/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(entrega),
+  })
+
+export const desistirDeLaEntrega = (id: number, motivo: string) =>
+  http<Movimiento>(`/api/movimientos/${id}/desistimiento`, {
+    method: "POST",
+    body: JSON.stringify({ motivo }),
+  })
+
 export const rectificarMovimiento = (id: number, rectificacion: RectificacionCreate) =>
   http<Movimiento>(`/api/movimientos/${id}/rectificaciones`, {
     method: "POST",

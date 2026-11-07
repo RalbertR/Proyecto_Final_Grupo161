@@ -1,20 +1,27 @@
-import { tiposDeBien, type FilaInventario } from "../tipos/bien"
+import { tiposDeBien, type BienActa } from "../tipos/bien"
 import { Marca } from "./Marca"
 
 type ListaBienesEntregaProps = {
-  bienes: FilaInventario[]
+  bienes: BienActa[]
   bloqueados: Map<number, string>
+  conNovedad?: Set<number>
   onQuitar: (bienId: number) => void
 }
 
-export const ListaBienesEntrega = ({ bienes, bloqueados, onQuitar }: ListaBienesEntregaProps) => (
+export const ListaBienesEntrega = ({
+  bienes,
+  bloqueados,
+  conNovedad,
+  onQuitar,
+}: ListaBienesEntregaProps) => (
   <ul className="divide-y divide-gray-100 rounded-xs border border-gray-200">
     {bienes.map((bien) => {
       const motivo = bloqueados.get(bien.bien_id)
+      const novedad = conNovedad?.has(bien.bien_id)
       return (
         <li
           key={bien.bien_id}
-          className="flex items-center justify-between gap-3 px-3 py-1.5 text-sm"
+          className={`flex items-center justify-between gap-3 px-3 py-1.5 text-sm ${novedad ? "bg-pendiente/10" : ""}`}
         >
           <div className="flex min-w-0 flex-col items-start gap-1">
             <span className={motivo ? "text-gray-400 line-through" : ""}>
@@ -22,6 +29,7 @@ export const ListaBienesEntrega = ({ bienes, bloqueados, onQuitar }: ListaBienes
               <span className="font-mono">{bien.identificacion}</span> · {bien.marca} {bien.modelo}
               {bien.ubicacion && <span className="text-gray-500"> · {bien.ubicacion}</span>}
             </span>
+            {novedad && <Marca>Con novedad</Marca>}
             {motivo && <Marca>{motivo}</Marca>}
           </div>
           <button
