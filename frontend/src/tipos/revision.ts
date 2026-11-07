@@ -43,7 +43,7 @@ export const controlVigente = (
 ): ControlRevision => (control?.version === version ? control : { version, datos: {}, bienes: {} })
 
 export interface EventoActa {
-  accion: "Observada" | "Revisada" | "Corregida"
+  accion: "Observada" | "Revisada" | "Corregida" | "Devuelta"
   usuario: string
   fecha: string
   motivo: string | null
@@ -64,6 +64,14 @@ export const historialActa = (acta: Movimiento): EventoActa[] =>
         usuario: v.usuario,
         fecha: v.fecha,
         motivo: v.motivo,
+      })),
+    ...acta.recepciones
+      .filter((r) => r.resultado === "DEVUELTO")
+      .map((r): EventoActa => ({
+        accion: "Devuelta",
+        usuario: r.usuario,
+        fecha: r.fecha,
+        motivo: r.motivo,
       })),
   ].sort((a, b) => a.fecha.localeCompare(b.fecha))
 

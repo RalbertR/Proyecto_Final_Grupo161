@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
-import { obtenerObservados, obtenerPorRecibir } from "../api/movimientos"
+import { obtenerDevueltas, obtenerObservados, obtenerPorRecibir } from "../api/movimientos"
 import { obtenerMovimientosARevisar } from "../api/revisiones"
 import { Boton } from "../componentes/Boton"
 import { Escudo } from "../componentes/Escudo"
@@ -23,6 +23,12 @@ export const LayoutPrincipal = () => {
   const { data: porRecibir } = useQuery({
     queryKey: ["por-recibir"],
     queryFn: obtenerPorRecibir,
+    enabled: !!yo,
+    retry: false,
+  })
+  const { data: devueltas } = useQuery({
+    queryKey: ["devueltas"],
+    queryFn: obtenerDevueltas,
     enabled: !!yo,
     retry: false,
   })
@@ -80,6 +86,10 @@ export const LayoutPrincipal = () => {
           <NavLink to="/por-recibir" className={claseEnlace}>
             Por recibir
             {!!porRecibir?.length && <Marca>{porRecibir.length}</Marca>}
+          </NavLink>
+          <NavLink to="/devueltas" className={claseEnlace}>
+            Devueltas
+            {!!devueltas?.length && <Marca>{devueltas.length}</Marca>}
           </NavLink>
           {corrige && (
             <NavLink to="/observados" className={claseEnlace}>

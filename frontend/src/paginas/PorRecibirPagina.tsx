@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { obtenerPorRecibir } from "../api/movimientos"
 import { Boton } from "../componentes/Boton"
+import { Marca } from "../componentes/Marca"
 import { ModalRecepcion } from "../componentes/ModalRecepcion"
 import { areaDelTipo } from "../tipos/bien"
 import {
@@ -91,7 +92,12 @@ export const PorRecibirPagina = () => {
             <tbody>
               {actas.map((acta) => (
                 <tr key={acta.id} className="border-b border-gray-200">
-                  <td className="px-3 py-2 font-mono">{acta.numero_acta}</td>
+                  <td className="px-3 py-2">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="font-mono">{acta.numero_acta}</span>
+                      {acta.recepciones.length > 0 && <Marca tono="secundario">Reenviada</Marca>}
+                    </span>
+                  </td>
                   <td className="px-3 py-2">{acta.unidad_origen?.nombre}</td>
                   <td className="px-3 py-2 font-mono">{fechaLegible(acta.fecha_hecho)}</td>
                   <td className="px-3 py-2">

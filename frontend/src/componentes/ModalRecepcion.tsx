@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react"
 import { ErrorHttp } from "../api/http"
 import { recibirEntrega } from "../api/movimientos"
 import { obtenerUbicaciones } from "../api/unidades"
+import { tiposDeBien } from "../tipos/bien"
 import {
   fechaLegible,
   motivoInicial,
@@ -13,6 +14,7 @@ import {
   type Recepcion,
 } from "../tipos/movimiento"
 import { Boton } from "./Boton"
+import { DevolucionesActa } from "./DevolucionesActa"
 import { ResumenRecepcion } from "./ResumenRecepcion"
 import { TablaControl } from "./TablaControl"
 
@@ -82,7 +84,8 @@ export const ModalRecepcion = ({
     isError && error instanceof ErrorHttp && (error.status === 404 || error.status === 409)
   const total = acta.bienes.length
   const controlados = acta.bienes.filter((b) => control[b.bien_id]?.controlado).length
-  const conNovedad = acta.bienes.filter((b) => control[b.bien_id]?.conNovedad).length
+  const bienesConNovedad = acta.bienes.filter((b) => control[b.bien_id]?.conNovedad)
+  const conNovedad = bienesConNovedad.length
   const ubicacionesElegidas = acta.bienes.flatMap((b) => {
     const id =
       control[b.bien_id]?.ubicacionId ??
@@ -122,7 +125,11 @@ export const ModalRecepcion = ({
     e.preventDefault()
     const texto = motivo.trim()
     if (!texto) return
-    enviar({ resultado: "RECHAZADO", motivo_rechazo: texto })
+    enviar({
+      resultado: "DEVUELTO",
+      motivo: texto,
+      bienes_con_novedad: bienesConNovedad.map((b) => b.bien_id),
+    })
   }
 
   const avisoError = isError && (
@@ -151,7 +158,7 @@ export const ModalRecepcion = ({
         <div className="flex max-h-[90vh] flex-col">
           <header className="border-b border-gray-200 px-6 py-4">
             <h2 id="titulo-recepcion" className="text-lg font-semibold">
-              {recibida.estado === "APLICADO" ? "Acta recibida" : "Acta rechazada"}
+              {recibida.estado === "APLICADO" ? "Acta recibida" : "Acta devuelta al origen"}
             </h2>
           </header>
           <div className="overflow-y-auto px-6 py-4">
@@ -165,13 +172,26 @@ export const ModalRecepcion = ({
         <form onSubmit={handleConfirmarRechazo} className="flex max-h-[90vh] flex-col">
           <header className="flex items-baseline justify-between gap-4 border-b border-gray-200 px-6 py-4">
             <h2 id="titulo-recepcion" className="text-lg font-semibold">
-              Rechazar acta <span className="font-mono">{acta.numero_acta}</span>
+              Rechazar a la unidad de origen
             </h2>
             <span className="text-sm text-gray-500">A {acta.unidad_origen?.nombre}</span>
           </header>
           {avisoError}
           <div className="overflow-y-auto px-6 py-4">
-            <fieldset disabled={isPending || yaRecibida} className="min-w-0">
+            <fieldset disabled={isPending || yaRecibida} className="flex min-w-0 flex-col gap-4">
+              {conNovedad > 0 && (
+                <p className="text-sm">
+                  <span className="font-semibold">Bienes con novedad</span>
+                  {" · "}
+                  {bienesConNovedad.map((b, i) => (
+                    <span key={b.bien_id}>
+                      {i > 0 && ", "}
+                      {tiposDeBien[b.tipo_bien] ?? b.tipo_bien}{" "}
+                      <span className="font-mono">{b.identificacion}</span>
+                    </span>
+                  ))}
+                </p>
+              )}
               <label className="flex flex-col gap-2 text-sm font-semibold">
                 Motivo
                 <textarea
@@ -202,7 +222,7 @@ export const ModalRecepcion = ({
                   Volver
                 </Boton>
                 <Boton type="submit" variant="peligro" disabled={isPending || !motivo.trim()}>
-                  {isPending ? "Rechazando…" : "Confirmar rechazo"}
+                  {isPending ? "Devolviendo…" : "Confirmar"}
                 </Boton>
               </>
             )}
@@ -224,6 +244,7 @@ export const ModalRecepcion = ({
           )}
           <div className="overflow-y-auto px-6 py-4">
             <fieldset disabled={isPending || yaRecibida} className="flex min-w-0 flex-col gap-4">
+              <DevolucionesActa acta={acta} />
               <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
                 <dt className="font-semibold">Fecha del hecho</dt>
                 <dd className="font-mono">{fechaLegible(acta.fecha_hecho)}</dd>
@@ -268,7 +289,7 @@ export const ModalRecepcion = ({
                     onClick={handleRechazar}
                     disabled={isPending}
                   >
-                    Rechazar
+                    Rechazar a la unidad de origen
                   </Boton>
                   <Boton type="submit" disabled={isPending || !puedeAceptar}>
                     {isPending ? "Aceptando…" : "Aceptar"}
