@@ -116,7 +116,10 @@ RECEPCIONES = text(
 )
 
 NOVEDADES = text(
-    "SELECT bien_id FROM recepcion_novedad WHERE recepcion_id = :id ORDER BY bien_id"
+    "SELECT rn.bien_id, COALESCE(b.numero_serie, ml.patente) AS identificacion "
+    "FROM recepcion_novedad rn JOIN bien b ON b.id = rn.bien_id "
+    "LEFT JOIN movil ml ON ml.bien_id = b.id "
+    "WHERE rn.recepcion_id = :id ORDER BY rn.bien_id"
 )
 
 QUITAR_RENGLONES = text("DELETE FROM movimiento_bien WHERE movimiento_id = :id")
@@ -254,8 +257,8 @@ def listar_recepciones(session: Session, movimiento_id: int) -> list[RowMapping]
     return list(session.exec(RECEPCIONES, params={"id": movimiento_id}).mappings())
 
 
-def listar_novedades(session: Session, recepcion_id: int) -> list[int]:
-    return list(session.exec(NOVEDADES, params={"id": recepcion_id}).scalars())
+def listar_novedades(session: Session, recepcion_id: int) -> list[RowMapping]:
+    return list(session.exec(NOVEDADES, params={"id": recepcion_id}).mappings())
 
 
 def quitar_renglones(session: Session, movimiento_id: int) -> None:

@@ -85,7 +85,7 @@ Las reglas principales que sostiene el esquema son estas:
 - Mientras una entrega o un traslado está pendiente, el responsable sigue siendo el origen y el bien no admite otro movimiento.
 - Cada acta incluye bienes de una sola área: armamento y chalecos, o móviles y equipos de comunicaciones.
 - La revisión la hace el superior inmediato después del hecho. Si observa un registro indica el motivo, y la corrección la hace el autor.
-- No se borra ningún registro. Las correcciones se guardan como versiones nuevas. Las anulaciones llevan un motivo y cubren siempre el acta completa. La Regional puede anular las actas de sus Unidades Operacionales y las propias, y Dirección las de los tres niveles.
+- No se borra ningún registro. Las correcciones se guardan como versiones nuevas. La excepción son los renglones de un acta devuelta, que se reemplazan al corregirla. Las anulaciones llevan un motivo y cubren siempre el acta completa. La Regional puede anular las actas de sus Unidades Operacionales y las propias, y Dirección las de los tres niveles.
 - Solo se anula un movimiento si ninguno de sus bienes tuvo movimientos posteriores. Si los tuvo, se anulan primero esos. Al anularse un movimiento aplicado, cada bien vuelve a la unidad, el oficial y la ubicación de origen.
 - Solo se anula un cambio de estado si el bien no tuvo cambios de estado posteriores vigentes. Si los tuvo, se anulan primero esos. Los movimientos posteriores no lo impiden. Al anularse, el bien vuelve a su estado anterior.
 - Una Unidad Operacional no puede retirar un traslado que solicitó. Si hay que cancelarlo, lo anula su Regional o Dirección.

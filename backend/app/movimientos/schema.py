@@ -82,10 +82,15 @@ class VersionPublic(SQLModel):
     fecha: datetime
 
 
+class NovedadPublic(SQLModel):
+    bien_id: int
+    identificacion: str
+
+
 class RecepcionPublic(SQLModel):
     resultado: str
     motivo: str | None
-    bienes_con_novedad: list[int]
+    bienes_con_novedad: list[NovedadPublic]
     usuario: str
     fecha: datetime
 

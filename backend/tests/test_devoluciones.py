@@ -252,7 +252,9 @@ def test_el_origen_ve_el_acta_devuelta_con_el_motivo_y_las_novedades(
     assert acta["id"] == 1
     assert acta["estado"] == "DEVUELTO"
     assert acta["recepciones"][0]["motivo"] == DEVOLVER["motivo"]
-    assert acta["recepciones"][0]["bienes_con_novedad"] == [1]
+    assert acta["recepciones"][0]["bienes_con_novedad"] == [
+        {"bien_id": 1, "identificacion": "BT-1"}
+    ]
 
 
 @pytest.mark.parametrize("usuario_id", [5, 6], ids=["destino", "otra_unidad"])
@@ -527,8 +529,18 @@ def test_el_detalle_muestra_cada_devolucion(client, acta_devuelta):
         (r["resultado"], r["motivo"], r["bienes_con_novedad"], r["usuario"])
         for r in acta["recepciones"]
     ] == [
-        ("DEVUELTO", DEVOLVER["motivo"], [1], "aux.unidad_b"),
-        ("DEVUELTO", "Sigue sin coincidir", [2], "aux.unidad_b"),
+        (
+            "DEVUELTO",
+            DEVOLVER["motivo"],
+            [{"bien_id": 1, "identificacion": "BT-1"}],
+            "aux.unidad_b",
+        ),
+        (
+            "DEVUELTO",
+            "Sigue sin coincidir",
+            [{"bien_id": 2, "identificacion": "FM-1"}],
+            "aux.unidad_b",
+        ),
     ]
     assert all(r["fecha"] for r in acta["recepciones"])
 
@@ -539,7 +551,10 @@ def test_las_novedades_se_conservan_si_el_bien_sale_del_acta(client, acta_devuel
     acta = client.get("/api/movimientos/1", headers=con_token(5)).json()
 
     assert [b["bien_id"] for b in acta["bienes"]] == [2, 3]
-    assert acta["recepciones"][0]["bienes_con_novedad"] == [1]
+    # El bien 1 ya no está en el acta, pero la novedad sigue diciendo cuál era.
+    assert acta["recepciones"][0]["bienes_con_novedad"] == [
+        {"bien_id": 1, "identificacion": "BT-1"}
+    ]
 
 
 # --- Concurrencia ---

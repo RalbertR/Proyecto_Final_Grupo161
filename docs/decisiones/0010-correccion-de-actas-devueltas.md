@@ -16,5 +16,6 @@ La regla de las correcciones es que nunca se modifica el registro original (RN-0
 ## Consecuencias
 
 - Los bienes y el destino anteriores al reenvío no se conservan. Quedan las devoluciones, con su motivo y sus novedades, que dicen qué no coincidía.
+- Un bien que sale del acta deja de mostrarla en su historial. Su novedad sigue en la devolución, con su identificación, para que se pueda saber cuál era.
 - Si se cambia el destino, la unidad anterior deja de ver el acta.
 - Una fecha del hecho corregida se valida contra hoy, como en la entrega.

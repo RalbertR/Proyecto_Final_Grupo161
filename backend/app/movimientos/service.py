@@ -19,6 +19,7 @@ from .schema import (
     DesistimientoCreate,
     EntregaCreate,
     MovimientoPublic,
+    NovedadPublic,
     RecepcionAceptada,
     RecepcionDevuelta,
     RecepcionPublic,
@@ -139,8 +140,9 @@ def recibir_entrega(
     movimiento_id: int,
     recepcion: RecepcionAceptada | RecepcionDevuelta,
 ) -> MovimientoPublic:
-    # Se bloquean antes de leer el acta: otra recepción espera acá y, con
-    # READ COMMITTED, al seguir ve el acta recibida (ADR 0001).
+    # Se bloquean el acta y sus bienes antes de leerla: otra recepción espera acá
+    # y, con READ COMMITTED, al seguir ve el acta recibida (ADR 0001).
+    bloquear_movimiento(session, movimiento_id)
     bienes = repository.bloquear_bienes_del_movimiento(session, movimiento_id)
     cabecera = repository.buscar_cabecera(session, movimiento_id)
     if cabecera is None:
@@ -226,6 +228,9 @@ def corregir_entrega(
     movimiento_id: int,
     entrega: EntregaCreate,
 ) -> MovimientoPublic:
+    # Se bloquea el acta antes que sus bienes, como recibir y desistir: así dos
+    # operaciones sobre la misma acta no se cruzan en un deadlock (ADR 0001).
+    bloquear_movimiento(session, movimiento_id)
     ids = set(entrega.bienes)
     actuales = {
         renglon["bien_id"]
@@ -233,8 +238,7 @@ def corregir_entrega(
     }
     # Se bloquean los que entran y los que salen antes de leer el estado: otra
     # operación sobre el acta espera acá y, con READ COMMITTED, al seguir ve el
-    # acta reenviada o rechazada (ADR 0001). Los renglones solo cambian al salir
-    # de devuelta, así que los leídos antes siguen valiendo si el estado se confirma.
+    # acta reenviada o rechazada (ADR 0001).
     bloqueados = repository.bloquear_bienes(session, sorted(ids | actuales))
     validar_acta_devuelta(
         session, usuario, movimiento_id, "Solo la unidad de origen corrige el acta"
@@ -265,8 +269,10 @@ def desistir_de_la_entrega(
     movimiento_id: int,
     desistimiento: DesistimientoCreate,
 ) -> MovimientoPublic:
-    # Se bloquean antes de leer el estado: otra operación sobre el acta espera acá
-    # y, con READ COMMITTED, al seguir ve el acta reenviada (ADR 0001).
+    # Se bloquean el acta y sus bienes antes de leer el estado: otra operación
+    # sobre el acta espera acá y, con READ COMMITTED, al seguir ve el acta
+    # reenviada (ADR 0001).
+    bloquear_movimiento(session, movimiento_id)
     repository.bloquear_bienes_del_movimiento(session, movimiento_id)
     validar_acta_devuelta(
         session, usuario, movimiento_id, "Solo la unidad de origen desiste del acta"
@@ -352,9 +358,10 @@ def detalle(session: Session, cabecera: RowMapping) -> MovimientoPublic:
         recepciones=[
             RecepcionPublic(
                 **recepcion,
-                bienes_con_novedad=repository.listar_novedades(
-                    session, recepcion["id"]
-                ),
+                bienes_con_novedad=[
+                    NovedadPublic.model_validate(novedad)
+                    for novedad in repository.listar_novedades(session, recepcion["id"])
+                ],
             )
             for recepcion in repository.listar_recepciones(session, cabecera["id"])
         ],
