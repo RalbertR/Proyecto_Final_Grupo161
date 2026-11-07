@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlmodel import SQLModel
 
+from app.oficiales.schema import OficialPublic
 from app.organizacion.schema import UnidadPublic
 from app.revision.schema import RevisionPublic
 
@@ -12,8 +13,7 @@ Motivo = Annotated[
 ]
 
 
-class EntregaCreate(BaseModel):
-    unidad_destino_id: int
+class ActaCreate(BaseModel):
     numero_acta: str = Field(pattern=r"^[0-9]{4}/[0-9]{4}$")
     fecha_hecho: date
     descripcion: str | None = Field(default=None, max_length=500)
@@ -25,6 +25,14 @@ class EntregaCreate(BaseModel):
         if fecha_hecho > date.today():
             raise ValueError("La fecha del hecho no puede ser posterior a hoy")
         return fecha_hecho
+
+
+class EntregaCreate(ActaCreate):
+    unidad_destino_id: int
+
+
+class DotacionCreate(ActaCreate):
+    oficial_id: int
 
 
 class UbicacionDestino(BaseModel):
@@ -105,6 +113,8 @@ class MovimientoPublic(SQLModel):
     descripcion: str | None
     unidad_origen: UnidadPublic | None
     unidad_destino: UnidadPublic | None
+    oficial_origen: OficialPublic | None
+    oficial_destino: OficialPublic | None
     usuario: str
     fecha_carga: datetime
     bienes: list[RenglonPublic]

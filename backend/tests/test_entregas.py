@@ -63,6 +63,8 @@ ACTA_REGISTRADA = {
         "nombre": "Unidad Operacional B",
         "nivel": "OPERACIONAL",
     },
+    "oficial_origen": None,
+    "oficial_destino": None,
     "usuario": "aux.unidad_a",
     "bienes": [
         {
