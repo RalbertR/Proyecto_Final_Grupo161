@@ -32,9 +32,19 @@ INSERTAR_DOTACION = text(
     ":unidad_id, :oficial_id)"
 )
 
+INSERTAR_DEVOLUCION = text(
+    "INSERT INTO movimiento (tipo, estado, estado_revision, numero_acta, "
+    "fecha_hecho, descripcion, usuario_id, unidad_registrante_id, "
+    "unidad_origen_id, unidad_destino_id, oficial_origen_id) "
+    "VALUES ('ENTREGA', 'APLICADO', :estado_revision, :numero_acta, "
+    ":fecha_hecho, :descripcion, :usuario_id, :unidad_id, :unidad_id, "
+    ":unidad_id, :oficial_id)"
+)
+
 INSERTAR_RENGLON = text(
-    "INSERT INTO movimiento_bien (movimiento_id, bien_id, ubicacion_origen_id) "
-    "VALUES (:movimiento_id, :bien_id, :ubicacion_id)"
+    "INSERT INTO movimiento_bien (movimiento_id, bien_id, ubicacion_origen_id, "
+    "ubicacion_destino_id) "
+    "VALUES (:movimiento_id, :bien_id, :ubicacion_id, :ubicacion_destino_id)"
 )
 
 CABECERA = text(
@@ -120,6 +130,12 @@ ASIGNAR_BIENES = text(
     "WHERE mb.movimiento_id = :id"
 )
 
+DEVOLVER_BIENES = text(
+    "UPDATE bien b JOIN movimiento_bien mb ON mb.bien_id = b.id "
+    "SET b.oficial_id = NULL, b.ubicacion_id = mb.ubicacion_destino_id "
+    "WHERE mb.movimiento_id = :id"
+)
+
 INSERTAR_RECEPCION = text(
     "INSERT INTO recepcion (movimiento_id, resultado, motivo, usuario_id) "
     "VALUES (:movimiento_id, :resultado, :motivo, :usuario_id)"
@@ -194,8 +210,16 @@ def insertar_dotacion(session: Session, **valores) -> int:
     return session.exec(INSERTAR_DOTACION, params=valores).lastrowid
 
 
+def insertar_devolucion(session: Session, **valores) -> int:
+    return session.exec(INSERTAR_DEVOLUCION, params=valores).lastrowid
+
+
 def insertar_renglon(
-    session: Session, movimiento_id: int, bien_id: int, ubicacion_id: int
+    session: Session,
+    movimiento_id: int,
+    bien_id: int,
+    ubicacion_id: int | None,
+    ubicacion_destino_id: int | None = None,
 ) -> None:
     session.exec(
         INSERTAR_RENGLON,
@@ -203,6 +227,7 @@ def insertar_renglon(
             "movimiento_id": movimiento_id,
             "bien_id": bien_id,
             "ubicacion_id": ubicacion_id,
+            "ubicacion_destino_id": ubicacion_destino_id,
         },
     )
 
@@ -270,6 +295,10 @@ def mover_bienes(session: Session, movimiento_id: int) -> None:
 
 def asignar_bienes(session: Session, movimiento_id: int) -> None:
     session.exec(ASIGNAR_BIENES, params={"id": movimiento_id})
+
+
+def devolver_bienes(session: Session, movimiento_id: int) -> None:
+    session.exec(DEVOLVER_BIENES, params={"id": movimiento_id})
 
 
 def insertar_recepcion(session: Session, **valores) -> int:

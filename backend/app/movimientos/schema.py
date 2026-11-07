@@ -13,11 +13,10 @@ Motivo = Annotated[
 ]
 
 
-class ActaCreate(BaseModel):
+class DatosActa(BaseModel):
     numero_acta: str = Field(pattern=r"^[0-9]{4}/[0-9]{4}$")
     fecha_hecho: date
     descripcion: str | None = Field(default=None, max_length=500)
-    bienes: list[int] = Field(min_length=1)
 
     @field_validator("fecha_hecho")
     @classmethod
@@ -25,6 +24,10 @@ class ActaCreate(BaseModel):
         if fecha_hecho > date.today():
             raise ValueError("La fecha del hecho no puede ser posterior a hoy")
         return fecha_hecho
+
+
+class ActaCreate(DatosActa):
+    bienes: list[int] = Field(min_length=1)
 
 
 class EntregaCreate(ActaCreate):
@@ -38,6 +41,11 @@ class DotacionCreate(ActaCreate):
 class UbicacionDestino(BaseModel):
     bien_id: int
     ubicacion_id: int
+
+
+class DevolucionCreate(DatosActa):
+    oficial_id: int
+    ubicaciones: list[UbicacionDestino] = Field(min_length=1)
 
 
 class RecepcionAceptada(BaseModel):
