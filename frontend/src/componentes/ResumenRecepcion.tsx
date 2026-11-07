@@ -11,7 +11,7 @@ export const ResumenRecepcion = ({ movimiento }: { movimiento: Movimiento }) => 
       >
         {aceptada
           ? "Los bienes ya están en el inventario de la unidad."
-          : "Los bienes siguen en la unidad de origen."}
+          : `Los bienes siguen en ${movimiento.unidad_origen?.nombre} hasta que la corrija.`}
       </p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
         <dt className="font-semibold">Acta</dt>

@@ -50,8 +50,25 @@ export interface Movimiento {
   version_vigente: number
   versiones: VersionMovimiento[]
   revisiones: Revision[]
+  recepciones: RecepcionActa[]
   motivo_rechazo: string | null
 }
+
+export interface Novedad {
+  bien_id: number
+  identificacion: string
+}
+
+export interface RecepcionActa {
+  resultado: string
+  motivo: string | null
+  bienes_con_novedad: Novedad[]
+  usuario: string
+  fecha: string
+}
+
+export const devoluciones = (acta: Movimiento): RecepcionActa[] =>
+  acta.recepciones.filter((r) => r.resultado === "DEVUELTO").reverse()
 
 export interface VersionMovimiento {
   version: number
@@ -81,7 +98,7 @@ export const ultimaObservacion = (acta: Movimiento): Revision | undefined =>
 
 export type Recepcion =
   | { resultado: "ACEPTADO"; ubicaciones: { bien_id: number; ubicacion_id: number }[] }
-  | { resultado: "RECHAZADO"; motivo_rechazo: string }
+  | { resultado: "DEVUELTO"; motivo: string; bienes_con_novedad: number[] }
 
 export interface ControlBien {
   controlado: boolean

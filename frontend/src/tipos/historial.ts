@@ -43,6 +43,7 @@ const marcaPorEstado: Record<string, MarcaEvento> = {
   PENDIENTE: { texto: "Pendiente de recepción", tono: "pendiente" },
   RECHAZADO: { texto: "Rechazado", tono: "error" },
   ANULADO: { texto: "Anulado", tono: "error" },
+  DEVUELTO: { texto: "Devuelta al origen", tono: "pendiente" },
 }
 
 const marcaPorRevision: Record<string, MarcaEvento> = {
