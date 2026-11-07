@@ -45,6 +45,20 @@ export const areasDe = (bienes: Pick<FilaInventario, "tipo_bien">[]) => [
   ...new Set(bienes.map((b) => areaDelTipo[b.tipo_bien])),
 ]
 
+export const motivoParaSumar = (
+  bien: FilaInventario,
+  unidadId: number,
+  enLista: BienActa[],
+  propios: Set<number>,
+) => {
+  const bloqueo = motivoBloqueo(bien, unidadId)
+  if (bloqueo && !(bloqueo === "Tiene un movimiento pendiente" && propios.has(bien.bien_id)))
+    return bloqueo
+  const area = areasDe(enLista)[0]
+  if (area && areaDelTipo[bien.tipo_bien] !== area) return "Es de otra área"
+  return null
+}
+
 export type BienActa = Pick<
   FilaInventario,
   "bien_id" | "tipo_bien" | "identificacion" | "marca" | "modelo" | "ubicacion"

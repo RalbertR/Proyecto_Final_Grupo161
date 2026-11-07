@@ -5,6 +5,7 @@ import { corregirEntrega, desistirDeLaEntrega } from "../api/movimientos"
 import { bienDelRenglon, type BienActa } from "../tipos/bien"
 import { devoluciones, hoy, type EntregaCreate, type Movimiento } from "../tipos/movimiento"
 import { Boton } from "./Boton"
+import { BuscadorBienes } from "./BuscadorBienes"
 import { DevolucionesActa } from "./DevolucionesActa"
 import { ListaBienesEntrega } from "./ListaBienesEntrega"
 import { ResumenEntrega } from "./ResumenEntrega"
@@ -36,6 +37,8 @@ export const ModalCorreccion = ({ acta, onCerrar, onTerminada }: ModalCorreccion
   const [desistiendo, setDesistiendo] = useState(false)
   const [motivo, setMotivo] = useState("")
   const conNovedad = new Set(devoluciones(acta)[0]?.bienes_con_novedad.map((n) => n.bien_id))
+  const propios = new Set(acta.bienes.map((b) => b.bien_id))
+  const unidadOrigenId = acta.unidad_origen?.id
 
   const alResolver = {
     onSuccess: () => {
@@ -227,6 +230,14 @@ export const ModalCorreccion = ({ acta, onCerrar, onTerminada }: ModalCorreccion
                   <p className="text-sm text-gray-600">El acta tiene que tener al menos un bien.</p>
                 )}
               </div>
+              {unidadOrigenId !== undefined && (
+                <BuscadorBienes
+                  unidadId={unidadOrigenId}
+                  enLista={bienes}
+                  propios={propios}
+                  onSumar={(bien) => setBienes((actuales) => [...actuales, bien])}
+                />
+              )}
               <div className={claseCampo}>
                 Unidad de destino
                 <span className="font-normal">{acta.unidad_destino?.nombre}</span>
