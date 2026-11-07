@@ -307,13 +307,14 @@ def test_una_revision_de_una_version_que_no_existe_es_rechazada(session, organiz
         revisar(session, 1, movimiento_id=1)
 
 
-def rectificar_cambio_de_estado(session, cambio_estado_id, version):
+def rectificar_cambio_de_estado(session, cambio_estado_id, version, documento_id=None):
     session.exec(
         text(
             "INSERT INTO rectificacion_cambio_estado (cambio_estado_id, version, "
-            "observaciones, motivo, usuario_id) VALUES (:c, :v, "
-            "'Reparada y probada en el polígono', 'Se completa la observación', 1)"
-        ).bindparams(c=cambio_estado_id, v=version)
+            "observaciones, documento_id, motivo, usuario_id) VALUES (:c, :v, "
+            "'Reparada y probada en el polígono', :documento, "
+            "'Se completa la observación', 1)"
+        ).bindparams(c=cambio_estado_id, v=version, documento=documento_id)
     )
 
 
@@ -447,3 +448,321 @@ def test_la_bandeja_muestra_la_version_vigente(session, organizacion):
     rectificar(session, 1, 1)
 
     assert session.exec(version_en_la_bandeja).scalar_one() == 1
+
+
+def insertar_oficial(session, id, unidad_id):
+    session.exec(
+        text(
+            "INSERT INTO oficial (id, legajo, apellido, nombre, unidad_id) "
+            "VALUES (:id, :legajo, 'Gómez', 'Laura', :unidad_id)"
+        ).bindparams(id=id, legajo=f"5012{id}", unidad_id=unidad_id)
+    )
+
+
+def asignar(session, bien_id, oficial_id):
+    session.exec(
+        text(
+            "UPDATE bien SET oficial_id = :oficial_id, ubicacion_id = NULL "
+            "WHERE id = :bien_id"
+        ).bindparams(oficial_id=oficial_id, bien_id=bien_id)
+    )
+
+
+def registrar_dotacion(session, movimiento_id, oficial_id):
+    session.exec(
+        text(
+            "INSERT INTO movimiento (id, tipo, estado, estado_revision, numero_acta, "
+            "fecha_hecho, usuario_id, unidad_registrante_id, unidad_origen_id, "
+            "unidad_destino_id, oficial_destino_id) VALUES (:id, 'ENTREGA', "
+            "'APLICADO', 'PENDIENTE', '0002/2026', CURDATE(), 1, 4, 4, 4, :oficial)"
+        ).bindparams(id=movimiento_id, oficial=oficial_id)
+    )
+
+
+def registrar_movimiento_de_traslado(session, id, oficial_id, origen, destino, bienes):
+    session.exec(
+        text(
+            "INSERT INTO movimiento (id, tipo, estado, estado_revision, numero_acta, "
+            "fecha_hecho, usuario_id, unidad_registrante_id, unidad_origen_id, "
+            "oficial_origen_id, unidad_destino_id, oficial_destino_id) VALUES (:id, "
+            "'TRASLADO', 'APLICADO', 'PENDIENTE', '0003/2026', CURDATE(), 1, :origen, "
+            ":origen, :oficial, :destino, :oficial)"
+        ).bindparams(id=id, origen=origen, oficial=oficial_id, destino=destino)
+    )
+    insertar_renglones(session, id, bienes)
+
+
+def trasladar(session, id, oficial_id, origen, destino, estado="CONFIRMADO", bienes=()):
+    if bienes:
+        registrar_movimiento_de_traslado(
+            session, id, oficial_id, origen, destino, bienes
+        )
+    session.exec(
+        text(
+            "INSERT INTO traslado_oficial (id, oficial_id, unidad_origen_id, "
+            "unidad_destino_id, movimiento_id, estado, usuario_solicitante_id, "
+            "usuario_resolucion_id, fecha_resolucion) VALUES (:id, :oficial, "
+            ":origen, :destino, :movimiento, :estado, 1, "
+            "IF(:estado = 'PENDIENTE', NULL, 1), "
+            "IF(:estado = 'PENDIENTE', NULL, NOW()))"
+        ).bindparams(
+            id=id,
+            oficial=oficial_id,
+            origen=origen,
+            destino=destino,
+            movimiento=id if bienes else None,
+            estado=estado,
+        )
+    )
+
+
+def cambiar_unidad(session, oficial_id, unidad_id):
+    session.exec(
+        text("UPDATE oficial SET unidad_id = :unidad WHERE id = :id").bindparams(
+            unidad=unidad_id, id=oficial_id
+        )
+    )
+
+
+@pytest.fixture
+def oficial_de_a(session, organizacion):
+    insertar_oficial(session, 1, 4)
+
+
+def test_un_oficial_sin_bienes_ni_movimientos_cambia_de_unidad(session, oficial_de_a):
+    cambiar_unidad(session, 1, 5)
+
+    unidad = session.exec(text("SELECT unidad_id FROM oficial WHERE id = 1"))
+    assert unidad.scalar_one() == 5
+
+
+def test_un_oficial_con_bienes_no_cambia_de_unidad_sin_traslado(session, oficial_de_a):
+    asignar(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_oficial_con_movimientos_no_cambia_de_unidad_sin_traslado(
+    session, oficial_de_a
+):
+    registrar_dotacion(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_traslado_pendiente_no_habilita_el_cambio_de_unidad(session, oficial_de_a):
+    asignar(session, 1, 1)
+    trasladar(session, 1, 1, 4, 5, estado="PENDIENTE")
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_traslado_confirmado_cambia_la_unidad_y_mueve_sus_bienes(
+    session, oficial_de_a
+):
+    asignar(session, 1, 1)
+    trasladar(session, 1, 1, 4, 5, bienes=[1])
+
+    cambiar_unidad(session, 1, 5)
+
+    unidad = session.exec(text("SELECT unidad_id FROM bien WHERE id = 1"))
+    assert unidad.scalar_one() == 5
+
+
+def test_un_traslado_viejo_no_habilita_un_cambio_directo(session, oficial_de_a):
+    asignar(session, 1, 1)
+    trasladar(session, 1, 1, 4, 5, bienes=[1])
+    cambiar_unidad(session, 1, 5)
+    trasladar(session, 2, 1, 5, 4, bienes=[1])
+    cambiar_unidad(session, 1, 4)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_oficial_trasladado_no_vuelve_con_un_cambio_directo(session, oficial_de_a):
+    trasladar(session, 1, 1, 4, 5)
+    cambiar_unidad(session, 1, 5)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 4)
+
+
+def test_un_oficial_sin_dotaciones_cambia_por_un_traslado_sin_movimiento(
+    session, oficial_de_a
+):
+    trasladar(session, 1, 1, 4, 5)
+
+    cambiar_unidad(session, 1, 5)
+
+    unidad = session.exec(text("SELECT unidad_id FROM oficial WHERE id = 1"))
+    assert unidad.scalar_one() == 5
+
+
+def test_un_traslado_sin_movimiento_no_mueve_dotaciones(session, oficial_de_a):
+    trasladar(session, 1, 1, 4, 5)
+    asignar(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_un_traslado_no_mueve_un_bien_que_no_esta_en_su_movimiento(
+    session, oficial_de_a
+):
+    asignar(session, 1, 1)
+    trasladar(session, 1, 1, 4, 5, bienes=[1])
+    asignar(session, 2, 1)
+
+    with pytest.raises(OperationalError, match="traslado confirmado"):
+        cambiar_unidad(session, 1, 5)
+
+
+def test_cambiar_otro_dato_de_un_oficial_con_bienes_se_acepta(session, oficial_de_a):
+    asignar(session, 1, 1)
+
+    session.exec(text("UPDATE oficial SET activo = FALSE WHERE id = 1"))
+
+    activo = session.exec(text("SELECT activo FROM oficial WHERE id = 1"))
+    assert activo.scalar_one() == 0
+
+
+def cargar_informe(session, id):
+    session.exec(
+        text(
+            "INSERT INTO documento (id, nombre_original, tipo_mime, tamano_bytes, "
+            "hash_sha256, ruta_almacenamiento, usuario_id) VALUES (:id, 'informe.pdf', "
+            "'application/pdf', 1024, SHA2(:id, 256), 'informes/x.pdf', 1)"
+        ).bindparams(id=id)
+    )
+
+
+def registrar_salida_de_servicio(session, cambio_id, bien_id, documento_id):
+    session.exec(
+        text(
+            "INSERT INTO cambio_estado_operativo (id, bien_id, estado_anterior, "
+            "estado_nuevo, observaciones, documento_id, estado_revision, usuario_id, "
+            "unidad_registrante_id) VALUES (:id, :bien_id, 'EN_SERVICIO', "
+            "'FUERA_DE_SERVICIO', 'Falla en el percutor', :documento, 'PENDIENTE', "
+            "1, 4)"
+        ).bindparams(id=cambio_id, bien_id=bien_id, documento=documento_id)
+    )
+
+
+def test_rectificar_una_salida_de_servicio_sin_informe_es_rechazado(
+    session, organizacion
+):
+    cargar_informe(session, 1)
+    registrar_salida_de_servicio(session, 1, 1, 1)
+
+    with pytest.raises(OperationalError, match="informe tecnico"):
+        rectificar_cambio_de_estado(session, 1, 1)
+
+
+def test_rectificar_una_salida_de_servicio_con_otro_informe_se_acepta(
+    session, organizacion
+):
+    cargar_informe(session, 1)
+    cargar_informe(session, 2)
+    registrar_salida_de_servicio(session, 1, 1, 1)
+
+    rectificar_cambio_de_estado(session, 1, 1, documento_id=2)
+
+    vigente = session.exec(
+        text("SELECT documento_id FROM v_cambio_estado_vigente WHERE id = 1")
+    )
+    assert vigente.scalar_one() == 2
+
+
+def test_rectificar_una_vuelta_a_servicio_sin_informe_se_acepta(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    rectificar_cambio_de_estado(session, 1, 1)
+
+    vigente = session.exec(
+        text("SELECT version_vigente FROM v_cambio_estado_vigente WHERE id = 1")
+    )
+    assert vigente.scalar_one() == 1
+
+
+def anular_cambio_de_estado(session, cambio_id):
+    session.exec(
+        text(
+            "UPDATE cambio_estado_operativo SET estado = 'ANULADO', "
+            "anulado_por_id = 1, fecha_anulacion = NOW(), "
+            "motivo_anulacion = 'Se cargó sobre el bien equivocado' WHERE id = :id"
+        ).bindparams(id=cambio_id)
+    )
+
+
+def test_anular_un_cambio_de_estado_conserva_el_registro(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    anular_cambio_de_estado(session, 1)
+
+    cambio = session.exec(
+        text(
+            "SELECT estado, observaciones, anulado_por_id, motivo_anulacion "
+            "FROM cambio_estado_operativo WHERE id = 1"
+        )
+    ).one()
+    assert tuple(cambio) == (
+        "ANULADO",
+        "Reparada por el armero",
+        1,
+        "Se cargó sobre el bien equivocado",
+    )
+
+
+def test_anular_un_cambio_de_estado_sin_motivo_es_rechazado(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="ck_cambio_anulacion"):
+        session.exec(
+            text(
+                "UPDATE cambio_estado_operativo SET estado = 'ANULADO', "
+                "anulado_por_id = 1, fecha_anulacion = NOW() WHERE id = 1"
+            )
+        )
+
+
+def test_un_cambio_aplicado_con_datos_de_anulacion_es_rechazado(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    with pytest.raises(OperationalError, match="ck_cambio_anulacion"):
+        session.exec(
+            text(
+                "UPDATE cambio_estado_operativo "
+                "SET motivo_anulacion = 'Sin anular' WHERE id = 1"
+            )
+        )
+
+
+def test_un_cambio_de_estado_anulado_sale_de_la_bandeja(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+    en_la_bandeja = text(
+        "SELECT COUNT(*) FROM v_bandeja_revision "
+        "WHERE registro = 'CAMBIO_ESTADO' AND registro_id = 1"
+    )
+    assert session.exec(en_la_bandeja).scalar_one() == 1
+
+    anular_cambio_de_estado(session, 1)
+
+    assert session.exec(en_la_bandeja).scalar_one() == 0
+
+
+def test_un_cambio_de_estado_anulado_sigue_en_el_historial(session, organizacion):
+    registrar_cambio_de_estado(session, 1, 1)
+
+    anular_cambio_de_estado(session, 1)
+
+    estado = session.exec(
+        text(
+            "SELECT estado FROM v_historial_bien "
+            "WHERE registro = 'CAMBIO_ESTADO' AND registro_id = 1"
+        )
+    )
+    assert estado.scalar_one() == "ANULADO"
