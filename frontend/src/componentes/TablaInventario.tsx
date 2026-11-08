@@ -11,7 +11,7 @@ import { useMemo, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { obtenerInventario } from "../api/inventario"
 import {
-  motivoBloqueo,
+  motivoSinTilde,
   nombreEstadoOperativo,
   tiposDeBien,
   type FilaInventario,
@@ -112,7 +112,7 @@ export const TablaInventario = ({
         header: () => <span className="sr-only">Elegir</span>,
         enableSorting: false,
         cell: ({ row: { original: bien } }) => {
-          const motivo = motivoBloqueo(bien, unidadPropiaId)
+          const motivo = motivoSinTilde(bien, unidadPropiaId)
           return (
             <label title={motivo ?? undefined} className="inline-flex size-6 items-center">
               <input

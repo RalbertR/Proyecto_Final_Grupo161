@@ -166,3 +166,8 @@ export const motivoInicial = (bienes: RenglonMovimiento[], control: ControlActa)
     .join(", ")
   return `Con novedad: ${lista}. `.slice(0, 500)
 }
+
+export const textoRevision: Record<string, string> = {
+  PENDIENTE: "Pendiente de la unidad superior",
+  NO_APLICA: "No corresponde",
+}

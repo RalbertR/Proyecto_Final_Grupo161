@@ -1,4 +1,10 @@
-import type { EntregaCreate, Movimiento, Recepcion, RectificacionCreate } from "../tipos/movimiento"
+import type {
+  DevolucionCreate,
+  EntregaCreate,
+  Movimiento,
+  Recepcion,
+  RectificacionCreate,
+} from "../tipos/movimiento"
 import { http } from "./http"
 
 export const registrarEntrega = (entrega: EntregaCreate) =>
@@ -37,4 +43,10 @@ export const rectificarMovimiento = (id: number, rectificacion: RectificacionCre
   http<Movimiento>(`/api/movimientos/${id}/rectificaciones`, {
     method: "POST",
     body: JSON.stringify(rectificacion),
+  })
+
+export const registrarDevolucion = (devolucion: DevolucionCreate) =>
+  http<Movimiento>("/api/movimientos/devoluciones", {
+    method: "POST",
+    body: JSON.stringify(devolucion),
   })

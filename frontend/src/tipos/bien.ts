@@ -80,3 +80,20 @@ export const motivoBloqueo = (bien: FilaInventario, unidadPropiaId?: number) => 
   if (bien.con_movimiento_pendiente) return "Tiene un movimiento pendiente"
   return null
 }
+
+export const motivoSinTilde = (bien: FilaInventario, unidadPropiaId?: number) => {
+  if (bien.unidad_id !== unidadPropiaId) return "Es de otra unidad"
+  if (bien.con_movimiento_pendiente) return "Tiene un movimiento pendiente"
+  return null
+}
+
+export const oficialesDe = (bienes: Pick<FilaInventario, "oficial_id">[]) => [
+  ...new Set(bienes.flatMap((b) => (b.oficial_id === null ? [] : [b.oficial_id]))),
+]
+
+export const motivoParaDevolver = (fresca: FilaInventario | undefined, oficialId: number) => {
+  if (!fresca) return "Ya no está en el inventario"
+  if (fresca.con_movimiento_pendiente) return "Tiene un movimiento pendiente"
+  if (fresca.oficial_id !== oficialId) return "Ya no está asignado a ese oficial"
+  return null
+}
