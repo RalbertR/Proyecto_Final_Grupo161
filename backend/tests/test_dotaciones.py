@@ -356,3 +356,30 @@ def test_lista_los_oficiales_activos_de_la_unidad(client, unidad_con_oficiales):
 
 def test_los_oficiales_se_piden_con_sesion(client, unidad_con_oficiales):
     assert client.get("/api/oficiales").status_code == 401
+
+
+def test_un_oficial_que_ya_tiene_un_bien_de_ese_tipo_responde_409(
+    client, unidad_con_oficiales
+):
+    respuesta = dotar(client, oficial_id=2, bienes=[1])
+
+    assert respuesta.status_code == 409
+    assert respuesta.json() == {
+        "detail": "El oficial ya tiene asignado un bien de ese tipo"
+    }
+    assert cantidad_de_actas() == 0
+
+
+def test_un_oficial_con_un_arma_recibe_un_chaleco(client, unidad_con_oficiales):
+    respuesta = dotar(client, oficial_id=2, bienes=[2])
+
+    assert respuesta.status_code == 201
+    assert tenencia(2)["oficial_id"] == 2
+
+
+def test_dos_bienes_del_mismo_tipo_responden_422(client, unidad_con_oficiales):
+    respuesta = dotar(client, bienes=[1, 6])
+
+    assert respuesta.status_code == 422
+    assert respuesta.json() == {"detail": "Un oficial recibe un solo bien de cada tipo"}
+    assert cantidad_de_actas() == 0

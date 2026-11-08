@@ -123,7 +123,7 @@ def registrar_entrega(
 
 
 def validar_oficial(session: Session, unidad_id: int, oficial_id: int) -> None:
-    oficial = oficiales.buscar(session, oficial_id)
+    oficial = oficiales.bloquear(session, oficial_id)
     if oficial is None or oficial["unidad_id"] != unidad_id or not oficial["activo"]:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -146,11 +146,22 @@ def registrar_dotacion(
             status_code=status.HTTP_409_CONFLICT,
             detail="Uno de los bienes está fuera de servicio",
         )
+    tipos = {bien.tipo_bien for bien in bienes}
+    if len(tipos) < len(bienes):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Un oficial recibe un solo bien de cada tipo",
+        )
     # RN-10: un oficial con un traslado pendiente no recibe dotaciones.
     if oficiales.tiene_traslado_pendiente(session, dotacion.oficial_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="El oficial tiene un traslado pendiente",
+        )
+    if oficiales.tipos_asignados(session, dotacion.oficial_id) & tipos:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El oficial ya tiene asignado un bien de ese tipo",
         )
     # RN-11: se aplica en el acto, sin recepción. Los renglones se insertan con el
     # acta ya aplicada, así trg_mb_orden les da su número de orden (ADR 0006).
