@@ -250,6 +250,29 @@ def test_el_detalle_del_acta_trae_el_oficial_destino(client, unidad_con_oficiale
     assert respuesta.json()["oficial_destino"] == GOMEZ
 
 
+def test_la_bandeja_trae_el_oficial_de_la_dotacion(client, unidad_con_oficiales):
+    acta_id = dotar(client).json()["id"]
+
+    bandeja = client.get("/api/revisiones/bandeja", headers=con_token(2)).json()
+
+    [fila] = [
+        f
+        for f in bandeja
+        if f["registro"] == "MOVIMIENTO" and f["registro_id"] == acta_id
+    ]
+    assert fila["oficial_origen"] is None
+    assert fila["oficial_destino"] == GOMEZ
+
+
+def test_el_historial_distingue_la_dotacion(client, unidad_con_oficiales):
+    acta_id = dotar(client).json()["id"]
+
+    historial = client.get("/api/bienes/1/historial", headers=con_token(4)).json()
+
+    [evento] = [e for e in historial["eventos"] if e["registro_id"] == acta_id]
+    assert (evento["oficial_origen_id"], evento["oficial_destino_id"]) == (None, 1)
+
+
 def test_un_bien_fuera_de_servicio_responde_409(client, unidad_con_oficiales):
     respuesta = dotar(client, bienes=[1, 5])
 
