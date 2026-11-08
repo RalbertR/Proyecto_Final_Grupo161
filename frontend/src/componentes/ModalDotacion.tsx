@@ -24,7 +24,6 @@ const claseControl =
 const claseEnlace =
   "text-sm font-semibold text-marca underline hover:text-marca-hover focus-visible:outline-3 focus-visible:outline-foco disabled:cursor-not-allowed disabled:opacity-50"
 const sinOficiales: Oficial[] = []
-const sinInventario: FilaInventario[] = []
 
 type ModalDotacionProps = {
   abierto: boolean
@@ -55,13 +54,13 @@ export const ModalDotacion = ({
   const [datos, setDatos] = useState(datosIniciales)
   const [elegido, setElegido] = useState<Oficial | null>(null)
   const [texto, setTexto] = useState("")
-  const { data: oficiales = sinOficiales, isError: sinListaDeOficiales } = useQuery({
+  const { data: oficiales, isError: sinListaDeOficiales } = useQuery({
     queryKey: ["oficiales"],
     queryFn: obtenerOficiales,
     enabled: abierto,
     retry: false,
   })
-  const { data: inventario = sinInventario } = useQuery({
+  const { data: inventario, isError: sinInventario } = useQuery({
     queryKey: ["inventario", unidadId],
     queryFn: () => obtenerInventario(unidadId),
     enabled: abierto,
@@ -102,7 +101,8 @@ export const ModalDotacion = ({
 
   const enviables = bienes.filter((b) => !bloqueados.has(b.bien_id))
   const tipos = [...new Set(enviables.map((b) => b.tipo_bien))]
-  const cumplen = oficialesQueCumplen(oficiales, inventario, tipos)
+  const listo = oficiales !== undefined && inventario !== undefined
+  const cumplen = listo ? oficialesQueCumplen(oficiales, inventario, tipos) : sinOficiales
   const oficial = cumplen.find((o) => o.id === elegido?.id) ?? null
   const coincidencias = texto.trim()
     ? cumplen.filter((o) => coincideOficial(o, texto)).slice(0, 8)
@@ -187,7 +187,7 @@ export const ModalDotacion = ({
               {error.message}
             </div>
           )}
-          {sinListaDeOficiales && (
+          {(sinListaDeOficiales || sinInventario) && (
             <div
               role="alert"
               className="mx-6 mt-4 shrink-0 rounded-xs border border-error bg-error/5 px-4 py-3 text-sm font-medium text-error"
@@ -238,11 +238,12 @@ export const ModalDotacion = ({
                       className={claseControl}
                     />
                     <span className="text-xs font-normal text-gray-500">
-                      Legajo o apellido. Solo aparecen los que no tienen {textoTipos(tipos)}{" "}
-                      asignado.
+                      Legajo o apellido. Solo aparecen los que no tienen en dotación{" "}
+                      {textoTipos(tipos)}.
                     </span>
                   </label>
                   {texto.trim() &&
+                    listo &&
                     (coincidencias.length ? (
                       <ul className="divide-y divide-gray-100 rounded-xs border border-gray-200">
                         {coincidencias.map((o) => (
@@ -266,7 +267,7 @@ export const ModalDotacion = ({
                       </ul>
                     ) : (
                       <p className="text-sm text-gray-500">
-                        Ningún oficial activo sin {textoTipos(tipos)} asignado
+                        Ningún oficial activo sin {textoTipos(tipos)} en dotación
                       </p>
                     ))}
                 </div>
