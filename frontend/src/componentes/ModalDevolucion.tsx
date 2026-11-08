@@ -40,7 +40,6 @@ export const ModalDevolucion = ({
   const queryClient = useQueryClient()
   const [datos, setDatos] = useState(datosIniciales)
   const [elegidas, setElegidas] = useState<Record<number, number>>({})
-  const [todas, setTodas] = useState("")
   const { data: ubicaciones, isError: sinUbicaciones } = useQuery({
     queryKey: ["ubicaciones"],
     queryFn: obtenerUbicaciones,
@@ -84,6 +83,8 @@ export const ModalDevolucion = ({
   const ubicacionDe = (bien: FilaInventario) =>
     elegidas[bien.bien_id] ?? ubicacionPorDefecto(bien.tipo_bien, ubicaciones ?? [])
   const faltaUbicacion = enviables.some((b) => ubicacionDe(b) === undefined)
+  const comunes = new Set(enviables.map(ubicacionDe))
+  const todas = comunes.size === 1 ? String([...comunes][0] ?? "") : ""
 
   const cambiar =
     (campo: keyof Datos) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -98,7 +99,6 @@ export const ModalDevolucion = ({
     })
 
   const elegirTodas = (valor: string) => {
-    setTodas(valor)
     if (!valor) return
     setElegidas((actual) => ({
       ...actual,
@@ -127,7 +127,6 @@ export const ModalDevolucion = ({
   const empezarDeNuevo = () => {
     setDatos(datosIniciales())
     setElegidas({})
-    setTodas("")
     reset()
   }
 
