@@ -23,6 +23,9 @@ services:
     environment:
       DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/logistica_policial?charset=utf8mb4
       CLAVE_JWT: ${CLAVE_JWT}
+      DIRECTORIO_DOCUMENTOS: /app/archivos_privados/documentos
+    volumes:
+      - documentos_privados:/app/archivos_privados/documentos
     depends_on:
       mysql:
         condition: service_healthy
@@ -51,3 +54,4 @@ services:
 
 volumes:
   mysql_datos:
+  documentos_privados:
