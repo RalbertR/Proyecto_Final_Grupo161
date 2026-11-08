@@ -16,6 +16,7 @@ class BienInventarioPublic(SQLModel):
     estado_operativo: EstadoOperativo
     tenencia: Tenencia
     ubicacion: str | None
+    oficial_id: int | None
     oficial_legajo: str | None
     oficial: str | None
     con_movimiento_pendiente: bool
@@ -50,6 +51,8 @@ class EventoHistorialPublic(SQLModel):
     unidad_duena: str | None
     estado_operativo_nuevo: EstadoOperativo | None
     detalle: str | None
+    oficial_origen_id: int | None
+    oficial_destino_id: int | None
 
 
 class HistorialBienPublic(SQLModel):

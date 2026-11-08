@@ -5,7 +5,7 @@ BANDEJA = text(
     "SELECT b.registro, b.registro_id, b.evento, b.fecha, "
     "un.nombre AS unidad_registrante, us.nombre_usuario AS usuario, b.detalle, "
     "b.version_vigente AS version, m.numero_acta, uo.nombre AS unidad_origen, "
-    "ud.nombre AS unidad_destino "
+    "ud.nombre AS unidad_destino, m.oficial_origen_id, m.oficial_destino_id "
     "FROM v_bandeja_revision b "
     "JOIN unidad un ON un.id = b.unidad_registrante_id "
     "JOIN usuario us ON us.id = b.usuario_id "

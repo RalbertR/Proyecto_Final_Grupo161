@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session
 
 from app.acceso.schema import UsuarioPublic
+from app.oficiales.service import oficial_publico
 from app.organizacion.model import Unidad
 
 from . import repository
@@ -17,7 +18,13 @@ def listar_bandeja(
     session: Session, usuario: UsuarioPublic
 ) -> list[RegistroBandejaPublic]:
     return [
-        RegistroBandejaPublic.model_validate(fila)
+        RegistroBandejaPublic.model_validate(
+            dict(fila)
+            | {
+                "oficial_origen": oficial_publico(session, fila["oficial_origen_id"]),
+                "oficial_destino": oficial_publico(session, fila["oficial_destino_id"]),
+            }
+        )
         for fila in repository.listar_bandeja(session, usuario.unidad.id)
     ]
 

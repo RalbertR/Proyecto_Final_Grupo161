@@ -38,6 +38,7 @@ EN_DEPOSITO = {
     "estado_operativo": "EN_SERVICIO",
     "tenencia": "DEPOSITO",
     "ubicacion": "Sala de Armas",
+    "oficial_id": None,
     "oficial_legajo": None,
     "oficial": None,
     "con_movimiento_pendiente": False,
@@ -58,6 +59,7 @@ EN_DOTACION = EN_DEPOSITO | {
     "estado_operativo": "FUERA_DE_SERVICIO",
     "tenencia": "DOTACION",
     "ubicacion": None,
+    "oficial_id": 1,
     "oficial_legajo": "10001",
     "oficial": "Gómez, Laura",
 }

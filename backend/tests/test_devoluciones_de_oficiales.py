@@ -405,3 +405,26 @@ def test_la_devolucion_se_pide_con_sesion(client, oficiales_con_bienes):
     respuesta = client.post("/api/movimientos/devoluciones", json=DEVOLUCION)
 
     assert respuesta.status_code == 401
+
+
+def test_la_bandeja_trae_el_oficial_de_la_devolucion(client, oficiales_con_bienes):
+    acta_id = devolver(client).json()["id"]
+
+    bandeja = client.get("/api/revisiones/bandeja", headers=con_token(2)).json()
+
+    [fila] = [
+        f
+        for f in bandeja
+        if f["registro"] == "MOVIMIENTO" and f["registro_id"] == acta_id
+    ]
+    assert fila["oficial_origen"] == GOMEZ
+    assert fila["oficial_destino"] is None
+
+
+def test_el_historial_distingue_la_devolucion(client, oficiales_con_bienes):
+    acta_id = devolver(client).json()["id"]
+
+    historial = client.get("/api/bienes/1/historial", headers=con_token(4)).json()
+
+    [evento] = [e for e in historial["eventos"] if e["registro_id"] == acta_id]
+    assert (evento["oficial_origen_id"], evento["oficial_destino_id"]) == (1, None)

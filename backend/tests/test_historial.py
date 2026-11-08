@@ -165,6 +165,8 @@ def test_el_historial_trae_los_movimientos_en_el_orden_en_que_se_aplicaron(
                 "unidad_duena": "Unidad Operacional B",
                 "estado_operativo_nuevo": None,
                 "detalle": DESCRIPCION,
+                "oficial_origen_id": None,
+                "oficial_destino_id": None,
             },
             {
                 "registro": "MOVIMIENTO",
@@ -180,6 +182,8 @@ def test_el_historial_trae_los_movimientos_en_el_orden_en_que_se_aplicaron(
                 "unidad_duena": "Unidad Operacional A",
                 "estado_operativo_nuevo": None,
                 "detalle": DESCRIPCION,
+                "oficial_origen_id": None,
+                "oficial_destino_id": None,
             },
         ],
     }

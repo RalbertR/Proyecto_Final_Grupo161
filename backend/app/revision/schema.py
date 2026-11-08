@@ -4,6 +4,8 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, StringConstraints
 from sqlmodel import SQLModel
 
+from app.oficiales.schema import OficialPublic
+
 
 class RegistroBandejaPublic(SQLModel):
     registro: str
@@ -17,6 +19,8 @@ class RegistroBandejaPublic(SQLModel):
     numero_acta: str | None
     unidad_origen: str | None
     unidad_destino: str | None
+    oficial_origen: OficialPublic | None
+    oficial_destino: OficialPublic | None
 
 
 class RevisionRevisado(BaseModel):
