@@ -1,4 +1,4 @@
-import type { RenglonMovimiento } from "./movimiento"
+import type { Oficial, RenglonMovimiento } from "./movimiento"
 
 export type EstadoOperativo = "EN_SERVICIO" | "FUERA_DE_SERVICIO"
 
@@ -96,4 +96,37 @@ export const motivoParaDevolver = (fresca: FilaInventario | undefined, oficialId
   if (fresca.con_movimiento_pendiente) return "Tiene un movimiento pendiente"
   if (fresca.oficial_id !== oficialId) return "Ya no está asignado a ese oficial"
   return null
+}
+
+export const tiposRepetidos = (bienes: Pick<FilaInventario, "tipo_bien">[]) =>
+  new Set(bienes.map((b) => b.tipo_bien)).size < bienes.length
+
+const articuloDelTipo: Record<string, string> = {
+  ARMAMENTO: "un arma",
+  CHALECO: "un chaleco",
+  EQUIPO_COMUNICACIONES: "un equipo de comunicaciones",
+  MOVIL: "un móvil",
+}
+
+export const textoTipos = (tipos: string[]) =>
+  tipos.map((t) => articuloDelTipo[t] ?? t).join(" ni ")
+
+const sinTildes = (texto: string) => texto.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
+
+export const coincideOficial = (oficial: Oficial, texto: string) => {
+  const buscado = sinTildes(texto.trim())
+  return oficial.legajo.startsWith(buscado) || sinTildes(oficial.nombre).includes(buscado)
+}
+
+export const oficialesQueCumplen = (
+  oficiales: Oficial[],
+  inventario: FilaInventario[],
+  tipos: string[],
+) => {
+  const ocupados = new Set(
+    inventario.flatMap((b) =>
+      b.oficial_id !== null && tipos.includes(b.tipo_bien) ? [b.oficial_id] : [],
+    ),
+  )
+  return oficiales.filter((o) => !ocupados.has(o.id))
 }

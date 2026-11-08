@@ -2,12 +2,22 @@ import type { ReactNode } from "react"
 import { areasDe, oficialesDe, type FilaInventario } from "../tipos/bien"
 import { Boton } from "./Boton"
 
+export type AvisoBarra = "areas" | "oficiales" | "fueraDeServicio" | "mismoTipo"
+
+const textoAviso: Record<AvisoBarra, string> = {
+  areas:
+    "Un acta incluye bienes de una sola área: armamento y chalecos, o móviles y equipos de comunicaciones.",
+  oficiales: "Una devolución es de un solo oficial. Dejá tildados solo los bienes de uno.",
+  fueraDeServicio: "Un bien fuera de servicio no se asigna en dotación. Destildalo para seguir.",
+  mismoTipo: "Un oficial recibe un solo bien de cada tipo. Dejá tildado uno de cada tipo.",
+}
+
 type BarraSeleccionProps = {
   seleccion: FilaInventario[]
-  avisoArea: boolean
-  avisoOficial: boolean
+  aviso: AvisoBarra | null
   onLimpiar: () => void
   onNuevaEntrega: () => void
+  onAsignarAOficial: () => void
   onRegistrarDevolucion: () => void
 }
 
@@ -22,10 +32,10 @@ const Aviso = ({ children }: { children: ReactNode }) => (
 
 export const BarraSeleccion = ({
   seleccion,
-  avisoArea,
-  avisoOficial,
+  aviso,
   onLimpiar,
   onNuevaEntrega,
+  onAsignarAOficial,
   onRegistrarDevolucion,
 }: BarraSeleccionProps) => {
   if (seleccion.length === 0) return null
@@ -42,15 +52,7 @@ export const BarraSeleccion = ({
           Una entrega es de bienes en depósito y una devolución de bienes asignados a un oficial.
         </Aviso>
       )}
-      {avisoOficial && (
-        <Aviso>Una devolución es de un solo oficial. Dejá tildados solo los bienes de uno.</Aviso>
-      )}
-      {avisoArea && (
-        <Aviso>
-          Un acta incluye bienes de una sola área: armamento y chalecos, o móviles y equipos de
-          comunicaciones.
-        </Aviso>
-      )}
+      {aviso && <Aviso>{textoAviso[aviso]}</Aviso>}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xs bg-marca px-4 py-3 text-sm text-gray-50 shadow-lg">
         <span>
           <span className="font-semibold">
@@ -69,18 +71,24 @@ export const BarraSeleccion = ({
             </span>
           )}
         </span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Boton variant="contorno" onClick={onLimpiar} className="px-3 py-1.5">
             Limpiar
           </Boton>
-          {!mezclado && (
-            <Boton
-              variant="claro"
-              onClick={devolucion ? onRegistrarDevolucion : onNuevaEntrega}
-              className="px-3 py-1.5"
-            >
-              {devolucion ? "Registrar devolución" : "Nueva entrega"}
+          {devolucion && (
+            <Boton variant="claro" onClick={onRegistrarDevolucion} className="px-3 py-1.5">
+              Registrar devolución
             </Boton>
+          )}
+          {enDotacion === 0 && (
+            <>
+              <Boton variant="claro" onClick={onNuevaEntrega} className="px-3 py-1.5">
+                Nueva entrega
+              </Boton>
+              <Boton variant="claro" onClick={onAsignarAOficial} className="px-3 py-1.5">
+                Asignar a oficial
+              </Boton>
+            </>
           )}
         </div>
       </div>
