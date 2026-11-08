@@ -1,5 +1,6 @@
 import type {
   DevolucionCreate,
+  DotacionCreate,
   EntregaCreate,
   Movimiento,
   Recepcion,
@@ -49,4 +50,10 @@ export const registrarDevolucion = (devolucion: DevolucionCreate) =>
   http<Movimiento>("/api/movimientos/devoluciones", {
     method: "POST",
     body: JSON.stringify(devolucion),
+  })
+
+export const registrarDotacion = (dotacion: DotacionCreate) =>
+  http<Movimiento>("/api/movimientos/dotaciones", {
+    method: "POST",
+    body: JSON.stringify(dotacion),
   })

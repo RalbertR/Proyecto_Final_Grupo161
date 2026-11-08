@@ -221,7 +221,7 @@ def test_cada_bien_toma_un_orden_nuevo_y_el_acta_queda_para_la_revision_de_la_re
     with engine.begin() as conexion:
         conexion.execute(
             text(
-                "UPDATE bien SET oficial_id = NULL, ubicacion_id = 1 WHERE id IN (1, 2)"
+                "UPDATE bien SET oficial_id = NULL, ubicacion_id = 1 WHERE id IN (1, 2, 6)"
             )
         )
     dotacion = client.post(

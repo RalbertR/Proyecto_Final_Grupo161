@@ -4,8 +4,9 @@ import { useSearchParams } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerInventario } from "../api/inventario"
 import { obtenerUnidades } from "../api/unidades"
-import { BarraSeleccion } from "../componentes/BarraSeleccion"
+import { BarraSeleccion, type AvisoBarra } from "../componentes/BarraSeleccion"
 import { ModalDevolucion } from "../componentes/ModalDevolucion"
+import { ModalDotacion } from "../componentes/ModalDotacion"
 import { ModalEntrega } from "../componentes/ModalEntrega"
 import { TablaInventario } from "../componentes/TablaInventario"
 import {
@@ -14,6 +15,7 @@ import {
   motivoParaDevolver,
   oficialesDe,
   tiposDeBien,
+  tiposRepetidos,
   type FilaInventario,
 } from "../tipos/bien"
 
@@ -40,10 +42,10 @@ export const InventarioPagina = () => {
   const handleElegirUnidad = (e: ChangeEvent<HTMLSelectElement>) => filtrar(tipos, e.target.value)
 
   const [seleccion, setSeleccion] = useState<FilaInventario[]>([])
-  const [avisoArea, setAvisoArea] = useState(false)
-  const [avisoOficial, setAvisoOficial] = useState(false)
+  const [aviso, setAviso] = useState<AvisoBarra | null>(null)
   const [modalAbierto, setModalAbierto] = useState(false)
   const [devolucionAbierta, setDevolucionAbierta] = useState(false)
+  const [dotacionAbierta, setDotacionAbierta] = useState(false)
   const [bloqueados, setBloqueados] = useState(sinBloqueados)
   const queryClient = useQueryClient()
 
@@ -53,24 +55,30 @@ export const InventarioPagina = () => {
         ? actual.filter((b) => b.bien_id !== bien.bien_id)
         : [...actual, bien],
     )
-    setAvisoArea(false)
-    setAvisoOficial(false)
+    setAviso(null)
   }, [])
 
   const handleLimpiar = () => {
     setSeleccion([])
-    setAvisoArea(false)
-    setAvisoOficial(false)
+    setAviso(null)
   }
 
   const handleNuevaEntrega = () => {
-    if (areasDe(seleccion).length > 1) setAvisoArea(true)
+    if (areasDe(seleccion).length > 1) setAviso("areas")
     else setModalAbierto(true)
   }
 
+  const handleAsignarAOficial = () => {
+    if (areasDe(seleccion).length > 1) setAviso("areas")
+    else if (seleccion.some((b) => b.estado_operativo === "FUERA_DE_SERVICIO"))
+      setAviso("fueraDeServicio")
+    else if (tiposRepetidos(seleccion)) setAviso("mismoTipo")
+    else setDotacionAbierta(true)
+  }
+
   const handleRegistrarDevolucion = () => {
-    if (oficialesDe(seleccion).length > 1) setAvisoOficial(true)
-    else if (areasDe(seleccion).length > 1) setAvisoArea(true)
+    if (oficialesDe(seleccion).length > 1) setAviso("oficiales")
+    else if (areasDe(seleccion).length > 1) setAviso("areas")
     else setDevolucionAbierta(true)
   }
 
@@ -80,6 +88,7 @@ export const InventarioPagina = () => {
   const handleCerrarModal = () => {
     setModalAbierto(false)
     setDevolucionAbierta(false)
+    setDotacionAbierta(false)
     setSeleccion((actual) => actual.filter((b) => !bloqueados.has(b.bien_id)))
     setBloqueados(sinBloqueados)
   }
@@ -87,6 +96,7 @@ export const InventarioPagina = () => {
   const handleRegistrada = () => {
     setModalAbierto(false)
     setDevolucionAbierta(false)
+    setDotacionAbierta(false)
     setSeleccion([])
     setBloqueados(sinBloqueados)
   }
@@ -174,15 +184,28 @@ export const InventarioPagina = () => {
       />
       <BarraSeleccion
         seleccion={seleccion}
-        avisoArea={avisoArea}
-        avisoOficial={avisoOficial}
+        aviso={aviso}
         onLimpiar={handleLimpiar}
         onNuevaEntrega={handleNuevaEntrega}
+        onAsignarAOficial={handleAsignarAOficial}
         onRegistrarDevolucion={handleRegistrarDevolucion}
       />
       {yo && (
         <ModalEntrega
           abierto={modalAbierto}
+          unidadOrigen={yo.unidad.nombre}
+          bienes={seleccion}
+          bloqueados={bloqueados}
+          onQuitar={handleQuitar}
+          onCerrar={handleCerrarModal}
+          onRegistrada={handleRegistrada}
+          onError={handleErrorEntrega}
+        />
+      )}
+      {yo && (
+        <ModalDotacion
+          abierto={dotacionAbierta}
+          unidadId={yo.unidad.id}
           unidadOrigen={yo.unidad.nombre}
           bienes={seleccion}
           bloqueados={bloqueados}

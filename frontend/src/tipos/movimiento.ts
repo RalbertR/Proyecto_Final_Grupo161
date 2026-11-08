@@ -17,6 +17,14 @@ export interface DevolucionCreate {
   ubicaciones: { bien_id: number; ubicacion_id: number }[]
 }
 
+export interface DotacionCreate {
+  oficial_id: number
+  numero_acta: string
+  fecha_hecho: string
+  descripcion: string | null
+  bienes: number[]
+}
+
 export interface Oficial {
   id: number
   legajo: string
