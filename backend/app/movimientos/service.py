@@ -20,6 +20,7 @@ from . import repository
 from .schema import (
     ActaCreate,
     DesistimientoCreate,
+    DevolucionCreate,
     DotacionCreate,
     EntregaCreate,
     MovimientoPublic,
@@ -60,14 +61,7 @@ def validar_entrega(
     validar_bienes(session, unidad_id, entrega, bienes, excluir)
 
 
-def validar_bienes(
-    session: Session,
-    unidad_id: int,
-    acta: ActaCreate,
-    bienes: list[Row],
-    excluir: int = 0,
-) -> None:
-    ids = sorted(set(acta.bienes))
+def validar_unidad_y_area(unidad_id: int, ids: list[int], bienes: list[Row]) -> None:
     if len(bienes) < len(ids) or any(bien.unidad_id != unidad_id for bien in bienes):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -79,6 +73,17 @@ def validar_bienes(
             detail="Un acta incluye bienes de una sola área: armamento y chalecos, "
             "o móviles y equipos de comunicaciones",
         )
+
+
+def validar_bienes(
+    session: Session,
+    unidad_id: int,
+    acta: ActaCreate,
+    bienes: list[Row],
+    excluir: int = 0,
+) -> None:
+    ids = sorted(set(acta.bienes))
+    validar_unidad_y_area(unidad_id, ids, bienes)
     if any(bien.de_baja or bien.oficial_id is not None for bien in bienes):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -164,6 +169,57 @@ def registrar_dotacion(
     for bien in bienes:
         repository.insertar_renglon(session, movimiento_id, bien.id, bien.ubicacion_id)
     repository.asignar_bienes(session, movimiento_id)
+    session.commit()
+    return detalle(session, repository.buscar_cabecera(session, movimiento_id))
+
+
+def registrar_devolucion(
+    session: Session, usuario: UsuarioPublic, devolucion: DevolucionCreate
+) -> MovimientoPublic:
+    unidad_id = usuario.unidad.id
+    destinos = {u.bien_id: u.ubicacion_id for u in devolucion.ubicaciones}
+    ids = sorted(destinos)
+    # Se bloquean antes de validar: otra operación sobre los mismos bienes espera
+    # acá y, con READ COMMITTED, al seguir ve su resultado (ADR 0001).
+    bienes = repository.bloquear_bienes(session, ids)
+    validar_unidad_y_area(unidad_id, ids, bienes)
+    propias = {ubicacion.id for ubicacion in listar_ubicaciones(session, unidad_id)}
+    if len(destinos) != len(devolucion.ubicaciones) or not (
+        set(destinos.values()) <= propias
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Indique una ubicación de su unidad para cada bien, sin repetirlos",
+        )
+    if any(bien.oficial_id != devolucion.oficial_id for bien in bienes):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Uno de los bienes no está asignado a ese oficial",
+        )
+    if repository.alguno_con_movimiento_pendiente(session, ids):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Uno de los bienes ya tiene un movimiento pendiente",
+        )
+    # RN-11: se aplica en el acto, sin recepción. Los renglones se insertan con el
+    # acta ya aplicada, así trg_mb_orden les da su número de orden (ADR 0006).
+    movimiento_id = repository.insertar_devolucion(
+        session,
+        estado_revision=(
+            "NO_APLICA" if usuario.unidad.nivel == Nivel.DIRECCION else "PENDIENTE"
+        ),
+        numero_acta=devolucion.numero_acta,
+        fecha_hecho=devolucion.fecha_hecho,
+        descripcion=devolucion.descripcion,
+        usuario_id=usuario.id,
+        unidad_id=unidad_id,
+        oficial_id=devolucion.oficial_id,
+    )
+    for bien in bienes:
+        repository.insertar_renglon(
+            session, movimiento_id, bien.id, None, destinos[bien.id]
+        )
+    repository.devolver_bienes(session, movimiento_id)
     session.commit()
     return detalle(session, repository.buscar_cabecera(session, movimiento_id))
 
