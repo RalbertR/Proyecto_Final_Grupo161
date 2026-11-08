@@ -1,5 +1,5 @@
 import { tiposDeBien } from "./bien"
-import type { Movimiento } from "./movimiento"
+import type { Movimiento, Oficial } from "./movimiento"
 
 export interface RegistroBandeja {
   registro: string
@@ -13,6 +13,8 @@ export interface RegistroBandeja {
   numero_acta: string | null
   unidad_origen: string | null
   unidad_destino: string | null
+  oficial_origen: Oficial | null
+  oficial_destino: Oficial | null
 }
 
 export const nombreEvento: Record<string, string> = {
@@ -22,6 +24,47 @@ export const nombreEvento: Record<string, string> = {
   TRASLADO: "Traslado",
   BAJA: "Baja",
 }
+
+export const textoOficial = (oficial: Oficial) => `${oficial.legajo} · ${oficial.nombre}`
+
+export const nombreMovimiento = (
+  tipo: string,
+  conOficialOrigen: boolean,
+  conOficialDestino: boolean,
+) => {
+  if (tipo === "ENTREGA" && conOficialOrigen) return "Devolución"
+  if (tipo === "ENTREGA" && conOficialDestino) return "Dotación"
+  return nombreEvento[tipo] ?? tipo
+}
+
+export const extremosActa = (
+  tipo: string,
+  unidadOrigen: string | null | undefined,
+  unidadDestino: string | null | undefined,
+  oficialOrigen: Oficial | null,
+  oficialDestino: Oficial | null,
+) => {
+  if (tipo === "ENTREGA" && oficialOrigen)
+    return { origen: textoOficial(oficialOrigen), destino: unidadDestino ?? null }
+  if (tipo === "ENTREGA" && oficialDestino)
+    return { origen: unidadOrigen ?? null, destino: textoOficial(oficialDestino) }
+  return { origen: unidadOrigen ?? null, destino: unidadDestino ?? null }
+}
+
+export const conOficial = (acta: Movimiento) =>
+  acta.tipo === "ENTREGA" && (acta.oficial_origen !== null || acta.oficial_destino !== null)
+
+export const nombreDelActa = (acta: Movimiento) =>
+  nombreMovimiento(acta.tipo, acta.oficial_origen !== null, acta.oficial_destino !== null)
+
+export const extremosDelActa = (acta: Movimiento) =>
+  extremosActa(
+    acta.tipo,
+    acta.unidad_origen?.nombre,
+    acta.unidad_destino?.nombre,
+    acta.oficial_origen,
+    acta.oficial_destino,
+  )
 
 export type RevisionCreate =
   | { resultado: "REVISADO"; version: number }
@@ -82,9 +125,12 @@ export const nombreDato: Record<DatoActa, string> = {
   unidades: "unidades",
 }
 
+export const nombreDatoDe = (acta: Movimiento, dato: DatoActa) =>
+  dato === "unidades" && conOficial(acta) ? "oficial y unidad" : nombreDato[dato]
+
 export const motivoObservacion = (acta: Movimiento, control: ControlRevision) => {
   const sinTildar = [
-    ...datosActa.filter((dato) => !control.datos[dato]).map((dato) => nombreDato[dato]),
+    ...datosActa.filter((dato) => !control.datos[dato]).map((dato) => nombreDatoDe(acta, dato)),
     ...acta.bienes
       .filter((bien) => !control.bienes[bien.bien_id])
       .map((bien) => `${tiposDeBien[bien.tipo_bien] ?? bien.tipo_bien} ${bien.identificacion}`),

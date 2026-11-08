@@ -1,6 +1,6 @@
 import { marcaEvento, type EventoHistorial } from "../tipos/historial"
 import { fechaLegible } from "../tipos/movimiento"
-import { nombreEvento } from "../tipos/revision"
+import { nombreMovimiento } from "../tipos/revision"
 import { Marca } from "./Marca"
 
 const columnas = ["Fecha", "Movimiento", "Acta", "Origen", "Destino", "Unidad dueña", "Estado"]
@@ -34,7 +34,11 @@ export const TablaMovimientosBien = ({ eventos, onAbrirActa }: TablaMovimientosB
                   {fechaLegible(evento.fecha)}
                 </td>
                 <td className="px-3 py-2 align-top">
-                  {nombreEvento[evento.evento] ?? evento.evento}
+                  {nombreMovimiento(
+                    evento.evento,
+                    evento.oficial_origen_id !== null,
+                    evento.oficial_destino_id !== null,
+                  )}
                 </td>
                 <td className="px-3 py-2 align-top whitespace-nowrap">
                   {evento.numero_acta ? (

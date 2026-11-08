@@ -9,6 +9,20 @@ export interface EntregaCreate {
   bienes: number[]
 }
 
+export interface DevolucionCreate {
+  oficial_id: number
+  numero_acta: string
+  fecha_hecho: string
+  descripcion: string | null
+  ubicaciones: { bien_id: number; ubicacion_id: number }[]
+}
+
+export interface Oficial {
+  id: number
+  legajo: string
+  nombre: string
+}
+
 export interface RectificacionCreate {
   fecha_hecho: string
   numero_acta: string
@@ -44,6 +58,8 @@ export interface Movimiento {
   descripcion: string | null
   unidad_origen: Unidad | null
   unidad_destino: Unidad | null
+  oficial_origen: Oficial | null
+  oficial_destino: Oficial | null
   usuario: string
   fecha_carga: string
   bienes: RenglonMovimiento[]

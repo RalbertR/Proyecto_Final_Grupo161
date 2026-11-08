@@ -21,6 +21,7 @@ export interface FilaInventario {
   estado_operativo: EstadoOperativo
   tenencia: Tenencia
   ubicacion: string | null
+  oficial_id: number | null
   oficial_legajo: string | null
   oficial: string | null
   con_movimiento_pendiente: boolean
