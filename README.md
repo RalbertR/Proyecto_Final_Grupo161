@@ -99,6 +99,12 @@ pre-commit install
 
 Para revisar todo el repositorio sin hacer un commit: `pre-commit run --all-files`.
 
+## Actas escaneadas
+
+La API permite adjuntar PDFs a un movimiento ya registrado y descargarlos con los mismos permisos de consulta del acta. Solo la unidad que registró el movimiento puede adjuntar. El contrato y los errores están en [HU-13: documentos de las actas](docs/contratos/documentos.md).
+
+En desarrollo, los PDFs se guardan en `backend/archivos_privados/documentos`, una carpeta ignorada por Git. Para usar otra carpeta privada, definir `DIRECTORIO_DOCUMENTOS` en el `.env`. En producción se guardan en el volumen `documentos_privados`, montado solo en el backend; el contenedor corre como `nobody` y puede escribir allí. Ese volumen conserva los archivos al recrear el backend y se debe respaldar junto con MySQL.
+
 ## Datos de prueba
 
 El script `database/semillas/cargar_datos_prueba.py` carga una organización ficticia para desarrollar y para la demo. Tiene la Dirección Logística, la Unidad Regional Norte con las Operacionales A y B, y la Unidad Regional Sur con la Operacional C. Cada unidad tiene sus ubicaciones, sus oficiales y bienes de los cuatro tipos en depósito y en dotación, 252 en total. En la Operacional A hay un arma dada de baja y una entrega de dos armas a B pendiente de recepción.
