@@ -45,6 +45,8 @@ EN_LA_BANDEJA = {
     "numero_acta": "0001/2026",
     "unidad_origen": "Unidad Operacional A",
     "unidad_destino": "Unidad Operacional B",
+    "oficial_origen": None,
+    "oficial_destino": None,
 }
 
 REVISAR = {"resultado": "REVISADO", "version": 0}

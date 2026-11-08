@@ -30,6 +30,8 @@ export interface EventoHistorial {
   unidad_duena: string | null
   estado_operativo_nuevo: EstadoOperativo | null
   detalle: string | null
+  oficial_origen_id: number | null
+  oficial_destino_id: number | null
 }
 
 export interface HistorialBien {

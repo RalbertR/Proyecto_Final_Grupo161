@@ -17,7 +17,7 @@ import {
   type Movimiento,
   type RectificacionCreate,
 } from "../tipos/movimiento"
-import { historialActa, nombreEvento } from "../tipos/revision"
+import { extremosDelActa, historialActa, nombreDelActa } from "../tipos/revision"
 import { BienesActa } from "./BienesActa"
 import { Boton } from "./Boton"
 import { HistorialActa } from "./HistorialActa"
@@ -91,9 +91,8 @@ export const ModalRectificacion = ({ acta, onCerrar }: ModalRectificacionProps) 
 
   const terminada = !!corregida || !!fallo?.terminal
   const observacion = ultimaObservacion(acta)
-  const origen = acta.unidad_origen?.nombre
-  const destino = acta.unidad_destino?.nombre
-  const movimiento = `${nombreEvento[acta.tipo] ?? acta.tipo} de ${origen}${destino ? ` a ${destino}` : ""}`
+  const { origen, destino } = extremosDelActa(acta)
+  const movimiento = `${nombreDelActa(acta)} de ${origen}${destino ? ` a ${destino}` : ""}`
   const cambioNumero = datos.numeroActa !== (acta.numero_acta ?? "")
   const cambioFecha = datos.fechaHecho !== acta.fecha_hecho
   const cambioDescripcion = datos.descripcion.trim() !== (acta.descripcion ?? "").trim()

@@ -7,7 +7,7 @@ import { Boton } from "../componentes/Boton"
 import { Marca } from "../componentes/Marca"
 import { ModalRevision } from "../componentes/ModalRevision"
 import { fechaLegible } from "../tipos/movimiento"
-import { nombreEvento, type ControlRevision } from "../tipos/revision"
+import { extremosActa, nombreMovimiento, type ControlRevision } from "../tipos/revision"
 
 const columnas = ["Acta", "Movimiento", "Origen", "Destino", "Fecha del hecho", "Cargó"]
 
@@ -89,30 +89,43 @@ export const RevisionPagina = () => {
               </tr>
             </thead>
             <tbody>
-              {registros.map((registro) => (
-                <tr key={registro.registro_id} className="border-b border-gray-200">
-                  <td className="px-3 py-2 font-mono">{registro.numero_acta}</td>
-                  <td className="px-3 py-2">
-                    <span className="inline-flex items-center gap-2">
-                      {nombreEvento[registro.evento] ?? registro.evento}
-                      {registro.version > 0 && <Marca tono="secundario">Corregida</Marca>}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">{registro.unidad_origen}</td>
-                  <td className="px-3 py-2">{registro.unidad_destino}</td>
-                  <td className="px-3 py-2 font-mono">{fechaLegible(registro.fecha)}</td>
-                  <td className="px-3 py-2 font-mono">{registro.usuario}</td>
-                  <td className="px-3 py-2 text-right">
-                    <Boton
-                      variant="contorno"
-                      onClick={() => setAbierto(registro.registro_id)}
-                      className="px-3 py-1.5 text-sm"
-                    >
-                      Revisar
-                    </Boton>
-                  </td>
-                </tr>
-              ))}
+              {registros.map((registro) => {
+                const { origen, destino } = extremosActa(
+                  registro.evento,
+                  registro.unidad_origen,
+                  registro.unidad_destino,
+                  registro.oficial_origen,
+                  registro.oficial_destino,
+                )
+                return (
+                  <tr key={registro.registro_id} className="border-b border-gray-200">
+                    <td className="px-3 py-2 font-mono">{registro.numero_acta}</td>
+                    <td className="px-3 py-2">
+                      <span className="inline-flex items-center gap-2">
+                        {nombreMovimiento(
+                          registro.evento,
+                          registro.oficial_origen !== null,
+                          registro.oficial_destino !== null,
+                        )}
+                        {registro.version > 0 && <Marca tono="secundario">Corregida</Marca>}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">{origen}</td>
+                    <td className="px-3 py-2">{destino}</td>
+                    <td className="px-3 py-2 font-mono">{fechaLegible(registro.fecha)}</td>
+                    <td className="px-3 py-2 font-mono">{registro.usuario}</td>
+                    <td className="px-3 py-2 text-right">
+                      <Boton
+                        variant="contorno"
+                        onClick={() => setAbierto(registro.registro_id)}
+                        className="px-3 py-1.5 text-sm"
+                      >
+                        Revisar
+                      </Boton>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

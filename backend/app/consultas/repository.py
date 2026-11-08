@@ -2,10 +2,11 @@ from sqlalchemy import RowMapping, bindparam
 from sqlmodel import Session, text
 
 INVENTARIO = text(
-    "SELECT * FROM v_inventario_unidad "
-    "WHERE unidad_id IN :unidades "
-    "AND (:tipo_bien IS NULL OR tipo_bien = :tipo_bien) "
-    "ORDER BY unidad_id, tipo_bien, identificacion"
+    "SELECT v.*, b.oficial_id FROM v_inventario_unidad v "
+    "JOIN bien b ON b.id = v.bien_id "
+    "WHERE v.unidad_id IN :unidades "
+    "AND (:tipo_bien IS NULL OR v.tipo_bien = :tipo_bien) "
+    "ORDER BY v.unidad_id, v.tipo_bien, v.identificacion"
 ).bindparams(bindparam("unidades", expanding=True))
 
 BIEN = text(
@@ -29,6 +30,7 @@ BIEN = text(
 HISTORIAL = text(
     "SELECT h.registro, h.registro_id, h.orden, h.evento, h.fecha, h.numero_acta, "
     "h.estado, h.estado_revision, h.detalle, h.estado_operativo_nuevo, "
+    "h.oficial_origen_id, h.oficial_destino_id, "
     "CASE WHEN h.estado = 'APLICADO' THEN COALESCE(ud.nombre, uo.nombre) "
     "ELSE COALESCE(uo.nombre, ud.nombre) END AS unidad_duena, "
     "NULLIF(CONCAT_WS(', ', uo.nombre, CONCAT(oo.apellido, ', ', oo.nombre), "

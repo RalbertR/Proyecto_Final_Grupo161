@@ -7,7 +7,7 @@ import { Boton } from "../componentes/Boton"
 import { Marca } from "../componentes/Marca"
 import { ModalRectificacion } from "../componentes/ModalRectificacion"
 import { fechaLegible, ultimaObservacion, type Movimiento } from "../tipos/movimiento"
-import { nombreEvento } from "../tipos/revision"
+import { extremosDelActa, nombreDelActa } from "../tipos/revision"
 
 const columnas = [
   "Acta",
@@ -84,11 +84,11 @@ export const ObservadosPagina = () => {
                     <td className="px-3 py-2 font-mono">{acta.numero_acta}</td>
                     <td className="px-3 py-2">
                       <span className="inline-flex items-center gap-2">
-                        {nombreEvento[acta.tipo] ?? acta.tipo}
+                        {nombreDelActa(acta)}
                         {acta.version_vigente > 0 && <Marca tono="secundario">Corregida</Marca>}
                       </span>
                     </td>
-                    <td className="px-3 py-2">{acta.unidad_destino?.nombre}</td>
+                    <td className="px-3 py-2">{extremosDelActa(acta).destino}</td>
                     <td className="px-3 py-2 font-mono">{fechaLegible(acta.fecha_hecho)}</td>
                     <td className="px-3 py-2 font-mono">{observacion?.usuario}</td>
                     <td className="max-w-md px-3 py-2">

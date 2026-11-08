@@ -1,6 +1,13 @@
 import type { ReactNode } from "react"
 import { fechaLegible, type Movimiento } from "../tipos/movimiento"
-import { nombreDato, type ControlRevision, type DatoActa } from "../tipos/revision"
+import {
+  conOficial,
+  extremosDelActa,
+  nombreDatoDe,
+  textoOficial,
+  type ControlRevision,
+  type DatoActa,
+} from "../tipos/revision"
 
 type DatosRevisionProps = {
   acta: Movimiento
@@ -23,6 +30,15 @@ export const DatosRevision = ({ acta, control, onCambiar }: DatosRevisionProps) 
   const anterior = acta.versiones.find((v) => v.version === acta.version_vigente - 1)
   const origen = acta.unidad_origen?.nombre
   const destino = acta.unidad_destino?.nombre
+  const extremos = extremosDelActa(acta)
+  const firmas =
+    conOficial(acta) && acta.oficial_origen
+      ? `El oficial ${textoOficial(acta.oficial_origen)} y quien recibe en ${destino}`
+      : conOficial(acta) && acta.oficial_destino
+        ? `Quien entrega en ${origen} y el oficial ${textoOficial(acta.oficial_destino)}`
+        : destino
+          ? `Quien entrega en ${origen} y quien recibe en ${destino}`
+          : `Quien firma en ${origen}`
 
   const casilla = (dato: DatoActa, texto: string) => (
     <label className="flex min-h-11 items-center gap-2 text-gray-700">
@@ -32,7 +48,7 @@ export const DatosRevision = ({ acta, control, onCambiar }: DatosRevisionProps) 
         onChange={(e) =>
           onCambiar({ ...control, datos: { ...control.datos, [dato]: e.target.checked } })
         }
-        aria-label={`Coincide con el acta: ${nombreDato[dato]}`}
+        aria-label={`Coincide con el acta: ${nombreDatoDe(acta, dato)}`}
         className="size-4 accent-marca focus-visible:outline-3 focus-visible:outline-foco"
       />
       {texto}
@@ -42,9 +58,7 @@ export const DatosRevision = ({ acta, control, onCambiar }: DatosRevisionProps) 
   const filas: { nombre: string; valor: ReactNode; tilde?: ReactNode }[] = [
     {
       nombre: "Firmas",
-      valor: destino
-        ? `Quien entrega en ${origen} y quien recibe en ${destino}`
-        : `Quien firma en ${origen}`,
+      valor: firmas,
       tilde: casilla("firmas", "Están en el acta"),
     },
     {
@@ -71,8 +85,8 @@ export const DatosRevision = ({ acta, control, onCambiar }: DatosRevisionProps) 
       tilde: casilla("fecha_hecho", "Coincide con el acta"),
     },
     {
-      nombre: "Unidades",
-      valor: destino ? `De ${origen} a ${destino}` : origen,
+      nombre: conOficial(acta) ? "Oficial y unidad" : "Unidades",
+      valor: extremos.destino ? `De ${extremos.origen} a ${extremos.destino}` : extremos.origen,
       tilde: casilla("unidades", "Coincide con el acta"),
     },
     {

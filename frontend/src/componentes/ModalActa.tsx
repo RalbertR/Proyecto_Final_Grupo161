@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react"
 import { obtenerMovimiento } from "../api/movimientos"
 import { marcaEvento } from "../tipos/historial"
 import { fechaLegible, type Movimiento } from "../tipos/movimiento"
-import { historialActa, nombreEvento } from "../tipos/revision"
+import { extremosDelActa, historialActa, nombreDelActa } from "../tipos/revision"
 import { BienesActa } from "./BienesActa"
 import { Boton } from "./Boton"
 import { Dato } from "./Dato"
@@ -12,17 +12,18 @@ import { Marca } from "./Marca"
 
 const DatosActa = ({ acta }: { acta: Movimiento }) => {
   const marca = marcaEvento(acta)
+  const extremos = extremosDelActa(acta)
   return (
     <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
-      <Dato etiqueta="Movimiento">{nombreEvento[acta.tipo] ?? acta.tipo}</Dato>
+      <Dato etiqueta="Movimiento">{nombreDelActa(acta)}</Dato>
       <Dato etiqueta="Fecha del hecho">
         <span className="font-mono">{fechaLegible(acta.fecha_hecho)}</span>
       </Dato>
       <Dato etiqueta="Estado">
         <Marca tono={marca.tono}>{marca.texto}</Marca>
       </Dato>
-      <Dato etiqueta="Origen">{acta.unidad_origen?.nombre ?? "No aplica"}</Dato>
-      <Dato etiqueta="Destino">{acta.unidad_destino?.nombre ?? "No aplica"}</Dato>
+      <Dato etiqueta="Origen">{extremos.origen ?? "No aplica"}</Dato>
+      <Dato etiqueta="Destino">{extremos.destino ?? "No aplica"}</Dato>
       <Dato etiqueta="Cargó">
         <span className="font-mono">{acta.usuario}</span>
       </Dato>
