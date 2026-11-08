@@ -103,6 +103,8 @@ Para revisar todo el repositorio sin hacer un commit: `pre-commit run --all-file
 
 La API permite adjuntar PDFs a un movimiento ya registrado y descargarlos con los mismos permisos de consulta del acta. Solo la unidad que registró el movimiento puede adjuntar. El contrato y los errores están en [HU-13: documentos de las actas](docs/contratos/documentos.md).
 
+En la aplicación, la sección "PDFs del acta" permite adjuntar después del registro y desde el detalle del acta. También está disponible al recibir, revisar y corregir. Cada documento muestra su nombre, tamaño, usuario y fecha, con la opción de descargarlo.
+
 En desarrollo, los PDFs se guardan en `backend/archivos_privados/documentos`, una carpeta ignorada por Git. Para usar otra carpeta privada, definir `DIRECTORIO_DOCUMENTOS` en el `.env`. En producción se guardan en el volumen `documentos_privados`, montado solo en el backend; el contenedor corre como `nobody` y puede escribir allí. Ese volumen conserva los archivos al recrear el backend y se debe respaldar junto con MySQL.
 
 ## Datos de prueba

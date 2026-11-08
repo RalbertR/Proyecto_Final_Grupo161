@@ -13,6 +13,7 @@ import {
 } from "../tipos/revision"
 import { Boton } from "./Boton"
 import { DatosRevision } from "./DatosRevision"
+import { DocumentosActa } from "./DocumentosActa"
 import { HistorialActa } from "./HistorialActa"
 import { Marca } from "./Marca"
 import { TablaRevision } from "./TablaRevision"
@@ -260,7 +261,7 @@ export const ModalRevision = ({
                   className="min-h-11 rounded-xs border border-gray-300 bg-white px-3 py-2 font-normal hover:border-gray-500 focus-visible:outline-3 focus-visible:outline-foco"
                 />
                 <span className="text-xs font-normal text-gray-500">
-                  Contá qué no coincide con el acta que llegó por correo, hasta 500 caracteres
+                  Contá qué no coincide con el acta escaneada, hasta 500 caracteres
                 </span>
               </label>
             </fieldset>
@@ -292,12 +293,13 @@ export const ModalRevision = ({
             {acta.version_vigente > 0 && <Marca tono="secundario">Corregida</Marca>}
           </h2>
           <p className="text-sm text-gray-600">
-            Compará cada dato con el acta escaneada que llegó por correo y tildá los que coinciden.
+            Compará cada dato con el acta escaneada y tildá los que coinciden.
           </p>
         </header>
         {avisos}
         <div className="overflow-y-auto px-6 py-4">
           <fieldset disabled={isPending || terminada} className="flex min-w-0 flex-col gap-4">
+            <DocumentosActa movimientoId={acta.id} />
             <HistorialActa eventos={historialActa(acta)} />
             <DatosRevision acta={acta} control={control} onCambiar={onCambiar} />
             <TablaRevision acta={acta} control={control} onCambiar={onCambiar} />

@@ -51,6 +51,14 @@ Responde **200** con los bytes originales, `Content-Type: application/pdf` y `Co
 
 Listar y descargar usan los mismos permisos que `GET /api/movimientos/{id}`. Incluyen a las unidades de origen y destino, sus superiores y la unidad que hoy tiene algún bien del acta, según el [ADR 0008](../decisiones/0008-actas-anteriores-de-un-bien.md). Ese acceso de consulta no habilita a adjuntar.
 
+## Pantalla
+
+La sección "PDFs del acta" aparece en el detalle del acta, en los resúmenes después de registrar una entrega, dotación o devolución, y al recibir, revisar o corregir un acta.
+
+El listado muestra el nombre, el tamaño, el usuario y la fecha de cada documento. "Descargar PDF" usa la sesión del usuario y conserva el nombre del archivo. Solo la unidad registrante ve el selector "Adjuntar PDF firmado" y el botón "Adjuntar PDF".
+
+Al elegir un archivo que no es PDF, está vacío o supera el límite se muestra el aviso sin enviarlo. Durante la carga se deshabilita el selector y el botón. Al guardar se muestra la confirmación y se actualiza el listado; un rechazo de la API muestra su mensaje, incluido el duplicado. Los botones de documentos no envían el formulario de recepción, revisión o corrección que los contiene.
+
 ## Errores
 
 | Estado | Motivo |

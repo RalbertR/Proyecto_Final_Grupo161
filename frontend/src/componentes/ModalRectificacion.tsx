@@ -20,6 +20,7 @@ import {
 import { extremosDelActa, historialActa, nombreDelActa } from "../tipos/revision"
 import { BienesActa } from "./BienesActa"
 import { Boton } from "./Boton"
+import { DocumentosActa } from "./DocumentosActa"
 import { HistorialActa } from "./HistorialActa"
 
 const claseAviso = "mx-6 mt-4 shrink-0 rounded-xs border px-4 py-3 text-sm font-medium"
@@ -147,6 +148,7 @@ export const ModalRectificacion = ({ acta, onCerrar }: ModalRectificacionProps) 
             <p className="text-sm">
               <span className="font-semibold">Motivo:</span> {variables?.motivo}
             </p>
+            <DocumentosActa movimientoId={corregida.id} />
           </div>
           <footer className="flex justify-end border-t border-gray-200 px-6 py-3">
             {volverALista}
@@ -162,7 +164,7 @@ export const ModalRectificacion = ({ acta, onCerrar }: ModalRectificacionProps) 
           </h2>
           <p className="text-sm text-gray-600">
             Corregí los datos para que coincidan con el acta en papel. Si el acta se salvó o se
-            volvió a firmar, reenviala por correo y contalo en el motivo.
+            volvió a firmar, adjuntá el PDF firmado y contalo en el motivo.
           </p>
         </header>
         {fallo && (
@@ -172,6 +174,7 @@ export const ModalRectificacion = ({ acta, onCerrar }: ModalRectificacionProps) 
         )}
         <div className="overflow-y-auto px-6 py-4">
           <fieldset disabled={isPending || terminada} className="flex min-w-0 flex-col gap-4">
+            <DocumentosActa movimientoId={acta.id} />
             <HistorialActa eventos={historialActa(acta).slice(0, -1)} />
             {observacion && (
               <p className="rounded-xs border border-error bg-error/5 px-4 py-3 text-sm text-red-900">

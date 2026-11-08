@@ -1,6 +1,7 @@
 import { tiposDeBien } from "../tipos/bien"
 import { fechaLegible, textoRevision, type Movimiento } from "../tipos/movimiento"
 import { textoOficial } from "../tipos/revision"
+import { DocumentosActa } from "./DocumentosActa"
 import { Marca } from "./Marca"
 
 export const ResumenDotacion = ({ movimiento }: { movimiento: Movimiento }) => (
@@ -25,6 +26,7 @@ export const ResumenDotacion = ({ movimiento }: { movimiento: Movimiento }) => (
       <dt className="font-semibold">Revisión</dt>
       <dd>{textoRevision[movimiento.estado_revision] ?? movimiento.estado_revision}</dd>
     </dl>
+    <DocumentosActa movimientoId={movimiento.id} />
     <div className="flex flex-col gap-2">
       <h3 className="text-sm font-semibold">Bienes · {movimiento.bienes.length}</h3>
       <ul className="divide-y divide-gray-100 rounded-xs border border-gray-200">
