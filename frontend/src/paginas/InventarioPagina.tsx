@@ -69,10 +69,10 @@ export const InventarioPagina = () => {
   }
 
   const handleAsignarAOficial = () => {
-    if (seleccion.some((b) => b.estado_operativo === "FUERA_DE_SERVICIO"))
+    if (areasDe(seleccion).length > 1) setAviso("areas")
+    else if (seleccion.some((b) => b.estado_operativo === "FUERA_DE_SERVICIO"))
       setAviso("fueraDeServicio")
     else if (tiposRepetidos(seleccion)) setAviso("mismoTipo")
-    else if (areasDe(seleccion).length > 1) setAviso("areas")
     else setDotacionAbierta(true)
   }
 

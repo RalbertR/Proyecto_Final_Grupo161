@@ -242,6 +242,9 @@ export const ModalDotacion = ({
                       {textoTipos(tipos)}.
                     </span>
                   </label>
+                  {texto.trim() && !listo && !sinListaDeOficiales && !sinInventario && (
+                    <p className="text-sm text-gray-500">Cargando oficiales…</p>
+                  )}
                   {texto.trim() &&
                     listo &&
                     (coincidencias.length ? (
