@@ -96,14 +96,9 @@ def duplicado() -> HTTPException:
     )
 
 
-def adjuntar_documento(
-    session: Session, usuario: UsuarioPublic, movimiento_id: int, archivo: UploadFile
-) -> DocumentoPublic:
-    if unidad_del_acta(session, movimiento_id) != usuario.unidad.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Solo la unidad que registró el movimiento puede adjuntar documentos",
-        )
+def guardar_pdf(
+    session: Session, usuario_id: int, archivo: UploadFile
+) -> tuple[int, Path]:
     nombre, contenido = validar_archivo(archivo)
     hash_sha256 = hashlib.sha256(contenido).hexdigest()
     if repository.hash_cargado(session, hash_sha256):
@@ -112,11 +107,9 @@ def adjuntar_documento(
     directorio = Path(DIRECTORIO_DOCUMENTOS)
     nombre_generado = f"{uuid4().hex}.pdf"
     ruta = directorio / nombre_generado
-    archivo_creado = False
+    directorio.mkdir(parents=True, exist_ok=True, mode=0o700)
+    descriptor = os.open(ruta, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:
-        directorio.mkdir(parents=True, exist_ok=True, mode=0o700)
-        descriptor = os.open(ruta, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        archivo_creado = True
         with os.fdopen(descriptor, "wb") as destino:
             destino.write(contenido)
         documento_id = repository.insertar_documento(
@@ -125,25 +118,64 @@ def adjuntar_documento(
             tamano_bytes=len(contenido),
             hash_sha256=hash_sha256,
             ruta_almacenamiento=nombre_generado,
-            usuario_id=usuario.id,
+            usuario_id=usuario_id,
         )
+    except Exception:
+        ruta.unlink(missing_ok=True)
+        raise
+    return documento_id, ruta
+
+
+def deshacer_guardado(session: Session, ruta: Path | None, error: Exception) -> None:
+    session.rollback()
+    if ruta is not None:
+        ruta.unlink(missing_ok=True)
+    if isinstance(error, IntegrityError) and "uq_documento_hash" in str(error.orig):
+        raise duplicado() from error
+    if isinstance(error, OSError):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No se pudo guardar el documento. Intente de nuevo",
+        ) from error
+
+
+def entregar_pdf(ruta_almacenamiento: str, nombre_original: str) -> FileResponse:
+    directorio = Path(DIRECTORIO_DOCUMENTOS).resolve()
+    ruta = (directorio / ruta_almacenamiento).resolve()
+    if not ruta.is_relative_to(directorio) or not ruta.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El archivo del documento no está disponible",
+        )
+    return FileResponse(
+        ruta,
+        media_type="application/pdf",
+        filename=nombre_original,
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+def adjuntar_documento(
+    session: Session, usuario: UsuarioPublic, movimiento_id: int, archivo: UploadFile
+) -> DocumentoPublic:
+    if unidad_del_acta(session, movimiento_id) != usuario.unidad.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo la unidad que registró el movimiento puede adjuntar documentos",
+        )
+    ruta = None
+    try:
+        documento_id, ruta = guardar_pdf(session, usuario.id, archivo)
         repository.vincular_documento(session, movimiento_id, documento_id)
         documento = DocumentoPublic.model_validate(
             repository.buscar_documento(session, movimiento_id, documento_id)
         )
         session.commit()
     except Exception as error:
-        session.rollback()
-        if archivo_creado:
-            ruta.unlink(missing_ok=True)
-        # El índice único también resuelve dos cargas simultáneas del mismo PDF.
-        if isinstance(error, IntegrityError) and "uq_documento_hash" in str(error.orig):
-            raise duplicado() from error
-        if isinstance(error, OSError):
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="No se pudo guardar el documento. Intente de nuevo",
-            ) from error
+        deshacer_guardado(session, ruta, error)
         raise
     return documento
 
@@ -158,19 +190,4 @@ def descargar_documento(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="El documento no está asociado a ese movimiento",
         )
-    directorio = Path(DIRECTORIO_DOCUMENTOS).resolve()
-    ruta = (directorio / documento["ruta_almacenamiento"]).resolve()
-    if not ruta.is_relative_to(directorio) or not ruta.is_file():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="El archivo del documento no está disponible",
-        )
-    return FileResponse(
-        ruta,
-        media_type="application/pdf",
-        filename=documento["nombre_original"],
-        headers={
-            "Cache-Control": "private, no-store",
-            "X-Content-Type-Options": "nosniff",
-        },
-    )
+    return entregar_pdf(documento["ruta_almacenamiento"], documento["nombre_original"])
