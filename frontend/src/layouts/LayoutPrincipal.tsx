@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
+import { obtenerCambiosObservados } from "../api/cambiosEstado"
 import { obtenerDevueltas, obtenerObservados, obtenerPorRecibir } from "../api/movimientos"
-import { obtenerMovimientosARevisar } from "../api/revisiones"
+import { obtenerBandeja } from "../api/revisiones"
 import { Boton } from "../componentes/Boton"
 import { Escudo } from "../componentes/Escudo"
 import { Marca } from "../componentes/Marca"
@@ -39,10 +40,17 @@ export const LayoutPrincipal = () => {
     enabled: corrige,
     retry: false,
   })
+  const { data: cambiosObservados } = useQuery({
+    queryKey: ["cambios-observados"],
+    queryFn: obtenerCambiosObservados,
+    enabled: corrige,
+    retry: false,
+  })
+  const cantidadObservados = (observados?.length ?? 0) + (cambiosObservados?.length ?? 0)
   const revisa = !!yo && yo.unidad.nivel !== "OPERACIONAL"
   const { data: aRevisar } = useQuery({
     queryKey: ["bandeja"],
-    queryFn: obtenerMovimientosARevisar,
+    queryFn: obtenerBandeja,
     enabled: revisa,
     retry: false,
   })
@@ -94,7 +102,7 @@ export const LayoutPrincipal = () => {
           {corrige && (
             <NavLink to="/observados" className={claseEnlace}>
               Observados
-              {!!observados?.length && <Marca>{observados.length}</Marca>}
+              {cantidadObservados > 0 && <Marca>{cantidadObservados}</Marca>}
             </NavLink>
           )}
           {revisa && (

@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { Link, useLocation, useParams } from "react-router-dom"
+import { obtenerYo } from "../api/auth"
 import { obtenerHistorial } from "../api/bienes"
 import { Boton } from "../componentes/Boton"
 import { FichaBien } from "../componentes/FichaBien"
 import { Marca } from "../componentes/Marca"
 import { ModalActa } from "../componentes/ModalActa"
+import { ModalCambioEstado } from "../componentes/ModalCambioEstado"
 import { TablaCambiosEstado } from "../componentes/TablaCambiosEstado"
 import { TablaMovimientosBien } from "../componentes/TablaMovimientosBien"
 import { tiposDeBien } from "../tipos/bien"
@@ -14,6 +16,8 @@ export const HistorialBienPagina = () => {
   const bienId = Number(useParams().id)
   const { state } = useLocation()
   const [actaId, setActaId] = useState<number | null>(null)
+  const [cambiando, setCambiando] = useState(false)
+  const { data: yo } = useQuery({ queryKey: ["yo"], queryFn: obtenerYo, retry: false })
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ["historial", bienId],
     queryFn: () => obtenerHistorial(bienId),
@@ -51,6 +55,8 @@ export const HistorialBienPagina = () => {
     )
 
   const { bien, eventos } = data
+  const puedeCambiar =
+    bien.unidad_id === yo?.unidad.id && !bien.con_movimiento_pendiente && !bien.de_baja
 
   return (
     <section className="flex flex-col gap-6">
@@ -73,10 +79,25 @@ export const HistorialBienPagina = () => {
         />
       </div>
       <div className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Estado de servicio</h2>
-        <TablaCambiosEstado eventos={eventos.filter((e) => e.registro === "CAMBIO_ESTADO")} />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Estado de servicio</h2>
+          {puedeCambiar && (
+            <Boton
+              variant="contorno"
+              onClick={() => setCambiando(true)}
+              className="px-3 py-1.5 text-sm"
+            >
+              Cambiar estado
+            </Boton>
+          )}
+        </div>
+        <TablaCambiosEstado
+          bien={bien}
+          eventos={eventos.filter((e) => e.registro === "CAMBIO_ESTADO")}
+        />
       </div>
       {actaId !== null && <ModalActa movimientoId={actaId} onCerrar={() => setActaId(null)} />}
+      {cambiando && <ModalCambioEstado bien={bien} onCerrar={() => setCambiando(false)} />}
     </section>
   )
 }

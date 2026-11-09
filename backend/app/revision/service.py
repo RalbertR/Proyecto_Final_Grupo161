@@ -63,6 +63,7 @@ def revisar_movimiento(
     revision_id = repository.insertar_revision(
         session,
         movimiento_id=movimiento_id,
+        cambio_estado_id=None,
         resultado=revision.resultado,
         motivo_observacion=motivo_observacion,
         version_revisada=revision.version,

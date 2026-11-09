@@ -1,4 +1,4 @@
-import { tiposDeBien } from "./bien"
+import { tiposDeBien, type EstadoOperativo } from "./bien"
 import type { Movimiento, Oficial } from "./movimiento"
 
 export interface RegistroBandeja {
@@ -15,6 +15,8 @@ export interface RegistroBandeja {
   unidad_destino: string | null
   oficial_origen: Oficial | null
   oficial_destino: Oficial | null
+  bien_identificacion: string | null
+  estado_nuevo: EstadoOperativo | null
 }
 
 export const nombreEvento: Record<string, string> = {
@@ -86,7 +88,8 @@ export const controlVigente = (
 ): ControlRevision => (control?.version === version ? control : { version, datos: {}, bienes: {} })
 
 export interface EventoActa {
-  accion: "Observada" | "Revisada" | "Corregida" | "Devuelta"
+  accion:
+    "Observada" | "Revisada" | "Corregida" | "Devuelta" | "Observado" | "Confirmado" | "Corregido"
   usuario: string
   fecha: string
   motivo: string | null

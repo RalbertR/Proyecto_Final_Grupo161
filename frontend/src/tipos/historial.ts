@@ -7,8 +7,10 @@ export interface BienHistorial {
   identificacion: string
   marca: string
   modelo: string
+  unidad_id: number
   unidad: string
   estado_operativo: EstadoOperativo
+  de_baja: boolean
   tenencia: Tenencia
   ubicacion: string | null
   oficial_legajo: string | null
@@ -32,6 +34,7 @@ export interface EventoHistorial {
   detalle: string | null
   oficial_origen_id: number | null
   oficial_destino_id: number | null
+  tiene_informe: boolean
 }
 
 export interface HistorialBien {

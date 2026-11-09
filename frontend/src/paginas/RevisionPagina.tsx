@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { Navigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
-import { obtenerMovimientosARevisar } from "../api/revisiones"
+import { obtenerBandeja } from "../api/revisiones"
 import { Boton } from "../componentes/Boton"
 import { Marca } from "../componentes/Marca"
 import { ModalRevision } from "../componentes/ModalRevision"
+import { ModalRevisionCambio } from "../componentes/ModalRevisionCambio"
+import { nombreEstadoOperativo } from "../tipos/bien"
 import { fechaLegible } from "../tipos/movimiento"
 import { extremosActa, nombreMovimiento, type ControlRevision } from "../tipos/revision"
 
@@ -22,11 +24,12 @@ export const RevisionPagina = () => {
     refetch,
   } = useQuery({
     queryKey: ["bandeja"],
-    queryFn: obtenerMovimientosARevisar,
+    queryFn: obtenerBandeja,
     enabled: !!yo && !operacional,
     retry: false,
   })
   const [abierto, setAbierto] = useState<number | null>(null)
+  const [cambioAbierto, setCambioAbierto] = useState<number | null>(null)
   const [controles, setControles] = useState<Record<number, ControlRevision>>({})
 
   if (operacional) return <Navigate to="/" replace />
@@ -90,6 +93,39 @@ export const RevisionPagina = () => {
             </thead>
             <tbody>
               {registros.map((registro) => {
+                if (registro.registro === "CAMBIO_ESTADO")
+                  return (
+                    <tr
+                      key={`CAMBIO_ESTADO-${registro.registro_id}`}
+                      className="border-b border-gray-200"
+                    >
+                      <td className="px-3 py-2 text-gray-500">Sin acta</td>
+                      <td className="px-3 py-2">
+                        <span className="inline-flex items-center gap-2">
+                          <span>
+                            Cambio de estado de{" "}
+                            <span className="font-mono">{registro.bien_identificacion}</span>
+                          </span>
+                          {registro.version > 0 && <Marca tono="secundario">Corregido</Marca>}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">{registro.unidad_registrante}</td>
+                      <td className="px-3 py-2">
+                        {registro.estado_nuevo && nombreEstadoOperativo[registro.estado_nuevo]}
+                      </td>
+                      <td className="px-3 py-2 font-mono">{fechaLegible(registro.fecha)}</td>
+                      <td className="px-3 py-2 font-mono">{registro.usuario}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Boton
+                          variant="contorno"
+                          onClick={() => setCambioAbierto(registro.registro_id)}
+                          className="px-3 py-1.5 text-sm"
+                        >
+                          Revisar
+                        </Boton>
+                      </td>
+                    </tr>
+                  )
                 const { origen, destino } = extremosActa(
                   registro.evento,
                   registro.unidad_origen,
@@ -98,7 +134,10 @@ export const RevisionPagina = () => {
                   registro.oficial_destino,
                 )
                 return (
-                  <tr key={registro.registro_id} className="border-b border-gray-200">
+                  <tr
+                    key={`MOVIMIENTO-${registro.registro_id}`}
+                    className="border-b border-gray-200"
+                  >
                     <td className="px-3 py-2 font-mono">{registro.numero_acta}</td>
                     <td className="px-3 py-2">
                       <span className="inline-flex items-center gap-2">
@@ -138,6 +177,14 @@ export const RevisionPagina = () => {
           onCambiar={handleCambiar}
           onCerrar={handleCerrar}
           onTerminada={handleTerminada}
+        />
+      )}
+      {cambioAbierto !== null && (
+        <ModalRevisionCambio
+          key={cambioAbierto}
+          cambioId={cambioAbierto}
+          onCerrar={() => setCambioAbierto(null)}
+          onTerminada={() => setCambioAbierto(null)}
         />
       )}
     </section>

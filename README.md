@@ -107,6 +107,10 @@ En la aplicación, la sección "PDFs del acta" permite adjuntar después del reg
 
 En desarrollo, los PDFs se guardan en `backend/archivos_privados/documentos`, una carpeta ignorada por Git. Para usar otra carpeta privada, definir `DIRECTORIO_DOCUMENTOS` en el `.env`. En producción se guardan en el volumen `documentos_privados`, montado solo en el backend; el contenedor corre como `nobody` y puede escribir allí. Ese volumen conserva los archivos al recrear el backend y se debe respaldar junto con MySQL.
 
+## Cambios de estado de servicio
+
+En la página de un bien, la sección "Estado de servicio" permite pasarlo a fuera de servicio con observaciones y el informe técnico en PDF, o volverlo a servicio con observaciones y, si se tiene, un informe de puesta en servicio. El superior lo confirma u observa desde la bandeja de revisión, y la unidad corrige los observados desde "Observados". Los informes se guardan igual que las actas escaneadas. El contrato y los errores están en [HU-17: cambios de estado de servicio](docs/contratos/cambios_estado.md).
+
 ## Datos de prueba
 
 El script `database/semillas/cargar_datos_prueba.py` carga una organización ficticia para desarrollar y para la demo. Tiene la Dirección Logística, la Unidad Regional Norte con las Operacionales A y B, y la Unidad Regional Sur con la Operacional C. Cada unidad tiene sus ubicaciones, sus oficiales y bienes de los cuatro tipos en depósito y en dotación, 252 en total. En la Operacional A hay un arma dada de baja y una entrega de dos armas a B pendiente de recepción.

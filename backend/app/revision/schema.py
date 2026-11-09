@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, StringConstraints
 from sqlmodel import SQLModel
 
+from app.bienes.model import EstadoOperativo
 from app.oficiales.schema import OficialPublic
 
 
@@ -21,6 +22,8 @@ class RegistroBandejaPublic(SQLModel):
     unidad_destino: str | None
     oficial_origen: OficialPublic | None
     oficial_destino: OficialPublic | None
+    bien_identificacion: str | None
+    estado_nuevo: EstadoOperativo | None
 
 
 class RevisionRevisado(BaseModel):

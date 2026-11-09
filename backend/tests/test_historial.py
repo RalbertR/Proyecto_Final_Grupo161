@@ -35,8 +35,10 @@ BIEN = {
     "identificacion": "BT-1",
     "marca": "Bersa",
     "modelo": "TPR9",
+    "unidad_id": 4,
     "unidad": "Unidad Operacional A",
     "estado_operativo": "EN_SERVICIO",
+    "de_baja": False,
     "tenencia": "DEPOSITO",
     "ubicacion": "Sala de Armas",
     "oficial_legajo": None,
@@ -167,6 +169,7 @@ def test_el_historial_trae_los_movimientos_en_el_orden_en_que_se_aplicaron(
                 "detalle": DESCRIPCION,
                 "oficial_origen_id": None,
                 "oficial_destino_id": None,
+                "tiene_informe": False,
             },
             {
                 "registro": "MOVIMIENTO",
@@ -184,6 +187,7 @@ def test_el_historial_trae_los_movimientos_en_el_orden_en_que_se_aplicaron(
                 "detalle": DESCRIPCION,
                 "oficial_origen_id": None,
                 "oficial_destino_id": None,
+                "tiene_informe": False,
             },
         ],
     }
@@ -285,6 +289,41 @@ def test_un_cambio_de_estado_trae_el_estado_nuevo(client, bien_de_a):
     assert evento["estado_operativo_nuevo"] == "EN_SERVICIO"
     assert evento["detalle"] == "Se reemplazó el percutor"
     assert evento["unidad_duena"] is None
+    assert evento["tiene_informe"] is False
+
+
+def test_el_historial_marca_los_cambios_con_informe(client, bien_de_a):
+    entregar(client, 4, 5, "0016/2026")
+    with engine.begin() as conexion:
+        conexion.execute(
+            text(
+                "INSERT INTO documento (id, nombre_original, tipo_mime, tamano_bytes, "
+                "hash_sha256, ruta_almacenamiento, usuario_id) VALUES (1, "
+                "'informe.pdf', 'application/pdf', 10, REPEAT('a', 64), 'x.pdf', 4)"
+            )
+        )
+        conexion.execute(
+            text(
+                "INSERT INTO cambio_estado_operativo (bien_id, estado_anterior, "
+                "estado_nuevo, observaciones, documento_id, estado_revision, "
+                "usuario_id, unidad_registrante_id) VALUES (1, 'EN_SERVICIO', "
+                "'FUERA_DE_SERVICIO', 'No dispara', 1, 'PENDIENTE', 4, 4)"
+            )
+        )
+
+    eventos = historial(client, 4).json()["eventos"]
+
+    assert {e["registro"]: e["tiene_informe"] for e in eventos} == {
+        "MOVIMIENTO": False,
+        "CAMBIO_ESTADO": True,
+    }
+
+
+def test_la_ficha_trae_la_unidad_y_si_esta_de_baja(client, bien_de_a):
+    bien = historial(client, 4).json()["bien"]
+
+    assert bien["unidad_id"] == 4
+    assert bien["de_baja"] is False
 
 
 def test_la_unidad_que_hoy_tiene_el_bien_abre_las_actas_anteriores(client, bien_de_a):
