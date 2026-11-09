@@ -11,7 +11,7 @@ INVENTARIO = text(
 
 BIEN = text(
     "SELECT b.id, b.tipo_bien, COALESCE(b.numero_serie, m.patente) AS identificacion, "
-    "b.marca, b.modelo, b.unidad_id, u.nombre AS unidad, b.estado_operativo, "
+    "b.marca, b.modelo, b.unidad_id, u.nombre AS unidad, b.estado_operativo, b.de_baja, "
     "CASE WHEN b.oficial_id IS NOT NULL THEN 'DOTACION' ELSE 'DEPOSITO' END "
     "AS tenencia, ub.nombre AS ubicacion, o.legajo AS oficial_legajo, "
     "CONCAT(o.apellido, ', ', o.nombre) AS oficial, "
@@ -31,6 +31,7 @@ HISTORIAL = text(
     "SELECT h.registro, h.registro_id, h.orden, h.evento, h.fecha, h.numero_acta, "
     "h.estado, h.estado_revision, h.detalle, h.estado_operativo_nuevo, "
     "h.oficial_origen_id, h.oficial_destino_id, "
+    "ce.documento_id IS NOT NULL AS tiene_informe, "
     "CASE WHEN h.estado = 'APLICADO' THEN COALESCE(ud.nombre, uo.nombre) "
     "ELSE COALESCE(uo.nombre, ud.nombre) END AS unidad_duena, "
     "NULLIF(CONCAT_WS(', ', uo.nombre, CONCAT(oo.apellido, ', ', oo.nombre), "
@@ -44,6 +45,8 @@ HISTORIAL = text(
     "LEFT JOIN unidad ud ON ud.id = h.unidad_destino_id "
     "LEFT JOIN oficial od ON od.id = h.oficial_destino_id "
     "LEFT JOIN ubicacion ubd ON ubd.id = h.ubicacion_destino_id "
+    "LEFT JOIN v_cambio_estado_vigente ce "
+    "ON h.registro = 'CAMBIO_ESTADO' AND ce.id = h.registro_id "
     "WHERE h.bien_id = :id "
     "ORDER BY h.orden IS NULL, h.orden, h.fecha_carga, h.registro, h.registro_id"
 )
