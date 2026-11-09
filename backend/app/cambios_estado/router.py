@@ -1,14 +1,19 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, UploadFile, status
+from fastapi import APIRouter, Body, File, Form, UploadFile, status
 from fastapi.responses import FileResponse
 
 from app.acceso.dependencias import UsuarioActualDep
 from app.bienes.model import EstadoOperativo
 from app.core.database import SessionDep
+from app.revision.schema import RevisionPublic
 
 from . import service
-from .schema import CambioEstadoPublic
+from .schema import (
+    CambioEstadoPublic,
+    RevisionCambioObservada,
+    RevisionCambioRevisado,
+)
 
 router = APIRouter(tags=["Cambios de estado"])
 
@@ -39,3 +44,20 @@ def consultar_cambio(session: SessionDep, usuario: UsuarioActualDep, cambio_id: 
 @router.get("/cambios-estado/{cambio_id}/informe", response_class=FileResponse)
 def descargar_informe(session: SessionDep, usuario: UsuarioActualDep, cambio_id: int):
     return service.descargar_informe(session, usuario, cambio_id)
+
+
+@router.post(
+    "/cambios-estado/{cambio_id}/revisiones",
+    response_model=RevisionPublic,
+    status_code=status.HTTP_201_CREATED,
+)
+def revisar_cambio(
+    session: SessionDep,
+    usuario: UsuarioActualDep,
+    cambio_id: int,
+    revision: Annotated[
+        RevisionCambioRevisado | RevisionCambioObservada,
+        Body(discriminator="resultado"),
+    ],
+):
+    return service.revisar_cambio(session, usuario, cambio_id, revision)

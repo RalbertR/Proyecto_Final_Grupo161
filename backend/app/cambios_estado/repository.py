@@ -37,6 +37,21 @@ CAMBIO = text(
     "WHERE c.id = :id"
 )
 
+BLOQUEAR_CAMBIO = text(
+    "SELECT id FROM cambio_estado_operativo WHERE id = :id FOR UPDATE"
+)
+
+CAMBIO_VIGENTE = text(
+    "SELECT estado, estado_revision, estado_nuevo, documento_id, "
+    "unidad_registrante_id, version_vigente "
+    "FROM v_cambio_estado_vigente WHERE id = :id"
+)
+
+CAMBIAR_ESTADO_REVISION = text(
+    "UPDATE cambio_estado_operativo SET estado_revision = :estado_revision "
+    "WHERE id = :id"
+)
+
 REVISIONES_DEL_CAMBIO = text(
     "SELECT r.resultado, r.version_revisada, r.motivo_observacion, "
     "u.nombre_usuario AS usuario, r.fecha "
@@ -80,4 +95,19 @@ def listar_revisiones(session: Session, cambio_id: int) -> list[RowMapping]:
 def listar_rectificaciones(session: Session, cambio_id: int) -> list[RowMapping]:
     return list(
         session.exec(RECTIFICACIONES_DEL_CAMBIO, params={"id": cambio_id}).mappings()
+    )
+
+
+def bloquear_cambio(session: Session, cambio_id: int) -> RowMapping | None:
+    if session.exec(BLOQUEAR_CAMBIO, params={"id": cambio_id}).first() is None:
+        return None
+    return session.exec(CAMBIO_VIGENTE, params={"id": cambio_id}).mappings().one()
+
+
+def cambiar_estado_revision(
+    session: Session, cambio_id: int, estado_revision: str
+) -> None:
+    session.exec(
+        CAMBIAR_ESTADO_REVISION,
+        params={"id": cambio_id, "estado_revision": estado_revision},
     )

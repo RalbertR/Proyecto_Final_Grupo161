@@ -1,9 +1,21 @@
 from datetime import datetime
+from typing import Annotated
 
+from pydantic import Field
 from sqlmodel import SQLModel
 
 from app.bienes.model import EstadoOperativo
-from app.revision.schema import RevisionPublic
+from app.revision.schema import RevisionObservada, RevisionPublic, RevisionRevisado
+
+Version = Annotated[int, Field(ge=0, le=65535)]
+
+
+class RevisionCambioRevisado(RevisionRevisado):
+    version: Version
+
+
+class RevisionCambioObservada(RevisionObservada):
+    version: Version
 
 
 class BienDelCambio(SQLModel):

@@ -7,10 +7,16 @@ from app.acceso.schema import UsuarioPublic
 from app.acceso.service import unidades_visibles
 from app.bienes.model import EstadoOperativo
 from app.documentos.service import deshacer_guardado, entregar_pdf, guardar_pdf
-from app.organizacion.model import Nivel
+from app.organizacion.model import Nivel, Unidad
+from app.revision import repository as revision_repository
+from app.revision.schema import RevisionPublic
 
 from . import repository
-from .schema import CambioEstadoPublic
+from .schema import (
+    CambioEstadoPublic,
+    RevisionCambioObservada,
+    RevisionCambioRevisado,
+)
 
 MAXIMO_TEXTO = 500
 
@@ -172,3 +178,46 @@ def registrar_cambio(
         deshacer_guardado(session, ruta, error)
         raise
     return detalle_cambio(session, cambio_id)
+
+
+def version_vencida() -> HTTPException:
+    return conflicto("La revisión no corresponde a la versión vigente")
+
+
+def revisar_cambio(
+    session: Session,
+    usuario: UsuarioPublic,
+    cambio_id: int,
+    revision: RevisionCambioRevisado | RevisionCambioObservada,
+) -> RevisionPublic:
+    cambio = repository.bloquear_cambio(session, cambio_id)
+    if cambio is None:
+        raise no_existe()
+    registrante = session.get(Unidad, cambio["unidad_registrante_id"])
+    if registrante.unidad_superior_id != usuario.unidad.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo el superior inmediato de la unidad revisa el cambio de estado",
+        )
+    if cambio["estado"] != "APLICADO" or cambio["estado_revision"] != "PENDIENTE":
+        raise conflicto("El cambio de estado no está pendiente de revisión")
+    if revision.version != cambio["version_vigente"]:
+        raise version_vencida()
+    revision_id = revision_repository.insertar_revision(
+        session,
+        movimiento_id=None,
+        cambio_estado_id=cambio_id,
+        resultado=revision.resultado,
+        motivo_observacion=(
+            revision.motivo_observacion
+            if isinstance(revision, RevisionCambioObservada)
+            else None
+        ),
+        version_revisada=revision.version,
+        usuario_id=usuario.id,
+    )
+    repository.cambiar_estado_revision(session, cambio_id, revision.resultado)
+    session.commit()
+    return RevisionPublic.model_validate(
+        revision_repository.buscar_revision(session, revision_id)
+    )

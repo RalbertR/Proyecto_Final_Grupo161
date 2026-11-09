@@ -47,6 +47,8 @@ EN_LA_BANDEJA = {
     "unidad_destino": "Unidad Operacional B",
     "oficial_origen": None,
     "oficial_destino": None,
+    "bien_identificacion": None,
+    "estado_nuevo": None,
 }
 
 REVISAR = {"resultado": "REVISADO", "version": 0}

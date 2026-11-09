@@ -398,3 +398,105 @@ def test_informe_de_un_cambio_sin_informe_responde_404(client, datos):
     )
 
     assert respuesta.status_code == 404
+
+
+def registrado(client):
+    return cambiar(client, 1, "FUERA_DE_SERVICIO").json()["id"]
+
+
+def revisar(
+    client, cambio_id, resultado="REVISADO", version=0, motivo=None, usuario_id=2
+):
+    cuerpo = {"resultado": resultado, "version": version}
+    if motivo is not None:
+        cuerpo["motivo_observacion"] = motivo
+    return client.post(
+        f"/api/cambios-estado/{cambio_id}/revisiones",
+        json=cuerpo,
+        headers=con_token(usuario_id),
+    )
+
+
+def cambios_en_bandeja(client, usuario_id=2):
+    bandeja = client.get("/api/revisiones/bandeja", headers=con_token(usuario_id))
+    return [r for r in bandeja.json() if r["registro"] == "CAMBIO_ESTADO"]
+
+
+def test_la_regional_confirma_el_cambio(client, datos):
+    cambio_id = registrado(client)
+
+    respuesta = revisar(client, cambio_id)
+
+    assert respuesta.status_code == 201
+    assert respuesta.json()["resultado"] == "REVISADO"
+    assert respuesta.json()["version_revisada"] == 0
+    detalle = client.get(f"/api/cambios-estado/{cambio_id}", headers=con_token()).json()
+    assert detalle["estado_revision"] == "REVISADO"
+    assert cambios_en_bandeja(client) == []
+
+
+def test_la_regional_observa_el_cambio_con_motivo(client, datos):
+    cambio_id = registrado(client)
+
+    respuesta = revisar(
+        client, cambio_id, "OBSERVADO", motivo="El informe no está firmado"
+    )
+
+    assert respuesta.status_code == 201
+    detalle = client.get(f"/api/cambios-estado/{cambio_id}", headers=con_token()).json()
+    assert detalle["estado_revision"] == "OBSERVADO"
+    assert [r["motivo_observacion"] for r in detalle["revisiones"]] == [
+        "El informe no está firmado"
+    ]
+
+
+def test_observar_sin_motivo_responde_422(client, datos):
+    cambio_id = registrado(client)
+
+    assert revisar(client, cambio_id, "OBSERVADO", motivo="  ").status_code == 422
+    assert consultar("SELECT id FROM revision") == []
+
+
+@pytest.mark.parametrize("version", [-1, 70000])
+def test_version_fuera_de_rango_responde_422(client, datos, version):
+    cambio_id = registrado(client)
+
+    assert revisar(client, cambio_id, version=version).status_code == 422
+
+
+def test_revisar_un_cambio_de_otra_regional_responde_403(client, datos):
+    cambio_id = registrado(client)
+
+    assert revisar(client, cambio_id, usuario_id=3).status_code == 403
+    assert consultar("SELECT id FROM revision") == []
+
+
+def test_revisar_dos_veces_responde_409(client, datos):
+    cambio_id = registrado(client)
+    revisar(client, cambio_id)
+
+    assert revisar(client, cambio_id).status_code == 409
+    assert len(consultar("SELECT id FROM revision")) == 1
+
+
+def test_revisar_una_version_vieja_responde_409(client, datos):
+    cambio_id = registrado(client)
+
+    assert revisar(client, cambio_id, version=1).status_code == 409
+    assert consultar("SELECT id FROM revision") == []
+
+
+def test_revisar_un_cambio_inexistente_responde_404(client, datos):
+    assert revisar(client, 99).status_code == 404
+
+
+def test_la_bandeja_muestra_el_bien_y_el_estado_nuevo(client, datos):
+    cambio_id = registrado(client)
+
+    [fila] = cambios_en_bandeja(client)
+
+    assert fila["registro_id"] == cambio_id
+    assert fila["bien_identificacion"] == "RD-1"
+    assert fila["estado_nuevo"] == "FUERA_DE_SERVICIO"
+    assert fila["unidad_registrante"] == "Unidad Operacional A"
+    assert fila["version"] == 0
