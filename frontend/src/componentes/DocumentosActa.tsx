@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useId, useRef, useState, type ChangeEvent } from "react"
+import { useId, useRef, useState } from "react"
 import { adjuntarDocumento, obtenerArchivoDocumento, obtenerDocumentos } from "../api/documentos"
 import { ErrorHttp } from "../api/http"
-import type { Documento } from "../tipos/documento"
+import { descargarPdf, type Documento } from "../tipos/documento"
 import { fechaHoraLegible } from "../tipos/movimiento"
 import { Boton } from "./Boton"
+import { CampoPdf } from "./CampoPdf"
 
-const maximoBytes = 10 * 1024 * 1024
 const claseError = "rounded-xs border border-error bg-error/5 px-4 py-3 text-sm text-error"
 const tamanoLegible = (bytes: number) =>
   bytes < 1024 * 1024
@@ -15,12 +15,10 @@ const tamanoLegible = (bytes: number) =>
 
 export const DocumentosActa = ({ movimientoId }: { movimientoId: number }) => {
   const tituloId = useId()
-  const ayudaId = useId()
-  const campoArchivo = useRef<HTMLInputElement>(null)
   const enviando = useRef(false)
   const queryClient = useQueryClient()
   const [archivo, setArchivo] = useState<File | null>(null)
-  const [errorLocal, setErrorLocal] = useState<string | null>(null)
+  const [cargas, setCargas] = useState(0)
   const queryKey = ["documentos", movimientoId]
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey,
@@ -31,7 +29,7 @@ export const DocumentosActa = ({ movimientoId }: { movimientoId: number }) => {
     mutationFn: (seleccionado: File) => adjuntarDocumento(movimientoId, seleccionado),
     onSuccess: async () => {
       setArchivo(null)
-      if (campoArchivo.current) campoArchivo.current.value = ""
+      setCargas((n) => n + 1)
       await queryClient.invalidateQueries({ queryKey })
     },
     onError: (e) => {
@@ -43,40 +41,15 @@ export const DocumentosActa = ({ movimientoId }: { movimientoId: number }) => {
     },
   })
   const descarga = useMutation({
-    mutationFn: async (documento: Documento) => {
-      const contenido = await obtenerArchivoDocumento(movimientoId, documento.id)
-      const url = URL.createObjectURL(contenido)
-      const enlace = document.createElement("a")
-      enlace.href = url
-      enlace.download = documento.nombre_original
-      document.body.append(enlace)
-      enlace.click()
-      enlace.remove()
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-    },
+    mutationFn: async (documento: Documento) =>
+      descargarPdf(
+        await obtenerArchivoDocumento(movimientoId, documento.id),
+        documento.nombre_original,
+      ),
   })
 
-  const elegirArchivo = (e: ChangeEvent<HTMLInputElement>) => {
+  const elegirArchivo = (elegido: File | null) => {
     subida.reset()
-    setErrorLocal(null)
-    setArchivo(null)
-    const elegido = e.currentTarget.files?.[0]
-    if (!elegido) return
-    if (
-      !elegido.name.toLowerCase().endsWith(".pdf") ||
-      (elegido.type && elegido.type !== "application/pdf")
-    ) {
-      setErrorLocal("Elegí un archivo PDF.")
-      e.currentTarget.value = ""
-      return
-    }
-    if (elegido.size === 0 || elegido.size > maximoBytes) {
-      setErrorLocal(
-        elegido.size === 0 ? "El PDF está vacío." : "El PDF no puede superar los 10 MB.",
-      )
-      e.currentTarget.value = ""
-      return
-    }
     setArchivo(elegido)
   }
 
@@ -141,22 +114,14 @@ export const DocumentosActa = ({ movimientoId }: { movimientoId: number }) => {
           )}
           {data.puede_adjuntar && (
             <div className="flex flex-col gap-2">
-              <label className="flex min-w-0 flex-col gap-2 text-sm font-semibold">
-                Adjuntar PDF firmado
-                <input
-                  ref={campoArchivo}
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  disabled={subida.isPending}
-                  aria-describedby={ayudaId}
-                  onChange={elegirArchivo}
-                  className="min-h-11 min-w-0 rounded-xs border border-gray-300 bg-white p-2 font-normal file:mr-3 file:cursor-pointer file:rounded-xs file:border-0 file:bg-gray-100 file:px-3 file:py-1 file:font-semibold hover:border-gray-500 focus-visible:outline-3 focus-visible:outline-foco disabled:opacity-50"
-                />
-              </label>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p id={ayudaId} className="text-xs text-gray-600">
-                  PDF de hasta 10 MB. Los documentos ya cargados se conservan.
-                </p>
+              <CampoPdf
+                key={cargas}
+                etiqueta="Adjuntar PDF firmado"
+                ayuda="PDF de hasta 10 MB. Los documentos ya cargados se conservan."
+                deshabilitado={subida.isPending}
+                onElegir={elegirArchivo}
+              />
+              <div className="flex justify-end">
                 <Boton type="button" onClick={adjuntar} disabled={!archivo || subida.isPending}>
                   {subida.isPending ? "Adjuntando…" : "Adjuntar PDF"}
                 </Boton>
@@ -165,9 +130,9 @@ export const DocumentosActa = ({ movimientoId }: { movimientoId: number }) => {
           )}
         </>
       )}
-      {(errorLocal || subida.error) && (
+      {subida.error && (
         <p role="alert" className={claseError}>
-          {errorLocal ?? subida.error?.message}
+          {subida.error.message}
         </p>
       )}
       {subida.isSuccess && (
