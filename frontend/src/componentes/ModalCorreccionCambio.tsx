@@ -180,18 +180,16 @@ export const ModalCorreccionCambio = ({ cambio, onCerrar }: ModalCorreccionCambi
                 Quitar el informe
               </label>
             )}
-            {!quitarInforme && (
-              <CampoPdf
-                etiqueta={cambio.informe ? "Reemplazar el informe" : "Sumar un informe"}
-                ayuda={
-                  fueraDeServicio
-                    ? "Opcional. Si no elegís otro, se conserva el informe vigente."
-                    : "Opcional. PDF de hasta 10 MB."
-                }
-                deshabilitado={isPending}
-                onElegir={setInforme}
-              />
-            )}
+            <CampoPdf
+              etiqueta={cambio.informe ? "Reemplazar el informe" : "Sumar un informe"}
+              ayuda={
+                fueraDeServicio
+                  ? "Opcional. Si no elegís otro, se conserva el informe vigente."
+                  : "Opcional. PDF de hasta 10 MB. No se puede combinar con quitar el informe."
+              }
+              deshabilitado={isPending || quitarInforme}
+              onElegir={setInforme}
+            />
             <label className={claseCampo}>
               Motivo de la corrección
               <textarea

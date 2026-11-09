@@ -25,7 +25,16 @@ export const ModalCambioEstado = ({ bien, onCerrar }: ModalCambioEstadoProps) =>
   const [observaciones, setObservaciones] = useState("")
   const [informe, setInforme] = useState<File | null>(null)
   const [fallo, setFallo] = useState<{ mensaje: string; terminal: boolean } | null>(null)
-  const estadoNuevo = estadoOpuesto(bien.estado_operativo)
+  const [estadoActual] = useState(bien.estado_operativo)
+  const estadoNuevo = estadoOpuesto(estadoActual)
+  const desactualizada = bien.estado_operativo !== estadoActual
+  const aviso = desactualizada
+    ? {
+        mensaje:
+          "El estado del bien cambió mientras la ventana estaba abierta. Cerrala y volvé a abrirla.",
+        terminal: true,
+      }
+    : fallo
   const fueraDeServicio = estadoNuevo === "FUERA_DE_SERVICIO"
   const { mutate, isPending } = useMutation({
     mutationFn: () => registrarCambio(bien.id, estadoNuevo, observaciones.trim(), informe),
@@ -89,23 +98,23 @@ export const ModalCambioEstado = ({ bien, onCerrar }: ModalCambioEstadoProps) =>
             {bien.marca} {bien.modelo}
           </p>
         </header>
-        {fallo && (
+        {aviso && (
           <div
             role="alert"
             className="mx-6 mt-4 rounded-xs border border-error bg-error/5 px-4 py-3 text-sm font-medium text-error"
           >
-            {fallo.mensaje}
+            {aviso.mensaje}
           </div>
         )}
         <div className="overflow-y-auto px-6 py-4">
           <fieldset
-            disabled={isPending || !!fallo?.terminal}
+            disabled={isPending || !!aviso?.terminal}
             className="flex min-w-0 flex-col gap-4"
           >
             <div className="flex flex-col gap-2">
               <span className="text-sm font-semibold">Estado</span>
               <p className="flex flex-wrap items-center gap-2 text-sm">
-                <span className={claseEstado}>{nombreEstadoOperativo[bien.estado_operativo]}</span>
+                <span className={claseEstado}>{nombreEstadoOperativo[estadoActual]}</span>
                 pasa a<span className={claseEstado}>{nombreEstadoOperativo[estadoNuevo]}</span>
               </p>
             </div>
@@ -144,7 +153,7 @@ export const ModalCambioEstado = ({ bien, onCerrar }: ModalCambioEstadoProps) =>
           </fieldset>
         </div>
         <footer className="flex justify-end gap-2 border-t border-gray-200 px-6 py-3">
-          {fallo?.terminal ? (
+          {aviso?.terminal ? (
             <Boton type="button" onClick={onCerrar}>
               Cerrar
             </Boton>
