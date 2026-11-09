@@ -1,5 +1,6 @@
 import type { EstadoOperativo } from "./bien"
 import type { Revision } from "./movimiento"
+import type { EventoActa } from "./revision"
 
 export interface BienDelCambio {
   id: number
@@ -52,3 +53,19 @@ export const estadoOpuesto = (estado: EstadoOperativo): EstadoOperativo =>
 
 export const ultimaObservacionCambio = (cambio: CambioEstado) =>
   cambio.revisiones.filter((revision) => revision.resultado === "OBSERVADO").at(-1)
+
+export const historialCambio = (cambio: CambioEstado): EventoActa[] =>
+  [
+    ...cambio.revisiones.map((r): EventoActa => ({
+      accion: r.resultado === "OBSERVADO" ? "Observado" : "Confirmado",
+      usuario: r.usuario,
+      fecha: r.fecha,
+      motivo: r.motivo_observacion,
+    })),
+    ...cambio.rectificaciones.map((r): EventoActa => ({
+      accion: "Corregido",
+      usuario: r.usuario,
+      fecha: r.fecha,
+      motivo: r.motivo,
+    })),
+  ].sort((a, b) => a.fecha.localeCompare(b.fecha))

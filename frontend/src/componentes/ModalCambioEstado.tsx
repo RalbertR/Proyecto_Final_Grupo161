@@ -37,8 +37,9 @@ export const ModalCambioEstado = ({ bien, onCerrar }: ModalCambioEstadoProps) =>
     },
     onError: (e) => {
       const status = e instanceof ErrorHttp ? e.status : 0
-      const terminal = status === 403 || status === 404 || status === 409
-      if (terminal) queryClient.invalidateQueries({ queryKey: ["historial", bien.id] })
+      const terminal = status === 403 || status === 404
+      if (status === 403 || status === 404 || status === 409)
+        queryClient.invalidateQueries({ queryKey: ["historial", bien.id] })
       setFallo({ mensaje: e.message, terminal })
     },
     onSettled: () => {

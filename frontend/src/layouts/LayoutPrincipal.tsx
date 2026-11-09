@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerDevueltas, obtenerObservados, obtenerPorRecibir } from "../api/movimientos"
-import { obtenerMovimientosARevisar } from "../api/revisiones"
+import { obtenerBandeja } from "../api/revisiones"
 import { Boton } from "../componentes/Boton"
 import { Escudo } from "../componentes/Escudo"
 import { Marca } from "../componentes/Marca"
@@ -42,7 +42,7 @@ export const LayoutPrincipal = () => {
   const revisa = !!yo && yo.unidad.nivel !== "OPERACIONAL"
   const { data: aRevisar } = useQuery({
     queryKey: ["bandeja"],
-    queryFn: obtenerMovimientosARevisar,
+    queryFn: obtenerBandeja,
     enabled: revisa,
     retry: false,
   })
