@@ -221,3 +221,70 @@ def revisar_cambio(
     return RevisionPublic.model_validate(
         revision_repository.buscar_revision(session, revision_id)
     )
+
+
+def listar_observados(
+    session: Session, usuario: UsuarioPublic
+) -> list[CambioEstadoPublic]:
+    return [
+        publico(session, fila)
+        for fila in repository.listar_observados(session, usuario.unidad.id)
+    ]
+
+
+def solo_vuelta_a_servicio() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail="Solo se puede quitar el informe de una vuelta a servicio",
+    )
+
+
+def rectificar_cambio(
+    session: Session,
+    usuario: UsuarioPublic,
+    cambio_id: int,
+    version: int,
+    observaciones: str,
+    motivo: str,
+    informe: UploadFile | None,
+    quitar_informe: bool,
+) -> CambioEstadoPublic:
+    observaciones = texto_obligatorio(observaciones, "las observaciones")
+    motivo = texto_obligatorio(motivo, "el motivo")
+    if quitar_informe and informe is not None:
+        raise solo_vuelta_a_servicio()
+    cambio = repository.bloquear_cambio(session, cambio_id)
+    if cambio is None:
+        raise no_existe()
+    if cambio["unidad_registrante_id"] != usuario.unidad.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo la unidad que registró el cambio puede corregirlo",
+        )
+    if cambio["estado"] != "APLICADO" or cambio["estado_revision"] != "OBSERVADO":
+        raise conflicto("El cambio de estado no está observado")
+    if version != cambio["version_vigente"]:
+        raise version_vencida()
+    if quitar_informe and cambio["estado_nuevo"] == EstadoOperativo.FUERA_DE_SERVICIO:
+        raise solo_vuelta_a_servicio()
+
+    ruta = None
+    try:
+        documento_id = None if quitar_informe else cambio["documento_id"]
+        if informe is not None:
+            documento_id, ruta = guardar_pdf(session, usuario.id, informe)
+        repository.insertar_rectificacion(
+            session,
+            cambio_estado_id=cambio_id,
+            version=cambio["version_vigente"] + 1,
+            observaciones=observaciones,
+            documento_id=documento_id,
+            motivo=motivo,
+            usuario_id=usuario.id,
+        )
+        repository.cambiar_estado_revision(session, cambio_id, "PENDIENTE")
+        session.commit()
+    except Exception as error:
+        deshacer_guardado(session, ruta, error)
+        raise
+    return detalle_cambio(session, cambio_id)

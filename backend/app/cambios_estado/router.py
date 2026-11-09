@@ -36,6 +36,38 @@ def registrar_cambio(
     )
 
 
+@router.get("/cambios-estado/observados", response_model=list[CambioEstadoPublic])
+def listar_observados(session: SessionDep, usuario: UsuarioActualDep):
+    return service.listar_observados(session, usuario)
+
+
+@router.post(
+    "/cambios-estado/{cambio_id}/rectificaciones",
+    response_model=CambioEstadoPublic,
+    status_code=status.HTTP_201_CREATED,
+)
+def rectificar_cambio(
+    session: SessionDep,
+    usuario: UsuarioActualDep,
+    cambio_id: int,
+    version: Annotated[int, Form(ge=0, le=65535)],
+    observaciones: Annotated[str, Form()],
+    motivo: Annotated[str, Form()],
+    informe: Annotated[UploadFile | None, File()] = None,
+    quitar_informe: Annotated[bool, Form()] = False,
+):
+    return service.rectificar_cambio(
+        session,
+        usuario,
+        cambio_id,
+        version,
+        observaciones,
+        motivo,
+        informe,
+        quitar_informe,
+    )
+
+
 @router.get("/cambios-estado/{cambio_id}", response_model=CambioEstadoPublic)
 def consultar_cambio(session: SessionDep, usuario: UsuarioActualDep, cambio_id: int):
     return service.consultar_cambio(session, usuario, cambio_id)

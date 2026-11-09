@@ -500,3 +500,154 @@ def test_la_bandeja_muestra_el_bien_y_el_estado_nuevo(client, datos):
     assert fila["estado_nuevo"] == "FUERA_DE_SERVICIO"
     assert fila["unidad_registrante"] == "Unidad Operacional A"
     assert fila["version"] == 0
+
+
+def observado(client, bien_id=1, estado="FUERA_DE_SERVICIO"):
+    cambio_id = cambiar(client, bien_id, estado).json()["id"]
+    revisar(client, cambio_id, "OBSERVADO", motivo="El informe no está firmado")
+    return cambio_id
+
+
+def corregir(
+    client,
+    cambio_id,
+    version=0,
+    observaciones="No transmite, informe firmado",
+    motivo="Se adjunta el informe firmado",
+    pdf=None,
+    quitar_informe=False,
+    usuario_id=4,
+):
+    archivos = (
+        {"informe": ("informe firmado.pdf", pdf, "application/pdf")}
+        if pdf is not None
+        else None
+    )
+    return client.post(
+        f"/api/cambios-estado/{cambio_id}/rectificaciones",
+        data={
+            "version": version,
+            "observaciones": observaciones,
+            "motivo": motivo,
+            "quitar_informe": quitar_informe,
+        },
+        files=archivos,
+        headers=con_token(usuario_id),
+    )
+
+
+def observados(client, usuario_id=4):
+    return client.get("/api/cambios-estado/observados", headers=con_token(usuario_id))
+
+
+def test_observados_trae_los_cambios_observados_de_mi_unidad(client, datos):
+    cambio_id = observado(client)
+
+    respuesta = observados(client)
+
+    assert respuesta.status_code == 200
+    [cambio] = respuesta.json()
+    assert cambio["id"] == cambio_id
+    assert (
+        cambio["revisiones"][-1]["motivo_observacion"] == "El informe no está firmado"
+    )
+    assert observados(client, usuario_id=5).json() == []
+
+
+def test_corregir_con_informe_nuevo_vuelve_a_pendiente(client, datos):
+    cambio_id = observado(client)
+    anterior = client.get(
+        f"/api/cambios-estado/{cambio_id}", headers=con_token()
+    ).json()
+
+    respuesta = corregir(client, cambio_id, pdf=crear_pdf("firmado"))
+
+    assert respuesta.status_code == 201
+    cambio = respuesta.json()
+    assert cambio["version_vigente"] == 1
+    assert cambio["estado_revision"] == "PENDIENTE"
+    assert cambio["observaciones"] == "No transmite, informe firmado"
+    assert cambio["informe"]["id"] != anterior["informe"]["id"]
+    assert cambio["informe"]["nombre_original"] == "informe firmado.pdf"
+    assert [r["motivo"] for r in cambio["rectificaciones"]] == [
+        "Se adjunta el informe firmado"
+    ]
+    assert observados(client).json() == []
+    [fila] = cambios_en_bandeja(client)
+    assert fila["version"] == 1
+
+
+def test_corregir_sin_archivo_conserva_el_informe(client, datos):
+    cambio_id = observado(client)
+    anterior = client.get(
+        f"/api/cambios-estado/{cambio_id}", headers=con_token()
+    ).json()
+
+    cambio = corregir(client, cambio_id).json()
+
+    assert cambio["informe"]["id"] == anterior["informe"]["id"]
+
+
+def test_quitar_el_informe_de_un_fuera_de_servicio_responde_422(client, datos):
+    cambio_id = observado(client)
+
+    assert corregir(client, cambio_id, quitar_informe=True).status_code == 422
+    assert consultar("SELECT id FROM rectificacion_cambio_estado") == []
+
+
+def test_quitar_el_informe_de_una_vuelta_a_servicio(client, datos):
+    cambio_id = observado(client, bien_id=2, estado="EN_SERVICIO")
+
+    respuesta = corregir(client, cambio_id, quitar_informe=True)
+
+    assert respuesta.status_code == 201
+    assert respuesta.json()["informe"] is None
+
+
+def test_quitar_el_informe_y_subir_otro_a_la_vez_responde_422(client, datos):
+    cambio_id = observado(client, bien_id=2, estado="EN_SERVICIO")
+
+    respuesta = corregir(client, cambio_id, quitar_informe=True, pdf=crear_pdf("otro"))
+
+    assert respuesta.status_code == 422
+
+
+def test_corregir_no_cambia_el_estado_del_bien(client, datos):
+    cambio_id = observado(client)
+
+    corregir(client, cambio_id)
+
+    assert estado_del_bien(1) == "FUERA_DE_SERVICIO"
+
+
+def test_corregir_un_cambio_que_no_esta_observado_responde_409(client, datos):
+    cambio_id = registrado(client)
+
+    assert corregir(client, cambio_id).status_code == 409
+
+
+def test_corregir_dos_veces_la_misma_version_responde_409(client, datos):
+    cambio_id = observado(client)
+    corregir(client, cambio_id)
+
+    assert corregir(client, cambio_id).status_code == 409
+    assert len(consultar("SELECT id FROM rectificacion_cambio_estado")) == 1
+
+
+def test_corregir_desde_otra_unidad_responde_403(client, datos):
+    cambio_id = observado(client)
+
+    assert corregir(client, cambio_id, usuario_id=5).status_code == 403
+
+
+def test_corregir_sin_motivo_responde_422(client, datos):
+    cambio_id = observado(client)
+
+    assert corregir(client, cambio_id, motivo=" ").status_code == 422
+
+
+def test_la_regional_revisa_la_version_corregida(client, datos):
+    cambio_id = observado(client)
+    corregir(client, cambio_id)
+
+    assert revisar(client, cambio_id, version=1).status_code == 201

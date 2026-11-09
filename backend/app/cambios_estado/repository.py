@@ -20,7 +20,7 @@ INSERTAR_CAMBIO = text(
 
 CAMBIAR_ESTADO_BIEN = text("UPDATE bien SET estado_operativo = :estado WHERE id = :id")
 
-CAMBIO = text(
+DATOS_CAMBIO = (
     "SELECT c.id, c.bien_id, c.estado, c.estado_anterior, c.estado_nuevo, "
     "c.observaciones, c.documento_id, c.version_vigente, c.estado_revision, "
     "c.unidad_registrante_id, c.fecha, un.nombre AS unidad_registrante, "
@@ -33,8 +33,20 @@ CAMBIO = text(
     "LEFT JOIN movil m ON m.bien_id = b.id "
     "JOIN unidad un ON un.id = c.unidad_registrante_id "
     "JOIN usuario us ON us.id = c.usuario_id "
-    "LEFT JOIN documento d ON d.id = c.documento_id "
-    "WHERE c.id = :id"
+    "LEFT JOIN documento d ON d.id = c.documento_id"
+)
+
+CAMBIO = text(DATOS_CAMBIO + " WHERE c.id = :id")
+
+OBSERVADOS = text(
+    DATOS_CAMBIO + " WHERE c.estado = 'APLICADO' AND c.estado_revision = 'OBSERVADO' "
+    "AND c.unidad_registrante_id = :unidad_id ORDER BY c.fecha, c.id"
+)
+
+INSERTAR_RECTIFICACION = text(
+    "INSERT INTO rectificacion_cambio_estado (cambio_estado_id, version, "
+    "observaciones, documento_id, motivo, usuario_id) VALUES (:cambio_estado_id, "
+    ":version, :observaciones, :documento_id, :motivo, :usuario_id)"
 )
 
 BLOQUEAR_CAMBIO = text(
@@ -111,3 +123,11 @@ def cambiar_estado_revision(
         CAMBIAR_ESTADO_REVISION,
         params={"id": cambio_id, "estado_revision": estado_revision},
     )
+
+
+def listar_observados(session: Session, unidad_id: int) -> list[RowMapping]:
+    return list(session.exec(OBSERVADOS, params={"unidad_id": unidad_id}).mappings())
+
+
+def insertar_rectificacion(session: Session, **valores) -> None:
+    session.exec(INSERTAR_RECTIFICACION, params=valores)
