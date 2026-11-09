@@ -7,6 +7,7 @@ import { devoluciones, hoy, type EntregaCreate, type Movimiento } from "../tipos
 import { Boton } from "./Boton"
 import { BuscadorBienes } from "./BuscadorBienes"
 import { DevolucionesActa } from "./DevolucionesActa"
+import { DocumentosActa } from "./DocumentosActa"
 import { ListaBienesEntrega } from "./ListaBienesEntrega"
 import { ResumenEntrega } from "./ResumenEntrega"
 
@@ -217,6 +218,7 @@ export const ModalCorreccion = ({ acta, onCerrar, onTerminada }: ModalCorreccion
           <div className="overflow-y-auto px-6 py-4">
             <fieldset disabled={isPending} className="flex min-w-0 flex-col gap-4">
               <DevolucionesActa acta={acta} />
+              <DocumentosActa movimientoId={acta.id} />
               <div className="flex flex-col gap-2">
                 <h3 className="text-sm font-semibold">Bienes · {bienes.length}</h3>
                 {bienes.length > 0 ? (

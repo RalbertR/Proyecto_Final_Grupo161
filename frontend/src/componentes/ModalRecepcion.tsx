@@ -15,6 +15,7 @@ import {
 } from "../tipos/movimiento"
 import { Boton } from "./Boton"
 import { DevolucionesActa } from "./DevolucionesActa"
+import { DocumentosActa } from "./DocumentosActa"
 import { ResumenRecepcion } from "./ResumenRecepcion"
 import { TablaControl } from "./TablaControl"
 
@@ -245,6 +246,7 @@ export const ModalRecepcion = ({
           <div className="overflow-y-auto px-6 py-4">
             <fieldset disabled={isPending || yaRecibida} className="flex min-w-0 flex-col gap-4">
               <DevolucionesActa acta={acta} />
+              <DocumentosActa movimientoId={acta.id} />
               <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
                 <dt className="font-semibold">Fecha del hecho</dt>
                 <dd className="font-mono">{fechaLegible(acta.fecha_hecho)}</dd>

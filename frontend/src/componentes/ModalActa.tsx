@@ -7,6 +7,7 @@ import { extremosDelActa, historialActa, nombreDelActa } from "../tipos/revision
 import { BienesActa } from "./BienesActa"
 import { Boton } from "./Boton"
 import { Dato } from "./Dato"
+import { DocumentosActa } from "./DocumentosActa"
 import { HistorialActa } from "./HistorialActa"
 import { Marca } from "./Marca"
 
@@ -92,6 +93,7 @@ export const ModalActa = ({ movimientoId, onCerrar }: ModalActaProps) => {
           {acta && (
             <>
               <DatosActa acta={acta} />
+              <DocumentosActa movimientoId={acta.id} />
               <HistorialActa eventos={historialActa(acta)} />
               <BienesActa acta={acta} />
             </>

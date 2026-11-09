@@ -9,15 +9,15 @@ export class ErrorHttp extends Error {
   }
 }
 
-export async function http<T>(url: string, init?: RequestInit): Promise<T> {
+async function solicitar(url: string, init?: RequestInit): Promise<Response> {
   const { token, cerrar } = useSesion.getState()
+  const headers = new Headers(init?.headers)
+  if (!headers.has("Content-Type") && !(init?.body instanceof FormData))
+    headers.set("Content-Type", "application/json")
+  if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`)
   const res = await fetch(url, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init?.headers,
-    },
+    headers,
   })
   if (res.status === 401 && token) {
     // Sesion vencida: recarga completa a /login
@@ -31,5 +31,14 @@ export async function http<T>(url: string, init?: RequestInit): Promise<T> {
       res.status,
     )
   }
+  return res
+}
+
+export async function http<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await solicitar(url, init)
   return res.status === 204 ? (undefined as T) : res.json()
+}
+
+export async function httpBlob(url: string, init?: RequestInit): Promise<Blob> {
+  return (await solicitar(url, init)).blob()
 }
