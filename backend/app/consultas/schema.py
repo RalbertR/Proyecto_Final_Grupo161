@@ -1,8 +1,10 @@
 from datetime import date
+from typing import Literal
 
 from sqlmodel import SQLModel
 
 from app.bienes.model import EstadoOperativo, Tenencia
+from app.organizacion.model import Nivel
 
 
 class BienInventarioPublic(SQLModel):
@@ -66,3 +68,41 @@ class EventoHistorialPublic(SQLModel):
 class HistorialBienPublic(SQLModel):
     bien: BienHistorialPublic
     eventos: list[EventoHistorialPublic]
+
+
+Etapa = Literal["POR_RECIBIR", "EN_REVISION", "OBSERVADA", "DEVUELTA"]
+
+
+class TipoSituacion(SQLModel):
+    tipo_bien: str
+    total: int
+    fuera_de_servicio: int
+
+
+class UnidadSituacion(SQLModel):
+    id: int
+    nombre: str
+    nivel: Nivel
+    tipos: list[TipoSituacion]
+    abiertas: int
+
+
+class GrupoSituacion(SQLModel):
+    etapa: Etapa
+    cantidad: int
+    dias_mas_antigua: int | None
+
+
+class ActaDemorada(SQLModel):
+    movimiento_id: int
+    numero_acta: str | None
+    etapa: Etapa
+    unidad_id: int
+    unidad: str
+    dias: int
+
+
+class SituacionPublic(SQLModel):
+    unidades: list[UnidadSituacion]
+    grupos: list[GrupoSituacion]
+    demoradas: list[ActaDemorada]
