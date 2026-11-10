@@ -10,9 +10,24 @@ Sistema web que centraliza la trazabilidad de los bienes logísticos de una fuer
 
 La organización y todos los datos del proyecto son ficticios.
 
+## Sistema desplegado
+
+El sistema está publicado en **https://logistica.nano-rodriguez.com**. Se entra con cualquiera de los usuarios de demostración, todos con la contraseña `1234Test`.
+
+| Usuario | Unidad | Qué puede hacer |
+|---|---|---|
+| `aux.unidad_a` | Unidad Operacional A | Registrar entregas, recibir las que le llegan, asignar bienes a oficiales y registrar sus devoluciones, cambiar el estado de servicio y corregir lo que le observan. |
+| `aux.unidad_b` | Unidad Operacional B | Lo mismo que la Operacional A. |
+| `aux.unidad_c` | Unidad Operacional C | Lo mismo que la Operacional A, dentro de la Regional Sur. |
+| `logistico.regional_norte` | Unidad Regional Norte | Revisar lo que registran las Operacionales A y B, con el acta escaneada al lado, ver el inventario propio y el de sus unidades, ver la sala de situación y operar sus propios bienes. |
+| `logistico.regional_sur` | Unidad Regional Sur | Lo mismo que la Regional Norte, con la Operacional C. |
+| `logistico.direccion` | Dirección Logística | Revisar lo que registran las Regionales, ver el inventario de toda la organización y la sala de situación, y operar sus propios bienes. |
+
+Para ver el recorrido principal, `aux.unidad_a` elige dos armas en depósito desde el inventario y registra una entrega a la Unidad Operacional B. Después `aux.unidad_b` la recibe desde "Por recibir" y `logistico.regional_norte` la revisa desde "Revisión". En la página de cada arma queda la línea de custodia con el paso de A a B.
+
 ## Estado del proyecto
 
-Terminamos el análisis y el diseño y estamos en la codificación. Ya están la base del backend, el esquema de la base de datos, los datos de prueba, las pruebas automatizadas y la integración continua.
+La versión 1.0 está terminada y desplegada. Incluye las entregas entre unidades con recepción y devolución al origen, la revisión del superior con correcciones como versiones nuevas, la dotación y devolución de oficiales, el estado de servicio, las actas escaneadas en PDF, el inventario con la línea de custodia de cada bien y la sala de situación. Los traslados, las anulaciones, las altas, las bajas y los reportes quedaron para una versión siguiente.
 
 El desarrollo se organiza en sprints. Cada historia de usuario y cada tarea técnica es un issue de GitHub con sus criterios y su estimación. Se trabaja en una rama propia y entra a main por un PR, con los linters y las pruebas corriendo en GitHub Actions.
 
@@ -124,14 +139,7 @@ python database/semillas/cargar_datos_prueba.py
 
 El script solo carga si la base está vacía. Si ya tiene datos, avisa y no modifica nada. Para cargarlos de nuevo hay que recrear la base como se explica en el desarrollo local. Siempre se cargan los mismos datos, así los ejemplos de la demo no cambian.
 
-| Usuario | Unidad |
-|---|---|
-| `logistico.direccion` | Dirección Logística |
-| `logistico.regional_norte` | Unidad Regional Norte |
-| `logistico.regional_sur` | Unidad Regional Sur |
-| `aux.unidad_a` | Unidad Operacional A |
-| `aux.unidad_b` | Unidad Operacional B |
-| `aux.unidad_c` | Unidad Operacional C |
+Los usuarios son los de la tabla de [Sistema desplegado](#sistema-desplegado). En una instalación propia, la contraseña de todos es la `CONTRASENA_DEMO` del `.env`.
 
 ## Pruebas
 
