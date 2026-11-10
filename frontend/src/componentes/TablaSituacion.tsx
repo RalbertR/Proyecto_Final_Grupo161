@@ -37,7 +37,7 @@ export const TablaSituacion = ({ unidades, elegida, onElegir }: TablaSituacionPr
               <th className={claseCabecera}>Unidad</th>
               {tipos.map((tipo) => (
                 <th key={tipo} className={`${claseCabecera} text-center`}>
-                  {nombreTipoCorto[tipo] ?? tipo}
+                  {nombreTipoCorto(tipo)}
                 </th>
               ))}
               <th className={`${claseCabecera} text-right`}>Total</th>
@@ -62,7 +62,7 @@ export const TablaSituacion = ({ unidades, elegida, onElegir }: TablaSituacionPr
                       <button
                         type="button"
                         aria-pressed={marcada}
-                        aria-label={`${u.nombre}, ${nombreTipoCorto[t.tipo_bien] ?? t.tipo_bien}: ${t.total} bienes, ${t.fuera_de_servicio} fuera de servicio`}
+                        aria-label={`${u.nombre}, ${nombreTipoCorto(t.tipo_bien)}: ${t.total} bienes, ${t.fuera_de_servicio} fuera de servicio`}
                         onClick={() => onElegir({ unidad: u, tipo: t })}
                         style={{ background: fondo(nivel) }}
                         className={`flex min-h-12 w-full flex-col items-center justify-center rounded-xs px-2 py-1 focus-visible:outline-2 focus-visible:outline-foco text-gray-900 ${marcada ? "ring-2 ring-marca" : ""}`}

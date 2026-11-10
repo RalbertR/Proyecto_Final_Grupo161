@@ -1,3 +1,4 @@
+import { tiposDeBien } from "./bien"
 import type { NivelUnidad } from "./unidad"
 
 export type Etapa = "POR_RECIBIR" | "EN_REVISION" | "OBSERVADA" | "DEVUELTA"
@@ -51,12 +52,14 @@ export const etapaDelActa: Record<Etapa, string> = {
   DEVUELTA: "Devuelta",
 }
 
-export const nombreTipoCorto: Record<string, string> = {
+const tiposCortos: Record<string, string> = {
   ARMAMENTO: "Armamento",
   CHALECO: "Chalecos",
   MOVIL: "Móviles",
   EQUIPO_COMUNICACIONES: "Comunic.",
 }
+
+export const nombreTipoCorto = (tipo: string) => tiposCortos[tipo] ?? tiposDeBien[tipo] ?? tipo
 
 export const textoDias = (dias: number) => {
   if (dias === 0) return "menos de un día"

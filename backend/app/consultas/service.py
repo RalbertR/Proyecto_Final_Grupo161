@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import get_args
 
 from fastapi import HTTPException, status
 from sqlalchemy import RowMapping
@@ -7,12 +8,14 @@ from sqlmodel import Session
 from app.acceso import repository as acceso_repository
 from app.acceso.schema import UsuarioPublic
 from app.acceso.service import unidades_visibles
+from app.movimientos.service import AREA_DEL_TIPO
 from app.organizacion.model import Nivel
 
 from . import repository
 from .schema import (
     ActaDemorada,
     BienInventarioPublic,
+    Etapa,
     GrupoSituacion,
     HistorialBienPublic,
     SituacionPublic,
@@ -57,11 +60,6 @@ def consultar_historial(
     return HistorialBienPublic.model_validate(
         {"bien": dict(bien), "eventos": [dict(evento) for evento in eventos]}
     )
-
-
-TIPOS_DE_BIEN = ["ARMAMENTO", "CHALECO", "MOVIL", "EQUIPO_COMUNICACIONES"]
-
-ETAPAS = ["POR_RECIBIR", "EN_REVISION", "OBSERVADA", "DEVUELTA"]
 
 
 def unidades_de_la_sala(
@@ -127,13 +125,13 @@ def consultar_situacion(
             id=fila["id"],
             nombre=fila["nombre"],
             nivel=fila["nivel"],
-            tipos=[conteo(bienes, fila["id"], tipo) for tipo in TIPOS_DE_BIEN],
+            tipos=[conteo(bienes, fila["id"], tipo) for tipo in AREA_DEL_TIPO],
             abiertas=abiertas[fila["id"]],
         )
         for fila in filas
     ]
     grupos = []
-    for etapa in ETAPAS:
+    for etapa in get_args(Etapa):
         del_grupo = [acta["dias"] for acta in actas if acta["etapa"] == etapa]
         grupos.append(
             GrupoSituacion(
