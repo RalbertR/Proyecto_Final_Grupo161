@@ -47,7 +47,7 @@ export const SituacionPagina = () => {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="font-etiqueta text-sm font-semibold tracking-wider text-gray-500 uppercase">
-            Sala de situación · {fechaDeHoyEnLetras(new Date())}
+            {fechaDeHoyEnLetras(new Date())}
           </p>
           <h1 className="text-2xl leading-tight font-semibold tracking-tight">
             {data ? fraseSituacion(data.grupos) : "Sala de situación"}

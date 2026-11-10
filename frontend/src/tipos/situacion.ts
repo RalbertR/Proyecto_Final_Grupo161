@@ -73,6 +73,7 @@ export const fraseSituacion = (grupos: GrupoSituacion[]) => {
 
 export const antiguedad = (g: GrupoSituacion) => {
   if (g.cantidad === 0 || g.dias_mas_antigua === null) return "Sin actas"
+  if (g.dias_mas_antigua === 0) return "Menos de un día"
   return `La más antigua, ${textoDias(g.dias_mas_antigua)}`
 }
 

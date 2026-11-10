@@ -29,18 +29,7 @@ export const TablaSituacion = ({ unidades, elegida, onElegir }: TablaSituacionPr
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Bienes por unidad y fuera de servicio</h2>
-        <div className="flex items-center gap-2 text-xs text-gray-600">
-          <span>Parte fuera de servicio</span>
-          <span
-            aria-hidden="true"
-            className="h-3 w-24 rounded-xs border border-gray-300"
-            style={{ background: `linear-gradient(to right, ${fondo(0)}, ${fondo(1)})` }}
-          />
-          <span>0 a 50% o más</span>
-        </div>
-      </div>
+      <h2 className="text-lg font-semibold">Bienes por unidad y fuera de servicio</h2>
       <div className="overflow-x-auto rounded-xs border border-gray-300 bg-white">
         <table className="w-full min-w-[40rem] text-left text-sm">
           <thead>
