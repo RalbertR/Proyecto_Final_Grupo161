@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
+import { fresca, porId, useAbrirDesdeInicio } from "../estado/abrirDesdeInicio"
 import { obtenerDevueltas } from "../api/movimientos"
 import { Boton } from "../componentes/Boton"
 import { ModalCorreccion } from "../componentes/ModalCorreccion"
@@ -14,8 +15,16 @@ export const DevueltasPagina = () => {
     isError,
     error,
     refetch,
+    isFetchedAfterMount,
+    isFetching,
   } = useQuery({ queryKey: ["devueltas"], queryFn: obtenerDevueltas, retry: false })
   const [abierta, setAbierta] = useState<Movimiento | null>(null)
+  useAbrirDesdeInicio(
+    fresca(devueltas, isFetchedAfterMount, isFetching),
+    "MOVIMIENTO",
+    porId,
+    setAbierta,
+  )
 
   return (
     <section className="flex flex-col gap-6">
@@ -39,7 +48,7 @@ export const DevueltasPagina = () => {
         <p className="p-4 text-gray-600">No hay actas devueltas</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full bg-white text-left text-sm">
             <thead className="border-b border-gray-500">
               <tr>
                 {columnas.map((columna) => (

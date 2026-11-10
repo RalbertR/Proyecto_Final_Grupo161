@@ -15,7 +15,7 @@ export const TablaMovimientosBien = ({ eventos, onAbrirActa }: TablaMovimientosB
     return <p className="py-2 text-gray-600">Este bien no tiene movimientos registrados</p>
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
+      <table className="w-full bg-white text-left text-sm">
         <thead className="border-b border-gray-500">
           <tr>
             {columnas.map((columna) => (

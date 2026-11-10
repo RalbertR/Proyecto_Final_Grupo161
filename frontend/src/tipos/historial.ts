@@ -35,6 +35,11 @@ export interface EventoHistorial {
   oficial_origen_id: number | null
   oficial_destino_id: number | null
   tiene_informe: boolean
+  unidad_origen: string | null
+  ubicacion_origen: string | null
+  oficial_origen: string | null
+  ubicacion_destino: string | null
+  oficial_destino: string | null
 }
 
 export interface HistorialBien {
@@ -48,14 +53,14 @@ const marcaPorEstado: Record<string, MarcaEvento> = {
   PENDIENTE: { texto: "Pendiente de recepción", tono: "pendiente" },
   RECHAZADO: { texto: "Rechazado", tono: "error" },
   ANULADO: { texto: "Anulado", tono: "error" },
-  DEVUELTO: { texto: "Devuelta al origen", tono: "pendiente" },
+  DEVUELTO: { texto: "Devuelta al origen", tono: "observado" },
 }
 
 const marcaPorRevision: Record<string, MarcaEvento> = {
   NO_APLICA: { texto: "Aplicado", tono: "secundario" },
   PENDIENTE: { texto: "Pendiente de revisión", tono: "pendiente" },
   REVISADO: { texto: "Revisado", tono: "secundario" },
-  OBSERVADO: { texto: "Observado", tono: "error" },
+  OBSERVADO: { texto: "Observado", tono: "observado" },
 }
 
 export const marcaEvento = (evento: Pick<EventoHistorial, "estado" | "estado_revision">) =>

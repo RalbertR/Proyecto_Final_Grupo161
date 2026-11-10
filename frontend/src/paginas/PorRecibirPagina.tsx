@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
+import { fresca, porId, useAbrirDesdeInicio } from "../estado/abrirDesdeInicio"
 import { obtenerPorRecibir } from "../api/movimientos"
 import { Boton } from "../componentes/Boton"
 import { Marca } from "../componentes/Marca"
@@ -24,9 +25,17 @@ export const PorRecibirPagina = () => {
     isError,
     error,
     refetch,
+    isFetchedAfterMount,
+    isFetching,
   } = useQuery({ queryKey: ["por-recibir"], queryFn: obtenerPorRecibir, retry: false })
   const [abierta, setAbierta] = useState<Movimiento | null>(null)
   const [controles, setControles] = useState<Record<number, ControlActa>>({})
+  useAbrirDesdeInicio(
+    fresca(actas, isFetchedAfterMount, isFetching),
+    "MOVIMIENTO",
+    porId,
+    setAbierta,
+  )
 
   const handleCambiar = (bienId: number, cambio: Partial<ControlBien>) => {
     if (!abierta) return
@@ -72,7 +81,7 @@ export const PorRecibirPagina = () => {
         <p className="p-4 text-gray-600">No hay entregas para recibir</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full bg-white text-left text-sm">
             <thead className="border-b border-gray-500">
               <tr>
                 {columnas.map((columna) => (

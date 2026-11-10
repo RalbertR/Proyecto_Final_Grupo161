@@ -268,7 +268,7 @@ export const ModalRecepcion = ({
             </fieldset>
           </div>
           {conNovedad > 0 && !yaRecibida && (
-            <div className={`${claseAviso} mb-3 border-pendiente bg-pendiente/10 text-amber-900`}>
+            <div className={`${claseAviso} mb-3 border-pendiente bg-pendiente/10 text-marca`}>
               Hay un bien con novedad. Para corregirlo, rechazá el acta a la unidad de origen.
             </div>
           )}

@@ -1,16 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useMemo, useState, type ChangeEvent } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerInventario } from "../api/inventario"
 import { obtenerUnidades } from "../api/unidades"
 import { BarraSeleccion, type AvisoBarra } from "../componentes/BarraSeleccion"
 import { ModalDevolucion } from "../componentes/ModalDevolucion"
 import { ModalDotacion } from "../componentes/ModalDotacion"
-import { ModalEntrega } from "../componentes/ModalEntrega"
 import { TablaInventario } from "../componentes/TablaInventario"
 import {
   areasDe,
+  motivosDeBloqueo,
   motivoBloqueo,
   motivoParaDevolver,
   oficialesDe,
@@ -30,6 +30,8 @@ export const InventarioPagina = () => {
     enabled: verUnidades,
   })
   const [sp, setSp] = useSearchParams()
+  const navigate = useNavigate()
+  const { pathname, search } = useLocation()
   const tipos = useMemo(() => sp.getAll("tipo"), [sp])
   const unidad = sp.get("unidad") ?? ""
 
@@ -43,7 +45,6 @@ export const InventarioPagina = () => {
 
   const [seleccion, setSeleccion] = useState<FilaInventario[]>([])
   const [aviso, setAviso] = useState<AvisoBarra | null>(null)
-  const [modalAbierto, setModalAbierto] = useState(false)
   const [devolucionAbierta, setDevolucionAbierta] = useState(false)
   const [dotacionAbierta, setDotacionAbierta] = useState(false)
   const [bloqueados, setBloqueados] = useState(sinBloqueados)
@@ -65,7 +66,7 @@ export const InventarioPagina = () => {
 
   const handleNuevaEntrega = () => {
     if (areasDe(seleccion).length > 1) setAviso("areas")
-    else setModalAbierto(true)
+    else navigate("/entregas/nueva", { state: { bienes: seleccion, volver: pathname + search } })
   }
 
   const handleAsignarAOficial = () => {
@@ -86,7 +87,6 @@ export const InventarioPagina = () => {
     setSeleccion((actual) => actual.filter((b) => b.bien_id !== bienId))
 
   const handleCerrarModal = () => {
-    setModalAbierto(false)
     setDevolucionAbierta(false)
     setDotacionAbierta(false)
     setSeleccion((actual) => actual.filter((b) => !bloqueados.has(b.bien_id)))
@@ -94,7 +94,6 @@ export const InventarioPagina = () => {
   }
 
   const handleRegistrada = () => {
-    setModalAbierto(false)
     setDevolucionAbierta(false)
     setDotacionAbierta(false)
     setSeleccion([])
@@ -111,12 +110,7 @@ export const InventarioPagina = () => {
       })
       .catch(() => null)
     if (!frescas) return
-    const motivos = new Map<number, string>()
-    for (const bien of seleccion) {
-      const motivo = regla(frescas.find((f) => f.bien_id === bien.bien_id))
-      if (motivo) motivos.set(bien.bien_id, motivo)
-    }
-    setBloqueados(motivos)
+    setBloqueados(motivosDeBloqueo(seleccion, frescas, regla))
   }
 
   const handleErrorEntrega = () =>
@@ -190,18 +184,6 @@ export const InventarioPagina = () => {
         onAsignarAOficial={handleAsignarAOficial}
         onRegistrarDevolucion={handleRegistrarDevolucion}
       />
-      {yo && (
-        <ModalEntrega
-          abierto={modalAbierto}
-          unidadOrigen={yo.unidad.nombre}
-          bienes={seleccion}
-          bloqueados={bloqueados}
-          onQuitar={handleQuitar}
-          onCerrar={handleCerrarModal}
-          onRegistrada={handleRegistrada}
-          onError={handleErrorEntrega}
-        />
-      )}
       {yo && (
         <ModalDotacion
           abierto={dotacionAbierta}

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
+import { fresca, porId, useAbrirDesdeInicio } from "../estado/abrirDesdeInicio"
 import { Navigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerCambiosObservados } from "../api/cambiosEstado"
@@ -61,6 +62,18 @@ export const ObservadosPagina = () => {
   })
   const [abierto, setAbierto] = useState<Movimiento | null>(null)
   const [cambioAbierto, setCambioAbierto] = useState<CambioEstado | null>(null)
+  useAbrirDesdeInicio(
+    fresca(actas.data, actas.isFetchedAfterMount, actas.isFetching),
+    "MOVIMIENTO",
+    porId,
+    setAbierto,
+  )
+  useAbrirDesdeInicio(
+    fresca(cambios.data, cambios.isFetchedAfterMount, cambios.isFetching),
+    "CAMBIO_ESTADO",
+    porId,
+    setCambioAbierto,
+  )
 
   if (direccion) return <Navigate to="/" replace />
 
@@ -94,7 +107,7 @@ export const ObservadosPagina = () => {
       <>
         {actas.data.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full bg-white text-left text-sm">
               <Encabezado titulos={columnas} />
               <tbody>
                 {actas.data.map((acta) => {
@@ -136,7 +149,7 @@ export const ObservadosPagina = () => {
               Cambios de estado
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full bg-white text-left text-sm">
                 <Encabezado titulos={columnasCambios} />
                 <tbody>
                   {cambios.data.map((cambio) => {

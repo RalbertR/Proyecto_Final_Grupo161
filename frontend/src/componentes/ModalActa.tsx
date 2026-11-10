@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useRef } from "react"
 import { obtenerMovimiento } from "../api/movimientos"
+import { puedeImprimir } from "../tipos/hoja"
 import { marcaEvento } from "../tipos/historial"
 import { fechaLegible, type Movimiento } from "../tipos/movimiento"
 import { extremosDelActa, historialActa, nombreDelActa } from "../tipos/revision"
 import { BienesActa } from "./BienesActa"
 import { Boton } from "./Boton"
+import { BotonImprimirActa } from "./BotonImprimirActa"
 import { Dato } from "./Dato"
 import { DocumentosActa } from "./DocumentosActa"
 import { HistorialActa } from "./HistorialActa"
@@ -99,7 +101,10 @@ export const ModalActa = ({ movimientoId, onCerrar }: ModalActaProps) => {
             </>
           )}
         </div>
-        <footer className="flex justify-end border-t border-gray-200 px-6 py-3">
+        <footer className="flex justify-end gap-2 border-t border-gray-200 px-6 py-3">
+          {acta && puedeImprimir(acta) && (
+            <BotonImprimirActa movimientoId={acta.id} variant="contorno" />
+          )}
           <Boton type="button" variant="contorno" onClick={() => dialogo.current?.close()}>
             Cerrar
           </Boton>

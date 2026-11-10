@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { fresca, porRegistroId, useAbrirDesdeInicio } from "../estado/abrirDesdeInicio"
 import { Navigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerBandeja } from "../api/revisiones"
@@ -22,6 +23,8 @@ export const RevisionPagina = () => {
     isError,
     error,
     refetch,
+    isFetchedAfterMount,
+    isFetching,
   } = useQuery({
     queryKey: ["bandeja"],
     queryFn: obtenerBandeja,
@@ -31,6 +34,24 @@ export const RevisionPagina = () => {
   const [abierto, setAbierto] = useState<number | null>(null)
   const [cambioAbierto, setCambioAbierto] = useState<number | null>(null)
   const [controles, setControles] = useState<Record<number, ControlRevision>>({})
+  const movimientos = useMemo(
+    () =>
+      fresca(registros, isFetchedAfterMount, isFetching)?.filter(
+        (r) => r.registro === "MOVIMIENTO",
+      ),
+    [registros, isFetchedAfterMount, isFetching],
+  )
+  const cambios = useMemo(
+    () =>
+      fresca(registros, isFetchedAfterMount, isFetching)?.filter(
+        (r) => r.registro === "CAMBIO_ESTADO",
+      ),
+    [registros, isFetchedAfterMount, isFetching],
+  )
+  useAbrirDesdeInicio(movimientos, "MOVIMIENTO", porRegistroId, (r) => setAbierto(r.registro_id))
+  useAbrirDesdeInicio(cambios, "CAMBIO_ESTADO", porRegistroId, (r) =>
+    setCambioAbierto(r.registro_id),
+  )
 
   if (operacional) return <Navigate to="/" replace />
 
@@ -74,7 +95,7 @@ export const RevisionPagina = () => {
         <p className="p-4 text-gray-600">No hay registros para revisar</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full bg-white text-left text-sm">
             <thead className="border-b border-gray-500">
               <tr>
                 {columnas.map((columna) => (

@@ -27,7 +27,7 @@ export const TablaCambiosEstado = ({ bien, eventos }: TablaCambiosEstadoProps) =
   return (
     <div className="flex flex-col gap-2">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full bg-white text-left text-sm">
           <thead className="border-b border-gray-500">
             <tr>
               {columnas.map((columna) => (

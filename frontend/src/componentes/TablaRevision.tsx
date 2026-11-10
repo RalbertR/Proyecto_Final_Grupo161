@@ -19,7 +19,7 @@ type TablaRevisionProps = {
 
 export const TablaRevision = ({ acta, control, onCambiar }: TablaRevisionProps) => (
   <div className="overflow-x-auto">
-    <table className="w-full text-left text-sm">
+    <table className="w-full bg-white text-left text-sm">
       <thead className="border-b border-gray-500">
         <tr>
           {columnas.map((columna) => (

@@ -54,7 +54,7 @@ const columnas = [
     header: "Tenencia",
     cell: ({ row: { original: bien } }) => (
       <div className="flex flex-col">
-        <span className="font-mono text-xs tracking-widest text-gray-500 uppercase">
+        <span className="font-etiqueta text-xs font-semibold tracking-wider text-gray-500 uppercase">
           {bien.tenencia === "DEPOSITO" ? "Depósito" : "Dotación"}
         </span>
         {bien.tenencia === "DEPOSITO" ? (
@@ -166,7 +166,7 @@ export const TablaInventario = ({
       aria-busy={isFetching}
       className={`overflow-x-auto transition-opacity ${isFetching ? "opacity-60" : ""}`}
     >
-      <table className="w-full text-left text-sm">
+      <table className="w-full bg-white text-left text-sm">
         <thead className="border-b border-gray-500">
           {table.getHeaderGroups().map((grupo) => (
             <tr key={grupo.id}>

@@ -56,6 +56,11 @@ class EventoHistorialPublic(SQLModel):
     oficial_origen_id: int | None
     oficial_destino_id: int | None
     tiene_informe: bool
+    unidad_origen: str | None
+    ubicacion_origen: str | None
+    oficial_origen: str | None
+    ubicacion_destino: str | None
+    oficial_destino: str | None
 
 
 class HistorialBienPublic(SQLModel):

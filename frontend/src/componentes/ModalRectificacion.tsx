@@ -185,11 +185,11 @@ export const ModalRectificacion = ({ acta, onCerrar }: ModalRectificacionProps) 
               </p>
             )}
             <dl className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
-              <dt className="text-xs font-semibold tracking-wide text-gray-500 uppercase sm:pt-0.5">
+              <dt className="font-etiqueta text-xs font-semibold tracking-wider text-gray-500 uppercase sm:pt-0.5">
                 Movimiento
               </dt>
               <dd>{movimiento}</dd>
-              <dt className="pt-2 text-xs font-semibold tracking-wide text-gray-500 uppercase sm:pt-0.5">
+              <dt className="pt-2 font-etiqueta text-xs font-semibold tracking-wider text-gray-500 uppercase sm:pt-0.5">
                 Cargó
               </dt>
               <dd className="font-mono">{acta.usuario}</dd>

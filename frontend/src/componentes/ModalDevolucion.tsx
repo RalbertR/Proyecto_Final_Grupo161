@@ -226,7 +226,7 @@ export const ModalDevolucion = ({
                   </select>
                 </label>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
+                  <table className="w-full bg-white text-left text-sm">
                     <thead className="border-b border-gray-500">
                       <tr>
                         {["Tipo", "Marca", "Modelo", "Identificación", "Estado", "Ubicación"].map(

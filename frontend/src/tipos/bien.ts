@@ -74,6 +74,19 @@ export const bienDelRenglon = (renglon: RenglonMovimiento): BienActa => ({
   ubicacion: renglon.ubicacion_origen,
 })
 
+export const motivosDeBloqueo = (
+  bienes: BienActa[],
+  frescas: FilaInventario[],
+  regla: (fresca: FilaInventario | undefined) => string | null,
+) => {
+  const motivos = new Map<number, string>()
+  for (const bien of bienes) {
+    const motivo = regla(frescas.find((f) => f.bien_id === bien.bien_id))
+    if (motivo) motivos.set(bien.bien_id, motivo)
+  }
+  return motivos
+}
+
 export const motivoBloqueo = (bien: FilaInventario, unidadPropiaId?: number) => {
   if (bien.unidad_id !== unidadPropiaId) return "Es de otra unidad"
   if (bien.tenencia === "DOTACION") return "Asignado a un oficial"
