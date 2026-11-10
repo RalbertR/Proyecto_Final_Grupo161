@@ -1,59 +1,48 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQueryClient } from "@tanstack/react-query"
+import type { ReactNode } from "react"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
-import { obtenerYo } from "../api/auth"
-import { obtenerCambiosObservados } from "../api/cambiosEstado"
-import { obtenerDevueltas, obtenerObservados, obtenerPorRecibir } from "../api/movimientos"
-import { obtenerBandeja } from "../api/revisiones"
 import { Boton } from "../componentes/Boton"
 import { Escudo } from "../componentes/Escudo"
-import { Marca } from "../componentes/Marca"
+import { usePendientes } from "../estado/pendientes"
 import { useSesion } from "../estado/sesion"
 import type { NivelUnidad } from "../tipos/unidad"
 
-const nombreNivel: Record<NivelUnidad, string> = {
-  DIRECCION: "Dirección",
-  REGIONAL: "Regional",
-  OPERACIONAL: "Operacional",
+const rolDelNivel: Record<NivelUnidad, string> = {
+  DIRECCION: "Logístico de Dirección",
+  REGIONAL: "Logístico Regional",
+  OPERACIONAL: "Auxiliar Logístico",
 }
 
 const claseEnlace = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex items-center gap-2 border-b-2 py-3 focus-visible:outline-3 focus-visible:outline-foco ${isActive ? "border-marca text-gray-900" : "border-transparent text-gray-500 hover:text-gray-900"}`
+  `flex min-h-10 items-center justify-between gap-3 rounded-xs px-2.5 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco ${isActive ? "bg-marca-hover font-semibold text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"}`
+
+const Enlace = ({
+  a,
+  fin,
+  cantidad,
+  children,
+}: {
+  a: string
+  fin?: boolean
+  cantidad?: number
+  children: ReactNode
+}) => (
+  <li>
+    <NavLink to={a} end={fin} className={claseEnlace}>
+      {children}
+      {!!cantidad && (
+        <span className="rounded-xs bg-pendiente px-1.5 font-mono text-xs font-medium text-marca">
+          {cantidad}
+        </span>
+      )}
+    </NavLink>
+  </li>
+)
 
 export const LayoutPrincipal = () => {
-  const { data: yo } = useQuery({ queryKey: ["yo"], queryFn: obtenerYo, retry: false })
-  const { data: porRecibir } = useQuery({
-    queryKey: ["por-recibir"],
-    queryFn: obtenerPorRecibir,
-    enabled: !!yo,
-    retry: false,
-  })
-  const { data: devueltas } = useQuery({
-    queryKey: ["devueltas"],
-    queryFn: obtenerDevueltas,
-    enabled: !!yo,
-    retry: false,
-  })
-  const corrige = !!yo && yo.unidad.nivel !== "DIRECCION"
-  const { data: observados } = useQuery({
-    queryKey: ["observados"],
-    queryFn: obtenerObservados,
-    enabled: corrige,
-    retry: false,
-  })
-  const { data: cambiosObservados } = useQuery({
-    queryKey: ["cambios-observados"],
-    queryFn: obtenerCambiosObservados,
-    enabled: corrige,
-    retry: false,
-  })
+  const { yo, porRecibir, devueltas, observados, cambiosObservados, aRevisar, corrige, revisa } =
+    usePendientes()
   const cantidadObservados = (observados?.length ?? 0) + (cambiosObservados?.length ?? 0)
-  const revisa = !!yo && yo.unidad.nivel !== "OPERACIONAL"
-  const { data: aRevisar } = useQuery({
-    queryKey: ["bandeja"],
-    queryFn: obtenerBandeja,
-    enabled: revisa,
-    retry: false,
-  })
   const cerrar = useSesion((s) => s.cerrar)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -65,56 +54,65 @@ export const LayoutPrincipal = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 bg-marca px-6 py-3 text-gray-50">
-        <span className="flex items-center gap-2.5 font-semibold">
-          <Escudo className="size-5" />
-          Sistema Logístico Policial
-        </span>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+    <div className="min-h-screen bg-fondo text-gray-900 md:grid md:grid-cols-[232px_minmax(0,1fr)]">
+      <nav
+        aria-label="Principal"
+        className="flex flex-wrap items-start gap-x-4 gap-y-3 bg-marca px-4 py-3 text-sm text-gray-300 md:sticky md:top-0 md:h-screen md:flex-col md:flex-nowrap md:items-stretch md:gap-6 md:py-5"
+      >
+        <div className="order-1 flex grow flex-col gap-3 md:grow-0">
+          <span className="flex items-center gap-2.5 text-base font-semibold text-white">
+            <Escudo className="size-5 shrink-0" />
+            Sistema Logístico Policial
+          </span>
           {yo && (
-            <>
-              <span className="font-etiqueta text-xs font-semibold tracking-wider text-gray-400 uppercase">
-                {nombreNivel[yo.unidad.nivel]}
+            <div className="flex flex-col gap-0.5">
+              <span className="hidden font-etiqueta text-xs font-semibold tracking-wider text-gray-400 uppercase md:block">
+                {rolDelNivel[yo.unidad.nivel]}
               </span>
-              <span className="font-semibold">{yo.unidad.nombre}</span>
-              <span className="font-mono text-gray-300">{yo.nombre_usuario}</span>
-            </>
+              <span className="font-semibold text-white">{yo.unidad.nombre}</span>
+            </div>
           )}
-          <Boton variant="contorno" onClick={handleCerrarSesion} className="px-3 py-1.5 text-sm">
-            Cerrar sesión
-          </Boton>
         </div>
-      </header>
-      <nav className="border-b border-gray-200">
-        <div className="mx-auto flex max-w-7xl gap-6 px-6 text-sm font-semibold">
-          <NavLink to="/" end className={claseEnlace}>
-            Inventario
-          </NavLink>
-          <NavLink to="/por-recibir" className={claseEnlace}>
+        <ul className="order-3 -mx-1 flex w-full gap-1 overflow-x-auto px-1 [scrollbar-width:none] md:order-2 md:mx-0 md:flex-col md:overflow-visible md:px-0">
+          <Enlace a="/" fin>
+            Inicio
+          </Enlace>
+          <Enlace a="/inventario">Inventario</Enlace>
+          <Enlace a="/por-recibir" cantidad={porRecibir?.length}>
             Por recibir
-            {!!porRecibir?.length && <Marca>{porRecibir.length}</Marca>}
-          </NavLink>
-          <NavLink to="/devueltas" className={claseEnlace}>
+          </Enlace>
+          <Enlace a="/devueltas" cantidad={devueltas?.length}>
             Devueltas
-            {!!devueltas?.length && <Marca>{devueltas.length}</Marca>}
-          </NavLink>
+          </Enlace>
           {corrige && (
-            <NavLink to="/observados" className={claseEnlace}>
+            <Enlace a="/observados" cantidad={cantidadObservados}>
               Observados
-              {cantidadObservados > 0 && <Marca>{cantidadObservados}</Marca>}
-            </NavLink>
+            </Enlace>
           )}
           {revisa && (
-            <NavLink to="/revision" className={claseEnlace}>
+            <Enlace a="/revision" cantidad={aRevisar?.length}>
               Revisión
-              {!!aRevisar?.length && <Marca>{aRevisar.length}</Marca>}
-            </NavLink>
+            </Enlace>
           )}
+        </ul>
+        <div className="order-2 flex items-center gap-3 md:order-3 md:mt-auto md:flex-col md:items-stretch md:gap-2 md:border-t md:border-white/15 md:pt-4">
+          {yo && (
+            <span
+              title={yo.nombre_usuario}
+              className="hidden truncate font-mono text-gray-400 md:block"
+            >
+              {yo.nombre_usuario}
+            </span>
+          )}
+          <Boton variant="contorno" onClick={handleCerrarSesion} className="px-3 py-1.5 text-sm">
+            Salir
+          </Boton>
         </div>
       </nav>
-      <main className="mx-auto max-w-7xl px-6 py-8">
-        <Outlet />
+      <main className="min-w-0 px-4 py-6 md:px-8 md:py-8">
+        <div className="mx-auto max-w-7xl">
+          <Outlet />
+        </div>
       </main>
     </div>
   )

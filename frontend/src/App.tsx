@@ -16,6 +16,7 @@ export const App = () => (
     <Route element={<RutaProtegida />}>
       <Route element={<LayoutPrincipal />}>
         <Route index element={<InventarioPagina />} />
+        <Route path="inventario" element={<InventarioPagina />} />
         <Route path="bienes/:id" element={<HistorialBienPagina />} />
         <Route path="por-recibir" element={<PorRecibirPagina />} />
         <Route path="devueltas" element={<DevueltasPagina />} />
