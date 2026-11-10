@@ -170,6 +170,11 @@ def test_el_historial_trae_los_movimientos_en_el_orden_en_que_se_aplicaron(
                 "oficial_origen_id": None,
                 "oficial_destino_id": None,
                 "tiene_informe": False,
+                "unidad_origen": "Unidad Operacional A",
+                "ubicacion_origen": "Sala de Armas",
+                "oficial_origen": None,
+                "ubicacion_destino": "Sala de Armas",
+                "oficial_destino": None,
             },
             {
                 "registro": "MOVIMIENTO",
@@ -188,6 +193,11 @@ def test_el_historial_trae_los_movimientos_en_el_orden_en_que_se_aplicaron(
                 "oficial_origen_id": None,
                 "oficial_destino_id": None,
                 "tiene_informe": False,
+                "unidad_origen": "Unidad Operacional B",
+                "ubicacion_origen": "Sala de Armas",
+                "oficial_origen": None,
+                "ubicacion_destino": "Sala de Armas",
+                "oficial_destino": None,
             },
         ],
     }
@@ -263,6 +273,47 @@ def test_el_historial_trae_el_oficial_de_un_bien_en_dotacion(client, bien_de_a):
     assert bien["ubicacion"] is None
     assert bien["oficial_legajo"] == "50123"
     assert bien["oficial"] == "Gómez, Laura"
+
+
+def test_el_historial_separa_la_unidad_la_ubicacion_y_el_oficial(client, bien_de_a):
+    acta = entregar(client, 4, 5, "0016/2026")
+    recibir(client, acta, 5, 2)
+
+    evento = historial(client, 5).json()["eventos"][0]
+
+    assert evento["unidad_origen"] == "Unidad Operacional A"
+    assert evento["ubicacion_origen"] == "Sala de Armas"
+    assert evento["oficial_origen"] is None
+    assert evento["ubicacion_destino"] == "Sala de Armas"
+    assert evento["oficial_destino"] is None
+
+
+def test_el_historial_trae_el_oficial_de_una_dotacion(client, bien_de_a):
+    with engine.begin() as conexion:
+        conexion.execute(
+            text(
+                "INSERT INTO oficial (id, legajo, apellido, nombre, unidad_id) "
+                "VALUES (1, '50123', 'Gómez', 'Laura', 4)"
+            )
+        )
+    respuesta = client.post(
+        "/api/movimientos/dotaciones",
+        json={
+            "oficial_id": 1,
+            "numero_acta": "0018/2026",
+            "fecha_hecho": HOY,
+            "descripcion": None,
+            "bienes": [1],
+        },
+        headers=con_token(4),
+    )
+    assert respuesta.status_code == 201
+
+    evento = historial(client, 4).json()["eventos"][0]
+
+    assert evento["oficial_destino"] == "Gómez, Laura"
+    assert evento["ubicacion_destino"] is None
+    assert evento["ubicacion_origen"] == "Sala de Armas"
 
 
 def test_el_historial_avisa_si_el_bien_tiene_un_movimiento_pendiente(client, bien_de_a):

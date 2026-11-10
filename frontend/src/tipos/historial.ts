@@ -35,6 +35,11 @@ export interface EventoHistorial {
   oficial_origen_id: number | null
   oficial_destino_id: number | null
   tiene_informe: boolean
+  unidad_origen: string | null
+  ubicacion_origen: string | null
+  oficial_origen: string | null
+  ubicacion_destino: string | null
+  oficial_destino: string | null
 }
 
 export interface HistorialBien {
