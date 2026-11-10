@@ -90,6 +90,7 @@ export const LayoutPrincipal = () => {
               Revisión
             </Enlace>
           )}
+          {revisa && <Enlace a="/situacion">Sala de situación</Enlace>}
         </ul>
         <div className="order-2 flex items-center gap-3 md:order-3 md:mt-auto md:flex-col md:items-stretch md:gap-2 md:border-t md:border-white/15 md:pt-4">
           {yo && (
