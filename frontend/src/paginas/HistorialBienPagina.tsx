@@ -26,7 +26,7 @@ export const HistorialBienPagina = () => {
 
   const volver = (
     <Link
-      to={state?.volver ?? "/"}
+      to={state?.volver ?? "/inventario"}
       className="w-fit text-sm font-semibold text-marca underline hover:text-marca-hover focus-visible:outline-3 focus-visible:outline-foco"
     >
       Volver al inventario

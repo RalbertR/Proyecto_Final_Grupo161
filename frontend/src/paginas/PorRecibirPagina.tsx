@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
+import { porId, useAbrirDesdeInicio } from "../estado/abrirDesdeInicio"
 import { obtenerPorRecibir } from "../api/movimientos"
 import { Boton } from "../componentes/Boton"
 import { Marca } from "../componentes/Marca"
@@ -27,6 +28,7 @@ export const PorRecibirPagina = () => {
   } = useQuery({ queryKey: ["por-recibir"], queryFn: obtenerPorRecibir, retry: false })
   const [abierta, setAbierta] = useState<Movimiento | null>(null)
   const [controles, setControles] = useState<Record<number, ControlActa>>({})
+  useAbrirDesdeInicio(actas, "MOVIMIENTO", porId, setAbierta)
 
   const handleCambiar = (bienId: number, cambio: Partial<ControlBien>) => {
     if (!abierta) return

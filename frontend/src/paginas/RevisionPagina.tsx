@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { porRegistroId, useAbrirDesdeInicio } from "../estado/abrirDesdeInicio"
 import { Navigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerBandeja } from "../api/revisiones"
@@ -31,6 +32,18 @@ export const RevisionPagina = () => {
   const [abierto, setAbierto] = useState<number | null>(null)
   const [cambioAbierto, setCambioAbierto] = useState<number | null>(null)
   const [controles, setControles] = useState<Record<number, ControlRevision>>({})
+  const movimientos = useMemo(
+    () => registros?.filter((r) => r.registro === "MOVIMIENTO"),
+    [registros],
+  )
+  const cambios = useMemo(
+    () => registros?.filter((r) => r.registro === "CAMBIO_ESTADO"),
+    [registros],
+  )
+  useAbrirDesdeInicio(movimientos, "MOVIMIENTO", porRegistroId, (r) => setAbierto(r.registro_id))
+  useAbrirDesdeInicio(cambios, "CAMBIO_ESTADO", porRegistroId, (r) =>
+    setCambioAbierto(r.registro_id),
+  )
 
   if (operacional) return <Navigate to="/" replace />
 

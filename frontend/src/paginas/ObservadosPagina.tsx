@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
+import { porId, useAbrirDesdeInicio } from "../estado/abrirDesdeInicio"
 import { Navigate } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerCambiosObservados } from "../api/cambiosEstado"
@@ -61,6 +62,8 @@ export const ObservadosPagina = () => {
   })
   const [abierto, setAbierto] = useState<Movimiento | null>(null)
   const [cambioAbierto, setCambioAbierto] = useState<CambioEstado | null>(null)
+  useAbrirDesdeInicio(actas.data, "MOVIMIENTO", porId, setAbierto)
+  useAbrirDesdeInicio(cambios.data, "CAMBIO_ESTADO", porId, setCambioAbierto)
 
   if (direccion) return <Navigate to="/" replace />
 
