@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 from sqlmodel import SQLModel
 
 from app.bienes.model import EstadoOperativo
@@ -40,6 +40,39 @@ class RectificacionCambioPublic(SQLModel):
 
 
 class CambioEstadoPublic(SQLModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": 7,
+                    "bien": {
+                        "id": 141,
+                        "identificacion": "RD-0457",
+                        "tipo_bien": "EQUIPO_COMUNICACIONES",
+                        "marca": "Motorola",
+                        "modelo": "DEP450",
+                    },
+                    "estado_anterior": "EN_SERVICIO",
+                    "estado_nuevo": "FUERA_DE_SERVICIO",
+                    "observaciones": "No transmite. Se golpeó en un procedimiento.",
+                    "informe": {
+                        "id": 33,
+                        "nombre_original": "informe_RD-0457.pdf",
+                        "tamano_bytes": 182311,
+                    },
+                    "estado": "APLICADO",
+                    "estado_revision": "PENDIENTE",
+                    "version_vigente": 0,
+                    "unidad_registrante": "Unidad Operacional A",
+                    "usuario": "aux.unidad_a",
+                    "fecha": "2026-11-09T10:21:00",
+                    "revisiones": [],
+                    "rectificaciones": [],
+                }
+            ]
+        }
+    )
+
     id: int
     bien: BienDelCambio
     estado_anterior: EstadoOperativo
