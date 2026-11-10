@@ -9,7 +9,7 @@ import { Boton } from "./Boton"
 import { CampoPdf } from "./CampoPdf"
 
 const claseEstado =
-  "rounded-xs border border-secundario bg-slate-50 px-3 py-1.5 text-sm font-semibold"
+  "rounded-xs border border-secundario bg-gray-50 px-3 py-1.5 text-sm font-semibold"
 
 type ModalCambioEstadoProps = {
   bien: BienHistorial

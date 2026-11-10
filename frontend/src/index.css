@@ -1,14 +1,34 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-sans: "Chivo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Chivo Mono", ui-monospace, monospace;
+  --font-etiqueta: "Archivo Narrow", ui-sans-serif, sans-serif;
+  --font-acta: "Bitter", Georgia, serif;
 
-  --color-marca: #1f2a44;
-  --color-marca-hover: #111827;
-  --color-secundario: #64748b;
+  --color-marca: #0a0a0a;
+  --color-marca-hover: #2a2a2a;
+  --color-secundario: #5c5c5c;
   --color-exito: #16a34a;
-  --color-error: #991b1b;
-  --color-pendiente: #d97706;
-  --color-foco: #fbbf24;
+  --color-error: #a31621;
+  --color-pendiente: #f5b82e;
+  --color-foco: #f5b82e;
+  --color-observado: #b8430b;
+  --color-fondo: #f1f1ef;
+
+  --color-gray-50: var(--color-neutral-50);
+  --color-gray-100: var(--color-neutral-100);
+  --color-gray-200: var(--color-neutral-200);
+  --color-gray-300: var(--color-neutral-300);
+  --color-gray-400: var(--color-neutral-400);
+  --color-gray-500: var(--color-neutral-500);
+  --color-gray-600: var(--color-neutral-600);
+  --color-gray-700: var(--color-neutral-700);
+  --color-gray-800: var(--color-neutral-800);
+  --color-gray-900: var(--color-neutral-900);
+  --color-gray-950: var(--color-neutral-950);
+}
+
+body {
+  background: var(--color-fondo);
 }

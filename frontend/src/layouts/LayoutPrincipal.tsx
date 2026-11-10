@@ -74,7 +74,7 @@ export const LayoutPrincipal = () => {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {yo && (
             <>
-              <span className="font-mono text-xs tracking-widest text-gray-400 uppercase">
+              <span className="font-etiqueta text-xs font-semibold tracking-wider text-gray-400 uppercase">
                 {nombreNivel[yo.unidad.nivel]}
               </span>
               <span className="font-semibold">{yo.unidad.nombre}</span>

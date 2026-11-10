@@ -14,7 +14,7 @@ const claseError = "rounded-xs border border-error bg-error/5 px-4 py-3 text-sm 
 
 const Fila = ({ etiqueta, children }: { etiqueta: string; children: ReactNode }) => (
   <>
-    <dt className="pt-2 text-xs font-semibold tracking-wide text-gray-500 uppercase sm:pt-0.5">
+    <dt className="pt-2 font-etiqueta text-xs font-semibold tracking-wider text-gray-500 uppercase sm:pt-0.5">
       {etiqueta}
     </dt>
     <dd>{children}</dd>

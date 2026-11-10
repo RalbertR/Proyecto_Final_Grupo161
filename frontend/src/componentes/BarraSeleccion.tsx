@@ -60,12 +60,12 @@ export const BarraSeleccion = ({
               ? "1 bien seleccionado"
               : `${seleccion.length} bienes seleccionados`}
           </span>
-          <span className={areas.length > 1 ? "text-amber-300" : "text-gray-300"}>
+          <span className={areas.length > 1 ? "text-pendiente" : "text-gray-300"}>
             {" · "}
             {areas.length > 1 ? "Dos áreas" : areas[0]}
           </span>
           {devolucion && (
-            <span className={oficiales.length > 1 ? "text-amber-300" : "text-gray-300"}>
+            <span className={oficiales.length > 1 ? "text-pendiente" : "text-gray-300"}>
               {" · "}
               {oficiales.length > 1 ? "Dos oficiales" : seleccion[0].oficial}
             </span>

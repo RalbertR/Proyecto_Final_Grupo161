@@ -36,7 +36,7 @@ export const LoginPagina = () => {
             <Escudo className="size-7 text-gray-50" />
             <div className="flex flex-col gap-0.5">
               <span className="font-semibold text-gray-50">Sistema Logístico Policial</span>
-              <span className="font-mono text-xs tracking-widest text-gray-400 uppercase">
+              <span className="font-etiqueta text-xs font-semibold tracking-wider text-gray-400 uppercase">
                 Dirección Logística
               </span>
             </div>

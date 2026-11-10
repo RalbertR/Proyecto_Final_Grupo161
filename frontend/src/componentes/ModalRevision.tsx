@@ -124,10 +124,7 @@ export const ModalRevision = ({
   const avisos = (
     <>
       {corregida && (
-        <div
-          role="status"
-          className={`${claseAviso} border-pendiente bg-pendiente/10 text-amber-900`}
-        >
+        <div role="status" className={`${claseAviso} border-pendiente bg-pendiente/10 text-marca`}>
           La unidad corrigió el acta mientras la revisabas. Volvé a controlarla con los datos
           nuevos.
         </div>

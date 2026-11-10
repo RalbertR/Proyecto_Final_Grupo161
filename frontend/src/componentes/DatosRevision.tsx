@@ -108,7 +108,7 @@ export const DatosRevision = ({ acta, control, onCambiar }: DatosRevisionProps) 
           key={fila.nombre}
           className="grid gap-x-4 py-1 sm:grid-cols-[10rem_1fr_13rem] sm:items-center"
         >
-          <dt className="pt-2 text-xs font-semibold tracking-wide text-gray-500 uppercase sm:pt-0">
+          <dt className="pt-2 font-etiqueta text-xs font-semibold tracking-wider text-gray-500 uppercase sm:pt-0">
             {fila.nombre}
           </dt>
           <dd className="py-1">{fila.valor}</dd>

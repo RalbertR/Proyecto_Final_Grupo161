@@ -94,7 +94,7 @@ export const ObservadosPagina = () => {
       <>
         {actas.data.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full bg-white text-left text-sm">
               <Encabezado titulos={columnas} />
               <tbody>
                 {actas.data.map((acta) => {
@@ -136,7 +136,7 @@ export const ObservadosPagina = () => {
               Cambios de estado
             </h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full bg-white text-left text-sm">
                 <Encabezado titulos={columnasCambios} />
                 <tbody>
                   {cambios.data.map((cambio) => {

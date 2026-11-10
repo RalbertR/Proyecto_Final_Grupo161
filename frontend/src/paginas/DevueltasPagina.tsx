@@ -39,7 +39,7 @@ export const DevueltasPagina = () => {
         <p className="p-4 text-gray-600">No hay actas devueltas</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full bg-white text-left text-sm">
             <thead className="border-b border-gray-500">
               <tr>
                 {columnas.map((columna) => (

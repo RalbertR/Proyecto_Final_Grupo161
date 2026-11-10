@@ -48,14 +48,14 @@ const marcaPorEstado: Record<string, MarcaEvento> = {
   PENDIENTE: { texto: "Pendiente de recepción", tono: "pendiente" },
   RECHAZADO: { texto: "Rechazado", tono: "error" },
   ANULADO: { texto: "Anulado", tono: "error" },
-  DEVUELTO: { texto: "Devuelta al origen", tono: "pendiente" },
+  DEVUELTO: { texto: "Devuelta al origen", tono: "observado" },
 }
 
 const marcaPorRevision: Record<string, MarcaEvento> = {
   NO_APLICA: { texto: "Aplicado", tono: "secundario" },
   PENDIENTE: { texto: "Pendiente de revisión", tono: "pendiente" },
   REVISADO: { texto: "Revisado", tono: "secundario" },
-  OBSERVADO: { texto: "Observado", tono: "error" },
+  OBSERVADO: { texto: "Observado", tono: "observado" },
 }
 
 export const marcaEvento = (evento: Pick<EventoHistorial, "estado" | "estado_revision">) =>
