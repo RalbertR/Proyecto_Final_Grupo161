@@ -99,6 +99,27 @@ def devolver(id, usuario_id, dias=0):
     )
 
 
+def recibir(id, dias=0):
+    ejecutar(
+        "INSERT INTO recepcion (movimiento_id, resultado, usuario_id, fecha) "
+        "VALUES (:id, 'ACEPTADO', 5, NOW() - INTERVAL :dias DAY)",
+        id=id,
+        dias=dias,
+    )
+
+
+def corregir(id, dias=0):
+    ejecutar(
+        "INSERT INTO rectificacion (movimiento_id, version, fecha_hecho, numero_acta, "
+        "motivo, usuario_id, fecha) "
+        "VALUES (:id, 1, DATE(NOW() - INTERVAL :dias DAY), :numero, "
+        "'Corrige la serie', 4, NOW() - INTERVAL :dias DAY)",
+        id=id,
+        numero=f"{id:04d}/2026",
+        dias=dias,
+    )
+
+
 def situacion(client, usuario_id, regional_id=None):
     parametros = {} if regional_id is None else {"regional_id": regional_id}
     return client.get(
@@ -203,6 +224,28 @@ def test_los_dias_se_cuentan_desde_que_entro_al_estado(client, alcance):
         "cantidad": 0,
         "dias_mas_antigua": None,
     }
+
+
+def test_en_revision_y_devuelta_cuentan_desde_el_ultimo_paso(client, alcance):
+    acta(1, "APLICADO", 4, 5, revision="PENDIENTE", dias=10)
+    recibir(1, dias=4)
+    acta(2, "APLICADO", 4, 5, revision="PENDIENTE", dias=9)
+    recibir(2, dias=7)
+    corregir(2, dias=3)
+    acta(3, "DEVUELTO", 4, 5, dias=8)
+    devolver(3, 5, dias=2)
+
+    cuerpo = situacion(client, 2).json()
+
+    assert [
+        (d["movimiento_id"], d["etapa"], d["dias"]) for d in cuerpo["demoradas"]
+    ] == [
+        (1, "EN_REVISION", 4),
+        (2, "EN_REVISION", 3),
+        (3, "DEVUELTA", 2),
+    ]
+    assert grupo(cuerpo, "EN_REVISION")["dias_mas_antigua"] == 4
+    assert grupo(cuerpo, "DEVUELTA")["dias_mas_antigua"] == 2
 
 
 def test_las_actas_cerradas_no_cuentan(client, alcance):
