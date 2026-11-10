@@ -4,13 +4,13 @@ import { Link, useLocation, useParams } from "react-router-dom"
 import { obtenerYo } from "../api/auth"
 import { obtenerHistorial } from "../api/bienes"
 import { Boton } from "../componentes/Boton"
-import { FichaBien } from "../componentes/FichaBien"
-import { Marca } from "../componentes/Marca"
+import { EncabezadoBien } from "../componentes/EncabezadoBien"
+import { LineaCustodia } from "../componentes/LineaCustodia"
 import { ModalActa } from "../componentes/ModalActa"
 import { ModalCambioEstado } from "../componentes/ModalCambioEstado"
 import { TablaCambiosEstado } from "../componentes/TablaCambiosEstado"
 import { TablaMovimientosBien } from "../componentes/TablaMovimientosBien"
-import { tiposDeBien } from "../tipos/bien"
+import { lineaCustodia } from "../tipos/custodia"
 
 export const HistorialBienPagina = () => {
   const bienId = Number(useParams().id)
@@ -58,19 +58,26 @@ export const HistorialBienPagina = () => {
   const puedeCambiar =
     bien.unidad_id === yo?.unidad.id && !bien.con_movimiento_pendiente && !bien.de_baja
 
+  const linea = lineaCustodia(bien, eventos)
+  const ultimo = eventos
+    .filter((e) => e.registro === "MOVIMIENTO" && e.estado === "APLICADO")
+    .at(-1)
+
   return (
     <section className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2 border-b border-gray-200 pb-4">
+      <div className="flex flex-col gap-3">
         {volver}
-        <h1 className="flex flex-wrap items-center gap-3 text-2xl leading-tight font-semibold tracking-tight">
-          <span>
-            {bien.marca} {bien.modelo} <span className="font-mono">{bien.identificacion}</span>
-          </span>
-          {bien.con_movimiento_pendiente && <Marca>Movimiento pendiente</Marca>}
-        </h1>
-        <p className="text-sm text-gray-600">{tiposDeBien[bien.tipo_bien] ?? bien.tipo_bien}</p>
+        <EncabezadoBien bien={bien} linea={linea} ultimo={ultimo} />
       </div>
-      <FichaBien bien={bien} />
+      <section
+        aria-labelledby="titulo-custodia"
+        className="flex flex-col gap-3 rounded-xs border border-gray-300 bg-white px-4 py-4"
+      >
+        <h2 id="titulo-custodia" className="text-lg font-semibold">
+          Línea de custodia
+        </h2>
+        <LineaCustodia linea={linea} onAbrirActa={setActaId} />
+      </section>
       <div className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Movimientos</h2>
         <TablaMovimientosBien
