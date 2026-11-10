@@ -12,6 +12,7 @@ import { NuevaEntregaPagina } from "./paginas/NuevaEntregaPagina"
 import { ObservadosPagina } from "./paginas/ObservadosPagina"
 import { PorRecibirPagina } from "./paginas/PorRecibirPagina"
 import { RevisionPagina } from "./paginas/RevisionPagina"
+import { SituacionPagina } from "./paginas/SituacionPagina"
 
 export const App = () => (
   <Routes>
@@ -27,6 +28,7 @@ export const App = () => (
         <Route path="devueltas" element={<DevueltasPagina />} />
         <Route path="observados" element={<ObservadosPagina />} />
         <Route path="revision" element={<RevisionPagina />} />
+        <Route path="situacion" element={<SituacionPagina />} />
         <Route path="*" element={<NoEncontradaPagina />} />
       </Route>
     </Route>

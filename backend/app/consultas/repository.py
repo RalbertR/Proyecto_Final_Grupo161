@@ -72,3 +72,67 @@ def buscar_bien(session: Session, bien_id: int) -> RowMapping | None:
 
 def listar_historial(session: Session, bien_id: int) -> list[RowMapping]:
     return list(session.exec(HISTORIAL, params={"id": bien_id}).mappings())
+
+
+UNIDADES_DEL_ALCANCE = text(
+    "SELECT id, nombre, nivel, unidad_superior_id FROM unidad WHERE id IN :unidades"
+).bindparams(bindparam("unidades", expanding=True))
+
+BIENES_POR_UNIDAD = text(
+    "SELECT unidad_id, tipo_bien, COUNT(*) AS total, "
+    "SUM(estado_operativo = 'FUERA_DE_SERVICIO') AS fuera_de_servicio "
+    "FROM bien WHERE de_baja = FALSE AND unidad_id IN :unidades "
+    "GROUP BY unidad_id, tipo_bien"
+).bindparams(bindparam("unidades", expanding=True))
+
+ULTIMA_CORRECCION = (
+    "COALESCE((SELECT MAX(r.fecha) FROM rectificacion r "
+    "WHERE r.movimiento_id = v.id), v.fecha_carga)"
+)
+
+ACTAS_ABIERTAS = text(
+    "SELECT a.movimiento_id, a.numero_acta, a.etapa, a.unidad_id, u.nombre AS unidad, "
+    "TIMESTAMPDIFF(DAY, a.desde, NOW()) AS dias FROM ("
+    "SELECT v.id AS movimiento_id, v.numero_acta, 'POR_RECIBIR' AS etapa, "
+    "v.unidad_destino_id AS unidad_id, "
+    f"GREATEST(v.fecha_carga, {ULTIMA_CORRECCION}) AS desde "
+    "FROM v_movimiento_vigente v WHERE v.estado = 'PENDIENTE' "
+    "UNION ALL "
+    "SELECT v.id, v.numero_acta, 'EN_REVISION', b.unidad_revisora_id, "
+    "GREATEST(v.fecha_carga, COALESCE((SELECT MAX(rc.fecha) FROM recepcion rc "
+    "WHERE rc.movimiento_id = v.id AND rc.resultado = 'ACEPTADO'), v.fecha_carga), "
+    f"{ULTIMA_CORRECCION}) "
+    "FROM v_movimiento_vigente v JOIN v_bandeja_revision b "
+    "ON b.registro = 'MOVIMIENTO' AND b.registro_id = v.id "
+    "UNION ALL "
+    "SELECT v.id, v.numero_acta, 'OBSERVADA', v.unidad_registrante_id, "
+    "COALESCE((SELECT MAX(rv.fecha) FROM revision rv WHERE rv.movimiento_id = v.id "
+    "AND rv.resultado = 'OBSERVADO'), v.fecha_carga) "
+    "FROM v_movimiento_vigente v "
+    "WHERE v.estado = 'APLICADO' AND v.estado_revision = 'OBSERVADO' "
+    "UNION ALL "
+    "SELECT v.id, v.numero_acta, 'DEVUELTA', v.unidad_origen_id, "
+    "COALESCE((SELECT MAX(rc.fecha) FROM recepcion rc WHERE rc.movimiento_id = v.id "
+    "AND rc.resultado = 'DEVUELTO'), v.fecha_carga) "
+    "FROM v_movimiento_vigente v WHERE v.estado = 'DEVUELTO'"
+    ") a JOIN unidad u ON u.id = a.unidad_id WHERE a.unidad_id IN :unidades "
+    "ORDER BY dias DESC, a.movimiento_id"
+).bindparams(bindparam("unidades", expanding=True))
+
+
+def listar_unidades_del_alcance(
+    session: Session, unidades: list[int]
+) -> list[RowMapping]:
+    return list(
+        session.exec(UNIDADES_DEL_ALCANCE, params={"unidades": unidades}).mappings()
+    )
+
+
+def contar_bienes_por_unidad(session: Session, unidades: list[int]) -> list[RowMapping]:
+    return list(
+        session.exec(BIENES_POR_UNIDAD, params={"unidades": unidades}).mappings()
+    )
+
+
+def listar_actas_abiertas(session: Session, unidades: list[int]) -> list[RowMapping]:
+    return list(session.exec(ACTAS_ABIERTAS, params={"unidades": unidades}).mappings())
