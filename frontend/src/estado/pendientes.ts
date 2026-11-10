@@ -39,9 +39,9 @@ export const usePendientes = () => {
     enabled: revisa,
     retry: false,
   })
-  const cargando = [yo, porRecibir, devueltas, observados, cambiosObservados, aRevisar].some(
-    (consulta) => consulta.isLoading,
-  )
+  const consultas = [yo, porRecibir, devueltas, observados, cambiosObservados, aRevisar]
+  const cargando = consultas.some((consulta) => consulta.isLoading)
+  const fallidas = consultas.filter((consulta) => consulta.isError)
 
   return {
     yo: yo.data,
@@ -53,5 +53,7 @@ export const usePendientes = () => {
     corrige,
     revisa,
     cargando,
+    error: fallidas[0]?.error ?? null,
+    reintentar: () => fallidas.forEach((consulta) => consulta.refetch()),
   }
 }
