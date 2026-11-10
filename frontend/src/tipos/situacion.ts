@@ -58,22 +58,21 @@ export const nombreTipoCorto: Record<string, string> = {
   EQUIPO_COMUNICACIONES: "Comunic.",
 }
 
-export const textoDias = (dias: number) => (dias === 1 ? "1 día" : `${dias} días`)
+export const textoDias = (dias: number) => {
+  if (dias === 0) return "menos de un día"
+  return dias === 1 ? "1 día" : `${dias} días`
+}
 
 export const fraseSituacion = (grupos: GrupoSituacion[]) => {
   const total = grupos.reduce((suma, g) => suma + g.cantidad, 0)
   const mayor = Math.max(0, ...grupos.map((g) => g.dias_mas_antigua ?? 0))
   if (total === 0) return "No hay actas abiertas"
-  if (total === 1)
-    return mayor === 0 ? "Un acta abierta, de hoy" : `Un acta abierta, lleva ${textoDias(mayor)}`
-  return mayor === 0
-    ? `${total} actas abiertas, todas de hoy`
-    : `${total} actas abiertas, la más demorada lleva ${textoDias(mayor)}`
+  if (total === 1) return `Un acta abierta, lleva ${textoDias(mayor)}`
+  return `${total} actas abiertas, la más demorada lleva ${textoDias(mayor)}`
 }
 
 export const antiguedad = (g: GrupoSituacion) => {
   if (g.cantidad === 0 || g.dias_mas_antigua === null) return "Sin actas"
-  if (g.dias_mas_antigua === 0) return "Desde hoy"
   return `La más antigua, ${textoDias(g.dias_mas_antigua)}`
 }
 

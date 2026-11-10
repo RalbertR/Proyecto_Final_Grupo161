@@ -160,7 +160,7 @@ export const SituacionPagina = () => {
                         </span>
                       </div>
                       <span className="shrink-0 font-mono text-sm font-semibold">
-                        {d.dias === 0 ? "Hoy" : textoDias(d.dias)}
+                        {d.dias === 0 ? "Menos de un día" : textoDias(d.dias)}
                       </span>
                     </li>
                   ))}

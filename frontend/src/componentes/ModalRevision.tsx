@@ -348,7 +348,7 @@ export const ModalRevision = ({
         <div className="h-[60vh] shrink-0 border-b border-gray-200 lg:h-full lg:w-1/2 lg:border-r lg:border-b-0">
           <VisorActa movimientoId={movimientoId} />
         </div>
-        <div className="flex min-h-0 flex-col lg:w-1/2">{contenido()}</div>
+        <div className="flex shrink-0 flex-col lg:min-h-0 lg:w-1/2 lg:shrink">{contenido()}</div>
       </div>
     </dialog>
   )
