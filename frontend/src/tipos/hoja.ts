@@ -4,9 +4,32 @@ import type { Movimiento, Oficial } from "./movimiento"
 export type ClaseHoja = "ENTREGA" | "DOTACION" | "DEVOLUCION"
 
 export interface RenglonHoja {
+  tipoBien: string
   identificacion: string
-  bien: string
+  marca: string
+  modelo: string
   estado: EstadoOperativo
+}
+
+export const renglonHoja = (b: {
+  tipo_bien: string
+  identificacion: string
+  marca: string
+  modelo: string
+  estado_operativo: string
+}): RenglonHoja => ({
+  tipoBien: b.tipo_bien,
+  identificacion: b.identificacion,
+  marca: b.marca,
+  modelo: b.modelo,
+  estado: b.estado_operativo as EstadoOperativo,
+})
+
+export const rotuloIdentificacion = (renglones: RenglonHoja[]) => {
+  const moviles = renglones.filter((r) => r.tipoBien === "MOVIL").length
+  if (moviles === 0) return "N.º de serie"
+  if (moviles === renglones.length) return "Dominio"
+  return "N.º de serie / Dominio"
 }
 
 export interface DatosHoja {
@@ -60,10 +83,6 @@ export const hojaDelActa = (acta: Movimiento): DatosHoja => {
       clase === "ENTREGA" ? (acta.unidad_destino?.nombre ?? "") : (oficial?.nombre ?? ""),
     oficial,
     descripcion: acta.descripcion,
-    renglones: acta.bienes.map((b) => ({
-      identificacion: b.identificacion,
-      bien: `${b.marca} ${b.modelo}`,
-      estado: b.estado_operativo as EstadoOperativo,
-    })),
+    renglones: acta.bienes.map(renglonHoja),
   }
 }

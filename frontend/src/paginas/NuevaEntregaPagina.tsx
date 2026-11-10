@@ -6,13 +6,14 @@ import { obtenerInventario } from "../api/inventario"
 import { registrarEntrega } from "../api/movimientos"
 import { obtenerDestinos } from "../api/unidades"
 import { Boton } from "../componentes/Boton"
+import { BotonImprimirActa } from "../componentes/BotonImprimirActa"
 import { BuscadorBienes } from "../componentes/BuscadorBienes"
 import { claseBoton } from "../componentes/claseBoton"
 import { DocumentosActa } from "../componentes/DocumentosActa"
 import { HojaActa } from "../componentes/HojaActa"
 import { ListaBienesEntrega } from "../componentes/ListaBienesEntrega"
 import { areasDe, motivoBloqueo, motivosDeBloqueo, type FilaInventario } from "../tipos/bien"
-import { hojaDelActa, type DatosHoja } from "../tipos/hoja"
+import { hojaDelActa, renglonHoja, type DatosHoja } from "../tipos/hoja"
 import { hoy } from "../tipos/movimiento"
 
 type Llegada = { bienes?: FilaInventario[]; volver?: string } | null
@@ -123,11 +124,7 @@ export const NuevaEntregaPagina = () => {
         contraparte: destino?.nombre ?? "",
         oficial: null,
         descripcion: datos.descripcion.trim() || null,
-        renglones: enviables.map((b) => ({
-          identificacion: b.identificacion,
-          bien: `${b.marca} ${b.modelo}`,
-          estado: b.estado_operativo,
-        })),
+        renglones: enviables.map(renglonHoja),
       }
 
   return (
@@ -148,6 +145,9 @@ export const NuevaEntregaPagina = () => {
             >
               Entrega registrada. Falta imprimir el acta y firmarla.
             </p>
+            <div>
+              <BotonImprimirActa movimientoId={registrada.id} />
+            </div>
             <DocumentosActa movimientoId={registrada.id} />
             <div className="flex flex-wrap gap-4">
               <Link to="/" className={claseEnlace}>

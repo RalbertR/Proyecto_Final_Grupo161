@@ -3,6 +3,7 @@ import { RutaProtegida } from "./componentes/RutaProtegida"
 import { LayoutPrincipal } from "./layouts/LayoutPrincipal"
 import { DevueltasPagina } from "./paginas/DevueltasPagina"
 import { HistorialBienPagina } from "./paginas/HistorialBienPagina"
+import { ImprimirActaPagina } from "./paginas/ImprimirActaPagina"
 import { InicioPagina } from "./paginas/InicioPagina"
 import { InventarioPagina } from "./paginas/InventarioPagina"
 import { LoginPagina } from "./paginas/LoginPagina"
@@ -16,6 +17,7 @@ export const App = () => (
   <Routes>
     <Route path="/login" element={<LoginPagina />} />
     <Route element={<RutaProtegida />}>
+      <Route path="actas/:id/imprimir" element={<ImprimirActaPagina />} />
       <Route element={<LayoutPrincipal />}>
         <Route index element={<InicioPagina />} />
         <Route path="inventario" element={<InventarioPagina />} />

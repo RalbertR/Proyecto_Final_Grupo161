@@ -32,3 +32,14 @@
 body {
   background: var(--color-fondo);
 }
+
+@page {
+  size: A4;
+  margin: 15mm;
+}
+
+@media print {
+  body {
+    background: white;
+  }
+}

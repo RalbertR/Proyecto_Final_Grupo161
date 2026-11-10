@@ -1,5 +1,5 @@
 import { nombreEstadoOperativo } from "../tipos/bien"
-import { fechaEnLetras, type DatosHoja } from "../tipos/hoja"
+import { fechaEnLetras, rotuloIdentificacion, type DatosHoja } from "../tipos/hoja"
 import { Escudo } from "./Escudo"
 import { Marca } from "./Marca"
 
@@ -55,15 +55,16 @@ export const HojaActa = ({ hoja, estado }: { hoja: DatosHoja; estado?: string })
       <thead>
         <tr className="border-b border-gray-900">
           <th className="w-10 py-1 pr-2 font-semibold">N.º</th>
-          <th className="py-1 pr-2 font-semibold">Identificación</th>
-          <th className="py-1 pr-2 font-semibold">Bien</th>
+          <th className="py-1 pr-2 font-semibold">{rotuloIdentificacion(hoja.renglones)}</th>
+          <th className="py-1 pr-2 font-semibold">Marca</th>
+          <th className="py-1 pr-2 font-semibold">Modelo</th>
           <th className="py-1 font-semibold">Estado</th>
         </tr>
       </thead>
       <tbody>
         {hoja.renglones.length === 0 ? (
           <tr className="border-b border-gray-300">
-            <td colSpan={4} className="py-2 text-gray-500">
+            <td colSpan={5} className="py-2 text-gray-500">
               Sin bienes
             </td>
           </tr>
@@ -72,7 +73,8 @@ export const HojaActa = ({ hoja, estado }: { hoja: DatosHoja; estado?: string })
             <tr key={r.identificacion} className="border-b border-gray-300">
               <td className="py-1 pr-2">{i + 1}</td>
               <td className="py-1 pr-2 font-mono">{r.identificacion}</td>
-              <td className="py-1 pr-2">{r.bien}</td>
+              <td className="py-1 pr-2">{r.marca}</td>
+              <td className="py-1 pr-2">{r.modelo}</td>
               <td className="py-1">{nombreEstadoOperativo[r.estado]}</td>
             </tr>
           ))
