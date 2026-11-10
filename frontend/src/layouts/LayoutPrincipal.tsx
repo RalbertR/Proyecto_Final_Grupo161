@@ -2,7 +2,6 @@ import { useQueryClient } from "@tanstack/react-query"
 import type { ReactNode } from "react"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { Boton } from "../componentes/Boton"
-import { Escudo } from "../componentes/Escudo"
 import { usePendientes } from "../estado/pendientes"
 import { useSesion } from "../estado/sesion"
 import type { NivelUnidad } from "../tipos/unidad"
@@ -60,10 +59,7 @@ export const LayoutPrincipal = () => {
         className="flex flex-wrap items-start gap-x-4 gap-y-3 bg-marca px-4 py-3 text-sm text-gray-300 md:sticky md:top-0 md:h-screen md:flex-col md:flex-nowrap md:items-stretch md:gap-6 md:py-5"
       >
         <div className="order-1 flex grow flex-col gap-3 md:grow-0">
-          <span className="flex items-center gap-2.5 text-base font-semibold text-white">
-            <Escudo className="size-5 shrink-0" />
-            Sistema Logístico Policial
-          </span>
+          <span className="text-base font-semibold text-white">Sistema Logístico Policial</span>
           {yo && (
             <div className="flex flex-col gap-0.5">
               <span className="hidden font-etiqueta text-xs font-semibold tracking-wider text-gray-400 uppercase md:block">

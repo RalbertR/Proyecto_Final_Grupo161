@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
-import { porId, useAbrirDesdeInicio } from "../estado/abrirDesdeInicio"
+import { fresca, porId, useAbrirDesdeInicio } from "../estado/abrirDesdeInicio"
 import { obtenerDevueltas } from "../api/movimientos"
 import { Boton } from "../componentes/Boton"
 import { ModalCorreccion } from "../componentes/ModalCorreccion"
@@ -15,9 +15,16 @@ export const DevueltasPagina = () => {
     isError,
     error,
     refetch,
+    isFetchedAfterMount,
+    isFetching,
   } = useQuery({ queryKey: ["devueltas"], queryFn: obtenerDevueltas, retry: false })
   const [abierta, setAbierta] = useState<Movimiento | null>(null)
-  useAbrirDesdeInicio(devueltas, "MOVIMIENTO", porId, setAbierta)
+  useAbrirDesdeInicio(
+    fresca(devueltas, isFetchedAfterMount, isFetching),
+    "MOVIMIENTO",
+    porId,
+    setAbierta,
+  )
 
   return (
     <section className="flex flex-col gap-6">

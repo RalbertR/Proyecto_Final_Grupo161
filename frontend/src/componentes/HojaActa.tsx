@@ -1,6 +1,5 @@
 import { nombreEstadoOperativo } from "../tipos/bien"
 import { fechaEnLetras, rotuloIdentificacion, type DatosHoja } from "../tipos/hoja"
-import { Escudo } from "./Escudo"
 import { Marca } from "./Marca"
 
 const titulo: Record<DatosHoja["clase"], string> = {
@@ -37,7 +36,6 @@ export const HojaActa = ({ hoja, estado }: { hoja: DatosHoja; estado?: string })
   >
     <header className="flex items-start justify-between gap-4 border-b-2 border-marca pb-3">
       <div className="flex items-center gap-2.5 font-sans">
-        <Escudo className="size-6" />
         <div className="flex flex-col leading-tight">
           <span className="text-[11px] tracking-wider text-gray-600 uppercase">
             Sistema Logístico Policial

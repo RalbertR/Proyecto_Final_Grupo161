@@ -3,7 +3,6 @@ import type { FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { iniciarSesion } from "../api/auth"
 import { Boton } from "../componentes/Boton"
-import { Escudo } from "../componentes/Escudo"
 import { useSesion } from "../estado/sesion"
 
 export const LoginPagina = () => {
@@ -33,7 +32,6 @@ export const LoginPagina = () => {
       <main className="flex flex-1 flex-col lg:flex-row">
         <section className="flex items-center justify-center bg-marca p-12 lg:w-2/5">
           <div className="flex items-center gap-3">
-            <Escudo className="size-7 text-gray-50" />
             <div className="flex flex-col gap-0.5">
               <span className="font-semibold text-gray-50">Sistema Logístico Policial</span>
               <span className="font-etiqueta text-xs font-semibold tracking-wider text-gray-400 uppercase">

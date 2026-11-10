@@ -29,6 +29,10 @@
   --color-gray-950: var(--color-neutral-950);
 }
 
+:root {
+  accent-color: var(--color-marca);
+}
+
 body {
   background: var(--color-fondo);
 }

@@ -73,7 +73,6 @@ export const NuevaEntregaPagina = () => {
     mutationFn: registrarEntrega,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventario"] })
-      navigate(pathname, { replace: true, state: { volver } })
     },
     onError: marcarBloqueados,
     onSettled: () => {
@@ -105,14 +104,19 @@ export const NuevaEntregaPagina = () => {
     e.preventDefault()
     if (enviando.current) return
     enviando.current = true
-    mutate({
-      unidad_destino_id: Number(datos.destino),
-      numero_acta: datos.numeroActa,
-      fecha_hecho: datos.fechaHecho || hoy(),
-      descripcion: datos.descripcion.trim() || null,
-      bienes: enviables.map((b) => b.bien_id),
-    })
+    mutate(
+      {
+        unidad_destino_id: Number(datos.destino),
+        numero_acta: datos.numeroActa,
+        fecha_hecho: datos.fechaHecho || hoy(),
+        descripcion: datos.descripcion.trim() || null,
+        bienes: enviables.map((b) => b.bien_id),
+      },
+      { onSuccess: () => navigate(pathname, { replace: true, state: { volver } }) },
+    )
   }
+
+  const inerte = isPending ? "pointer-events-none opacity-50" : ""
 
   const hoja: DatosHoja = registrada
     ? hojaDelActa(registrada)
@@ -130,7 +134,12 @@ export const NuevaEntregaPagina = () => {
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Link to={volver} className={claseEnlace}>
+        <Link
+          to={volver}
+          aria-disabled={isPending}
+          tabIndex={isPending ? -1 : undefined}
+          className={`${claseEnlace} ${inerte}`}
+        >
           {volver.startsWith("/inventario") ? "Volver al inventario" : "Volver al inicio"}
         </Link>
         <h1 className="text-2xl leading-tight font-semibold tracking-tight">Nueva entrega</h1>
@@ -267,7 +276,12 @@ export const NuevaEntregaPagina = () => {
               </div>
             </fieldset>
             <div className="flex flex-wrap justify-end gap-2 border-t border-gray-200 pt-4">
-              <Link to={volver} className={claseBoton("contorno")}>
+              <Link
+                to={volver}
+                aria-disabled={isPending}
+                tabIndex={isPending ? -1 : undefined}
+                className={claseBoton("contorno", inerte)}
+              >
                 Cancelar
               </Link>
               <Boton type="submit" disabled={isPending || enviables.length === 0}>

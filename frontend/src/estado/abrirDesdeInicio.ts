@@ -2,6 +2,9 @@ import { useEffect } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import type { PedidoAbrir, Registro } from "../tipos/pendiente"
 
+export const fresca = <T>(lista: T[] | undefined, despuesDeMontar: boolean, cargando: boolean) =>
+  despuesDeMontar && !cargando ? lista : undefined
+
 export const porId = (item: { id: number }) => item.id
 
 export const porRegistroId = (item: { registro_id: number }) => item.registro_id

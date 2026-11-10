@@ -95,12 +95,15 @@ export const posiciones = (linea: LineaCustodia, hoy: string) => {
   if (hechos.length === 0) return () => 0
   const conCarga = [linea.duena, linea.donde, linea.estado].some((f) => f[0]?.hecho === null)
   const inicio = conCarga ? CARGA_INICIAL : 0
-  const minimo = Math.max(1, dias(hechos[0], hoy) * 0.04)
-  const pesos = hechos.map((f, i) => Math.max(dias(f, hechos[i + 1] ?? hoy), minimo))
-  const total = pesos.reduce((a, b) => a + b, 0)
-  const acumulado = pesos.map((_, i) => pesos.slice(0, i).reduce((a, b) => a + b, 0))
-  return (hecho: number | null) =>
-    hecho === null ? 0 : inicio + ((100 - inicio) * acumulado[hecho]) / total
+  const piso = Math.min(0.1, 0.6 / hechos.length)
+  const resto = 1 - piso * hechos.length
+  const lapsos = hechos.map((f, i) => Math.max(dias(f, hechos[i + 1] ?? hoy), 0))
+  const totalDias = lapsos.reduce((a, b) => a + b, 0)
+  const partes = lapsos.map(
+    (d) => piso + (totalDias > 0 ? (resto * d) / totalDias : resto / hechos.length),
+  )
+  const acumulado = partes.map((_, i) => partes.slice(0, i).reduce((a, b) => a + b, 0))
+  return (hecho: number | null) => (hecho === null ? 0 : inicio + (100 - inicio) * acumulado[hecho])
 }
 
 export const fechaDelTramo = (linea: LineaCustodia, t: Tramo | undefined) =>
