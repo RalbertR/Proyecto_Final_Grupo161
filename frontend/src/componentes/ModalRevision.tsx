@@ -17,6 +17,7 @@ import { DocumentosActa } from "./DocumentosActa"
 import { HistorialActa } from "./HistorialActa"
 import { Marca } from "./Marca"
 import { TablaRevision } from "./TablaRevision"
+import { VisorActa } from "./VisorActa"
 
 const claseAviso = "mx-6 mt-4 shrink-0 rounded-xs border px-4 py-3 text-sm font-medium"
 
@@ -140,7 +141,7 @@ export const ModalRevision = ({
   const contenido = () => {
     if (revisada)
       return (
-        <div className="flex max-h-[90vh] flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
           <header className="border-b border-gray-200 px-6 py-4">
             <h2 id="titulo-revision" className="text-lg font-semibold">
               {revisada.resultado === "OBSERVADO" ? "Acta observada" : "Acta revisada"}
@@ -169,7 +170,7 @@ export const ModalRevision = ({
 
     if (!acta)
       return (
-        <div className="flex max-h-[90vh] flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
           <header className="border-b border-gray-200 px-6 py-4">
             <h2 id="titulo-revision" className="text-lg font-semibold">
               Revisar acta
@@ -232,7 +233,7 @@ export const ModalRevision = ({
 
     if (observando)
       return (
-        <form onSubmit={handleConfirmarObservacion} className="flex max-h-[90vh] flex-col">
+        <form onSubmit={handleConfirmarObservacion} className="flex min-h-0 flex-1 flex-col">
           <header className="flex items-baseline justify-between gap-4 border-b border-gray-200 px-6 py-4">
             <h2 id="titulo-revision" className="text-lg font-semibold">
               Observar acta <span className="font-mono">{acta.numero_acta}</span>
@@ -281,7 +282,7 @@ export const ModalRevision = ({
       )
 
     return (
-      <form onSubmit={handleRevisado} className="flex max-h-[90vh] flex-col">
+      <form onSubmit={handleRevisado} className="flex min-h-0 flex-1 flex-col">
         <header className="flex flex-col gap-1 border-b border-gray-200 px-6 py-4">
           <h2 id="titulo-revision" className="flex items-center gap-3 text-lg font-semibold">
             <span>
@@ -341,9 +342,14 @@ export const ModalRevision = ({
       }}
       onClose={terminada ? onTerminada : onCerrar}
       aria-labelledby="titulo-revision"
-      className="m-auto w-full max-w-5xl rounded-xs p-0 text-gray-900 shadow-xl backdrop:bg-gray-900/45"
+      className="m-auto w-[96vw] max-w-[120rem] rounded-xs p-0 text-gray-900 shadow-xl backdrop:bg-gray-900/45"
     >
-      {contenido()}
+      <div className="flex max-h-[94vh] flex-col overflow-y-auto lg:h-[94vh] lg:flex-row lg:overflow-hidden">
+        <div className="h-[60vh] shrink-0 border-b border-gray-200 lg:h-full lg:w-1/2 lg:border-r lg:border-b-0">
+          <VisorActa movimientoId={movimientoId} />
+        </div>
+        <div className="flex min-h-0 flex-col lg:w-1/2">{contenido()}</div>
+      </div>
     </dialog>
   )
 }
