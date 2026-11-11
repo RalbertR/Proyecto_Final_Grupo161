@@ -285,6 +285,14 @@ Para pasar a una versión nueva, correr `git pull` y `docker compose up -d --bui
 
 Los scripts los aplica root, porque el usuario de la aplicación no puede cambiar el esquema. La contraseña de root ya está en el contenedor de MySQL, que la toma del `.env`, y la carpeta `database/migraciones` está montada en `/migraciones`, así que después del `git pull` el contenedor ya ve el script nuevo.
 
+| Script | Qué cambia |
+|---|---|
+| `001_esquema.sql` | Crea las tablas, las vistas y los triggers. |
+| `002_entregas_y_revision.sql` | Número de orden por bien, revisión de la versión vigente y jerarquía estricta. |
+| `003_oficiales_y_cambios_de_estado.sql` | La unidad de un oficial solo cambia con un traslado, y las correcciones de un fuera de servicio llevan informe. |
+| `004_devolucion_de_actas.sql` | Devolución del acta al origen. |
+| `005_fechas_en_hora_argentina.sql` | El historial y la bandeja muestran el día de los cambios de estado en hora de Argentina. |
+
 1. Frenar el backend para que nadie escriba mientras cambia el esquema:
 
 ```bash
@@ -301,12 +309,12 @@ chmod 600 ~/respaldo_*.sql
 3. Aplicar cada script nuevo, uno por vez y en orden de número:
 
 ```bash
-docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" logistica_policial < /migraciones/002_entregas_y_revision.sql'
+docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" logistica_policial < /migraciones/005_fechas_en_hora_argentina.sql'
 ```
 
 4. Levantar el backend con el código nuevo con `docker compose up -d --build` y verificar en `https://<subdominio>/api/salud` que responda.
 
-Cada script se aplica una sola vez. Si se corre uno que ya está aplicado, falla en la primera sentencia con un error como `Duplicate column name` y no cambia nada. Si un script falla en el medio, la base queda a medio cambiar, porque en MySQL los cambios de esquema no se pueden deshacer. En ese caso se restaura el respaldo:
+Cada script se aplica una sola vez. Si se corre uno que ya está aplicado, falla en la primera sentencia con un error como `Duplicate column name` y no cambia nada. El 005 es la excepción, porque solo redefine vistas y se puede volver a correr sin que falle. Si un script falla en el medio, la base queda a medio cambiar, porque en MySQL los cambios de esquema no se pueden deshacer. En ese caso se restaura el respaldo:
 
 ```bash
 docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE logistica_policial"'
