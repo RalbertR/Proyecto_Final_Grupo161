@@ -22,9 +22,24 @@ La organización y todos los datos del proyecto son ficticios.
 
 Las historias de usuario y las reglas están en [docs/historias_y_reglas.md](docs/historias_y_reglas.md).
 
+## Sistema desplegado
+
+El sistema está publicado en **https://logistica.nano-rodriguez.com**. Se entra con cualquiera de los usuarios de demostración, todos con la contraseña `1234Test`.
+
+| Usuario | Unidad | Qué puede hacer |
+|---|---|---|
+| `aux.unidad_a` | Unidad Operacional A | Registrar entregas, recibir las que le llegan, asignar bienes a oficiales y registrar sus devoluciones, cambiar el estado de servicio y corregir lo que le observan. |
+| `aux.unidad_b` | Unidad Operacional B | Lo mismo que la Operacional A. |
+| `aux.unidad_c` | Unidad Operacional C | Lo mismo que la Operacional A, dentro de la Regional Sur. |
+| `logistico.regional_norte` | Unidad Regional Norte | Revisar lo que registran las Operacionales A y B, con el acta escaneada al lado, ver el inventario propio y el de sus unidades, ver la sala de situación y operar sus propios bienes. |
+| `logistico.regional_sur` | Unidad Regional Sur | Lo mismo que la Regional Norte, con la Operacional C. |
+| `logistico.direccion` | Dirección Logística | Revisar lo que registran las Regionales, ver el inventario de toda la organización y la sala de situación, y operar sus propios bienes. |
+
+Para ver el recorrido principal, `aux.unidad_a` elige dos armas en depósito desde el inventario y registra una entrega a la Unidad Operacional B. Después `aux.unidad_b` la recibe desde "Por recibir" y `logistico.regional_norte` la revisa desde "Revisión". En la página de cada arma queda la línea de custodia con el paso de A a B.
+
 ## Estado del proyecto
 
-El análisis y el diseño están terminados y el sistema funciona de punta a punta: el backend con su API, el frontend, la base de datos con sus scripts, los datos de demostración, las pruebas automatizadas, la integración continua y el despliegue en el servidor. Faltan las historias HU-12 (anular un acta), HU-14 (reubicar bienes) y HU-15 (dar de baja un bien), el recorrido de aceptación en el servidor y el documento de la versión 1.0.
+La versión 1.0 está terminada y desplegada, con todo lo que se describe en [Qué hace](#qué-hace). Los traslados, las anulaciones de actas, las reubicaciones, las altas, las bajas y los reportes quedaron para una versión siguiente.
 
 El desarrollo se organiza en sprints. Cada historia de usuario y cada tarea técnica es un issue de GitHub con sus criterios y su estimación. Se trabaja en una rama propia y entra a main por un PR, con los linters y las pruebas corriendo en GitHub Actions.
 
@@ -119,7 +134,7 @@ Swagger explica cada endpoint con su descripción, un ejemplo de lo que recibe o
 |---|---|
 | Desarrollo, directo al backend | `http://localhost:8000/api/docs` |
 | Desarrollo, por el servidor de Vite | `http://localhost:5173/api/docs` |
-| Servidor | `https://<subdominio>/api/docs` |
+| Servidor | `https://logistica.nano-rodriguez.com/api/docs` |
 
 Para probar los endpoints desde esa página:
 
@@ -162,6 +177,8 @@ python database/semillas/cargar_datos_prueba.py
 ```
 
 El script solo carga si la base está vacía. Si ya tiene datos, avisa y no modifica nada. Para cargarlos de nuevo hay que recrear la base como se explica en el desarrollo local. Siempre se cargan los mismos datos, así los ejemplos de la demo no cambian.
+
+Son los mismos usuarios del [sistema desplegado](#sistema-desplegado). Esta tabla cuenta lo que ve cada uno con los datos recién cargados:
 
 | Usuario | Unidad | Qué puede hacer |
 |---|---|---|
