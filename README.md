@@ -236,6 +236,48 @@ Cada contraseña y la clave JWT se generan con `openssl rand -hex 32`. La contra
 4. Levantar todo con `docker compose up -d --build` y revisar con `docker compose ps` que los contenedores estén corriendo y MySQL figure `healthy`.
 5. Abrir `https://<subdominio>/api/salud`, que tiene que responder `{"estado":"ok"}`, y después `https://<subdominio>` para ver el login. La documentación de la API queda en `https://<subdominio>/api/docs`.
 6. Para la demo, cargar los datos de prueba con `docker compose run --rm semillas`. Usa la `CONTRASENA_DEMO` del `.env`.
+7. Para recorrer todas las funciones, completar la demo con actas en todos los estados (backend levantado). Los tres comandos van en este orden y cada uno se corre **una sola vez**: `historia` no es idempotente y correrla dos veces duplica eventos.
+
+```bash
+docker compose run --rm semillas python /semillas/cargar_demo.py
+docker compose run --rm semillas python /semillas/cargar_historia.py historia
+docker compose run --rm semillas python /semillas/cargar_historia.py cerrar
+```
+
+`cargar_demo.py` registra por la API las actas pendientes de recepción, aplicadas, rechazadas, devueltas, revisadas, observadas y rectificadas, y las dotaciones a oficiales. `cargar_historia.py` agrega una historia de julio a noviembre de 2026 fechada por SQL, y `cerrar` numera las actas por unidad en orden cronológico y adjunta el acta escaneada de cada una. Si hay que repetirlo, se recrea la base como se explica más abajo. Antes de tocar datos en el servidor conviene hacer un respaldo.
+
+8. Programar el respaldo diario de la base (ver la sección siguiente).
+
+### Respaldo y restauración
+
+`database/respaldar.sh` hace un `mysqldump` comprimido de la base y lo guarda en `~/respaldos/logistica_<fecha>.sql.gz` con permisos `600`. Conserva los últimos siete, borra los más viejos y descarta un volcado incompleto en vez de dejarlo como respaldo. Para correrlo a las 3:00 todos los días, agregar con `crontab -e`:
+
+```
+0 3 * * * sh /home/<usuario>/proyecto_final/Proyecto_Final_Grupo161/database/respaldar.sh >> /home/<usuario>/respaldos/respaldo.log 2>&1
+```
+
+Se puede correr a mano en cualquier momento con `sh database/respaldar.sh`. El respaldo guarda la base, no los PDFs de las actas, que están en el volumen `documentos_privados` y se respaldan aparte.
+
+Para comprobar que un respaldo sirve sin tocar la base real, se restaura en una base temporal y se comparan los datos:
+
+```bash
+docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE restauracion_prueba"'
+gzip -dc ~/respaldos/logistica_<fecha>.sql.gz | docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" restauracion_prueba'
+docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE restauracion_prueba"'
+```
+
+Entre el segundo y el tercer comando, comparar con `SELECT COUNT(*)` las tablas `movimiento`, `bien`, `documento` y `revision`, y los triggers en `information_schema.triggers`, contra `logistica_policial`. Esta prueba se hizo el 11 de noviembre de 2026 con el respaldo del servidor y dio los mismos conteos: 69 movimientos, 252 bienes, 79 documentos, 57 revisiones y 11 triggers.
+
+Para restaurar de verdad (por ejemplo, después de una migración que falló), frenar el backend, borrar la base y cargar el respaldo en `logistica_policial`:
+
+```bash
+docker compose stop backend
+docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE logistica_policial; CREATE DATABASE logistica_policial"'
+gzip -dc ~/respaldos/logistica_<fecha>.sql.gz | docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" logistica_policial'
+docker compose up -d
+```
+
+Como el respaldo no trae `CREATE DATABASE`, hay que recrear la base vacía antes. Los permisos del usuario de la aplicación se conservan.
 
 ### Actualizar el servidor
 
