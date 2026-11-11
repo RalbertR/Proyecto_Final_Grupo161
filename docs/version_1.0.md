@@ -137,9 +137,9 @@ Las pruebas automáticas cubren la API y la base de datos. Corren con pytest con
 | Un bien no recibe dos cambios de estado a la vez. | Dos cambios simultáneos del mismo bien. Solo uno se aplica. | `test_dos_cambios_simultaneos_del_mismo_bien` |
 | Un PDF no se carga dos veces. | Dos cargas simultáneas del mismo archivo guardan un solo documento. | `test_dos_cargas_simultaneas_del_mismo_pdf_guardan_un_solo_documento` |
 
-La versión tiene 378 pruebas automáticas en verde y una cobertura del 99% del código de la API. Corren en GitHub Actions en cada pull request junto con los linters, y `main` no acepta un cambio si alguna falla. La sección Pruebas del [README](../README.md#pruebas) explica cómo repetirlas.
+La versión tiene 379 pruebas automáticas en verde y una cobertura del 99% del código de la API. Corren en GitHub Actions en cada pull request junto con los linters, y `main` no acepta un cambio si alguna falla. La sección Pruebas del [README](../README.md#pruebas) explica cómo repetirlas.
 
-El frontend no tiene pruebas automáticas. Cada pantalla se probó en el navegador contra sus criterios de aceptación, y antes de publicar la versión se hizo el [recorrido de aceptación](recorrido_de_aceptacion.md) con cada usuario de demostración en el sistema publicado, en una computadora y en un celular.
+El frontend no tiene pruebas automáticas. Cada pantalla se probó en el navegador contra sus criterios de aceptación, y antes de publicar la versión se hizo el [recorrido de aceptación](recorrido_de_aceptacion.md) con cada usuario de demostración en el sistema publicado, en una computadora y en un celular. Aparecieron dos fallas. Las fechas de los cambios de estado registrados después de las 21 h figuraban con el día siguiente en el historial y en la bandeja, y se corrigió con el script `005_fechas_en_hora_argentina.sql` y su prueba. La otra, que en el celular algunas pantallas se corren de costado, quedó entre las limitaciones.
 
 ## Qué queda para la versión siguiente
 
@@ -160,4 +160,6 @@ Limitaciones conocidas de esta versión:
 - El acta impresa muestra el estado actual de cada bien y no el que tenía al registrarse.
 - Cerrar sesión borra el token del navegador, pero el token sigue valiendo hasta que vence.
 - Los PDFs no se reemplazan ni se borran.
+- En el celular, la página de Revisión y las ventanas para recibir un acta y para corregirla se pueden correr de costado hasta un espacio vacío. Se ven completas y las acciones funcionan. Está en el issue #85.
+- Entre las 21 y las 24 h, la fecha del hecho de un movimiento acepta el día siguiente, porque la API la compara con el día del servidor, que está en UTC.
 - El sistema corre en un solo servidor y su disponibilidad depende de ese equipo y de su conexión.
