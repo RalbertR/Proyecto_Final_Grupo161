@@ -307,6 +307,30 @@ def test_lo_registrado_por_una_regional_va_a_la_bandeja_de_direccion(client, dat
     ]
 
 
+def test_un_cambio_de_las_23_30_figura_con_el_dia_de_argentina(client, datos):
+    cambio = cambiar(client, 1, "FUERA_DE_SERVICIO").json()
+    with engine.begin() as conexion:
+        conexion.execute(
+            text(
+                "UPDATE cambio_estado_operativo "
+                "SET fecha = '2026-11-11 02:30:00' WHERE id = :id"
+            ),
+            {"id": cambio["id"]},
+        )
+
+    historial = client.get("/api/bienes/1/historial", headers=con_token()).json()
+    bandeja = client.get("/api/revisiones/bandeja", headers=con_token(2)).json()
+
+    assert [
+        evento["fecha"]
+        for evento in historial["eventos"]
+        if evento["registro"] == "CAMBIO_ESTADO"
+    ] == ["2026-11-10"]
+    assert [r["fecha"] for r in bandeja if r["registro"] == "CAMBIO_ESTADO"] == [
+        "2026-11-10"
+    ]
+
+
 def test_un_fallo_al_registrar_borra_el_pdf_guardado(client, datos, monkeypatch):
     def fallar(*args, **kwargs):
         raise OSError("disco lleno")
