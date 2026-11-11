@@ -10,6 +10,18 @@ Sistema web que centraliza la trazabilidad de los bienes logísticos de una fuer
 
 La organización y todos los datos del proyecto son ficticios.
 
+### Qué hace
+
+- **Inventario por alcance.** Una Unidad Operacional ve solo sus bienes, una Regional los suyos y los de sus Operacionales, y la Dirección los de todas (RN-01).
+- **Entregas entre unidades.** Se registra el acta, el destino la acepta ubicando cada bien o la devuelve al origen con un motivo, y el origen la corrige y la reenvía o desiste.
+- **Dotación y devolución de oficiales.** Se asignan bienes a un oficial de la unidad y se registra cuando los devuelve.
+- **Revisión.** El superior inmediato revisa u observa lo que cargan sus unidades. Una corrección nunca pisa el original: queda como una versión nueva.
+- **Actas escaneadas.** Se adjunta el PDF firmado a cada movimiento y la Regional lo ve al lado de los datos que revisa.
+- **Estado de servicio.** Un bien pasa a fuera de servicio con su informe técnico, o vuelve a servicio.
+- **Historial y control.** Cada bien tiene su historial y su línea de custodia, y la Regional y la Dirección tienen una sala de situación con las actas demoradas y el equipamiento fuera de servicio.
+
+Las historias de usuario y las reglas están en [docs/historias_y_reglas.md](docs/historias_y_reglas.md).
+
 ## Sistema desplegado
 
 El sistema está publicado en **https://logistica.nano-rodriguez.com**. Se entra con cualquiera de los usuarios de demostración, todos con la contraseña `1234Test`.
@@ -27,7 +39,7 @@ Para ver el recorrido principal, `aux.unidad_a` elige dos armas en depósito des
 
 ## Estado del proyecto
 
-La versión 1.0 está terminada y desplegada. Incluye las entregas entre unidades con recepción y devolución al origen, la revisión del superior con correcciones como versiones nuevas, la dotación y devolución de oficiales, el estado de servicio, las actas escaneadas en PDF, el inventario con la línea de custodia de cada bien y la sala de situación. Los traslados, las anulaciones, las altas, las bajas y los reportes quedaron para una versión siguiente.
+La versión 1.0 está terminada y desplegada, con todo lo que se describe en [Qué hace](#qué-hace). Los traslados, las anulaciones de actas, las reubicaciones, las altas, las bajas y los reportes quedaron para una versión siguiente.
 
 El desarrollo se organiza en sprints. Cada historia de usuario y cada tarea técnica es un issue de GitHub con sus criterios y su estimación. Se trabaja en una rama propia y entra a main por un PR, con los linters y las pruebas corriendo en GitHub Actions.
 
@@ -91,7 +103,7 @@ fastapi dev app/main.py
 
 En Linux o macOS el entorno se activa con `source .venv/bin/activate`.
 
-4. Abrir `http://localhost:8000/api/salud`, que tiene que responder `{"estado":"ok"}`. La documentación de la API está en `http://localhost:8000/docs`.
+4. Abrir `http://localhost:8000/api/salud`, que tiene que responder `{"estado":"ok"}`. La documentación de la API está en `http://localhost:8000/api/docs`, como se explica en [Documentación de la API](#documentación-de-la-api).
 
 Los scripts solo se ejecutan cuando el volumen de MySQL está vacío. Para recrear la base desde cero hay que correr `docker compose down -v` y después `docker compose up -d`.
 
@@ -113,6 +125,33 @@ pre-commit install
 ```
 
 Para revisar todo el repositorio sin hacer un commit: `pre-commit run --all-files`.
+
+## Documentación de la API
+
+Swagger explica cada endpoint con su descripción, un ejemplo de lo que recibe o devuelve y los errores que puede responder, con el mensaje de cada uno. Está en `/api/docs`, y `/api/redoc` muestra lo mismo en otro formato:
+
+| Dónde | Dirección |
+|---|---|
+| Desarrollo, directo al backend | `http://localhost:8000/api/docs` |
+| Desarrollo, por el servidor de Vite | `http://localhost:5173/api/docs` |
+| Servidor | `https://logistica.nano-rodriguez.com/api/docs` |
+
+Para probar los endpoints desde esa página:
+
+1. Tocar **Authorize**, escribir un usuario de la tabla de [datos de prueba](#datos-de-prueba) (por ejemplo `aux.unidad_a`) y la `CONTRASENA_DEMO` del `.env`, y confirmar. Los demás endpoints envían el token solos.
+2. Abrir un endpoint, tocar **Try it out** y **Execute**. Lo que se ve depende del usuario: una Operacional solo ve su unidad, y el mismo pedido con otro usuario da otro resultado.
+
+Los errores de negocio responden siempre `{"detail": "<texto en español>"}`:
+
+| Código | Cuándo |
+|---|---|
+| 401 | Falta el token, es inválido o venció. |
+| 403 | El usuario no tiene alcance sobre lo que pide. |
+| 404 | El recurso no existe. |
+| 409 | El estado actual no admite la operación: un bien con un movimiento pendiente, un acta ya resuelta, una versión vencida. |
+| 422 | Un dato no cumple el formato o una regla de validación. Si falla el formato, `detail` es una lista con el campo que falló. |
+
+Los contratos con más detalle están en [docs/contratos](docs/contratos): [actas escaneadas](docs/contratos/documentos.md), [cambios de estado](docs/contratos/cambios_estado.md) y [sala de situación](docs/contratos/situacion.md). Una prueba de pytest falla si se agrega un endpoint sin descripción, sin ejemplo o sin sus errores, así que la documentación no se puede quedar atrás.
 
 ## Actas escaneadas
 
@@ -139,7 +178,16 @@ python database/semillas/cargar_datos_prueba.py
 
 El script solo carga si la base está vacía. Si ya tiene datos, avisa y no modifica nada. Para cargarlos de nuevo hay que recrear la base como se explica en el desarrollo local. Siempre se cargan los mismos datos, así los ejemplos de la demo no cambian.
 
-Los usuarios son los de la tabla de [Sistema desplegado](#sistema-desplegado). En una instalación propia, la contraseña de todos es la `CONTRASENA_DEMO` del `.env`.
+Son los mismos usuarios del [sistema desplegado](#sistema-desplegado). Esta tabla cuenta lo que ve cada uno con los datos recién cargados:
+
+| Usuario | Unidad | Qué puede hacer |
+|---|---|---|
+| `logistico.direccion` | Dirección Logística | Ve todas las unidades. Revisa lo que registran las Regionales. Lo que registra no se revisa. |
+| `logistico.regional_norte` | Unidad Regional Norte | Ve la Regional, A y B. Revisa lo que registran A y B. |
+| `logistico.regional_sur` | Unidad Regional Sur | Ve la Regional y C. Revisa lo que registra C. |
+| `aux.unidad_a` | Unidad Operacional A | Ve solo A. Tiene un arma dada de baja y una entrega a B pendiente de recepción. |
+| `aux.unidad_b` | Unidad Operacional B | Ve solo B. Recibe la entrega de A. |
+| `aux.unidad_c` | Unidad Operacional C | Ve solo C. Sirve para comprobar que no accede a los bienes de A. |
 
 ## Pruebas
 
@@ -159,6 +207,8 @@ pytest --cov=app --cov-report=term-missing
 ```
 
 La salida de este comando es la que se pega en cada PR.
+
+El frontend no tiene pruebas automáticas: la integración continua corre `pnpm lint` y `pnpm format:check` desde `frontend`, y las pantallas se prueban a mano contra los criterios de [docs/historias_y_reglas.md](docs/historias_y_reglas.md). Los linters del backend se corren con `pre-commit run --all-files`.
 
 La base de prueba se crea de nuevo cada vez que arranca el contenedor. Cuando se agrega un script a `database/migraciones`, alcanza con `docker compose up -d --wait --force-recreate mysql_pruebas`. Para apagarla se usa `docker compose stop mysql_pruebas`, porque un `docker compose down` no la incluye.
 
@@ -184,7 +234,7 @@ CONTRASENA_DEMO=
 Cada contraseña y la clave JWT se generan con `openssl rand -hex 32`. La contraseña de MySQL va dentro de la URL de conexión, por eso tiene que ser hexadecimal y sin símbolos. `COMPOSE_FILE` hace que todos los `docker compose` usen el archivo de producción sin tener que pasar `-f`. Después de completarlo, correr `chmod 600 .env`.
 
 4. Levantar todo con `docker compose up -d --build` y revisar con `docker compose ps` que los contenedores estén corriendo y MySQL figure `healthy`.
-5. Abrir `https://<subdominio>/api/salud`, que tiene que responder `{"estado":"ok"}`, y después `https://<subdominio>` para ver el login.
+5. Abrir `https://<subdominio>/api/salud`, que tiene que responder `{"estado":"ok"}`, y después `https://<subdominio>` para ver el login. La documentación de la API queda en `https://<subdominio>/api/docs`.
 6. Para la demo, cargar los datos de prueba con `docker compose run --rm semillas`. Usa la `CONTRASENA_DEMO` del `.env`.
 
 ### Actualizar el servidor

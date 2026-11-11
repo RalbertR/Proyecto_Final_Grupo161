@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 from sqlmodel import SQLModel
 
 from app.oficiales.schema import OficialPublic
@@ -26,15 +26,42 @@ class DatosActa(BaseModel):
         return fecha_hecho
 
 
+ACTA = {
+    "numero_acta": "0012/2026",
+    "fecha_hecho": "2026-11-09",
+    "descripcion": "Entrega de dos armas a la Unidad B",
+}
+
+
 class ActaCreate(DatosActa):
     bienes: list[int] = Field(min_length=1)
 
 
 class EntregaCreate(ActaCreate):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{**ACTA, "bienes": [21, 22], "unidad_destino_id": 5}]
+        }
+    )
+
     unidad_destino_id: int
 
 
 class DotacionCreate(ActaCreate):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "numero_acta": "0013/2026",
+                    "fecha_hecho": "2026-11-09",
+                    "descripcion": "Dotación de una pistola",
+                    "bienes": [31],
+                    "oficial_id": 12,
+                }
+            ]
+        }
+    )
+
     oficial_id: int
 
 
@@ -44,6 +71,20 @@ class UbicacionDestino(BaseModel):
 
 
 class DevolucionCreate(DatosActa):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "numero_acta": "0014/2026",
+                    "fecha_hecho": "2026-11-09",
+                    "descripcion": "Devolución por pase a otra tarea",
+                    "oficial_id": 12,
+                    "ubicaciones": [{"bien_id": 31, "ubicacion_id": 10}],
+                }
+            ]
+        }
+    )
+
     oficial_id: int
     ubicaciones: list[UbicacionDestino] = Field(min_length=1)
 
@@ -60,10 +101,29 @@ class RecepcionDevuelta(BaseModel):
 
 
 class DesistimientoCreate(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"motivo": "El destino ya no necesita los bienes"}]
+        }
+    )
+
     motivo: Motivo
 
 
 class RectificacionCreate(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "fecha_hecho": "2026-11-08",
+                    "numero_acta": "0012/2026",
+                    "descripcion": "Entrega de dos armas a la Unidad B",
+                    "motivo": "La fecha del acta escaneada es el 8 de noviembre",
+                }
+            ]
+        }
+    )
+
     fecha_hecho: date
     numero_acta: str = Field(pattern=r"^[0-9]{4}/[0-9]{4}$")
     descripcion: str | None = Field(default=None, max_length=500)
@@ -111,7 +171,61 @@ class RecepcionPublic(SQLModel):
     fecha: datetime
 
 
+MOVIMIENTO = {
+    "id": 19,
+    "tipo": "ENTREGA",
+    "estado": "APLICADO",
+    "estado_revision": "PENDIENTE",
+    "numero_acta": "0012/2026",
+    "fecha_hecho": "2026-11-09",
+    "descripcion": "Entrega de dos armas a la Unidad B",
+    "unidad_origen": {
+        "id": 4,
+        "nombre": "Unidad Operacional A",
+        "nivel": "OPERACIONAL",
+    },
+    "unidad_destino": {
+        "id": 5,
+        "nombre": "Unidad Operacional B",
+        "nivel": "OPERACIONAL",
+    },
+    "oficial_origen": None,
+    "oficial_destino": None,
+    "usuario": "aux.unidad_a",
+    "fecha_carga": "2026-11-09T10:21:00",
+    "bienes": [
+        {
+            "bien_id": 21,
+            "tipo_bien": "ARMAMENTO",
+            "identificacion": "PB-100021",
+            "marca": "Bersa",
+            "modelo": "Thunder 9",
+            "estado_operativo": "EN_SERVICIO",
+            "ubicacion_origen": "Sala de Armas",
+            "ubicacion_destino": "Sala de Armas",
+        }
+    ],
+    "version_vigente": 0,
+    "versiones": [
+        {
+            "version": 0,
+            "fecha_hecho": "2026-11-09",
+            "numero_acta": "0012/2026",
+            "descripcion": "Entrega de dos armas a la Unidad B",
+            "motivo": None,
+            "usuario": "aux.unidad_a",
+            "fecha": "2026-11-09T10:21:00",
+        }
+    ],
+    "revisiones": [],
+    "recepciones": [],
+    "motivo_rechazo": None,
+}
+
+
 class MovimientoPublic(SQLModel):
+    model_config = ConfigDict(json_schema_extra={"examples": [MOVIMIENTO]})
+
     id: int
     tipo: str
     estado: str
