@@ -87,9 +87,11 @@ Las historias de usuario y las reglas de negocio están en [docs/historias_y_reg
 
 ### Entrega final: versión 1.0
 
+- [Informe Final en PDF](docs/Informe%20Final%20-%20Proyecto%20Final%20-%20Grupo%20161.pdf)
 - [Video de la presentación](https://youtu.be/sHvcxOrmC-w)
-- [Documento de la versión 1.0](docs/version_1.0.md)
+- [Documento de la versión 1.0](docs/version_1.0.md), con las limitaciones conocidas
 - [Recorrido de aceptación](docs/recorrido_de_aceptacion.md)
+- [Decisiones de arquitectura](docs/decisiones)
 - Versión presentada: tag [`v1.0.0`](https://github.com/RalbertR/Proyecto_Final_Grupo161/tree/v1.0.0)
 
 ## Desarrollo local
