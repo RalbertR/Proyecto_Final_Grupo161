@@ -313,6 +313,17 @@ def test_una_entrega_con_datos_invalidos_responde_422(
     assert cantidad_de_actas() == 1
 
 
+def test_a_las_22_la_fecha_del_dia_siguiente_responde_422(
+    client, unidades_con_bienes, a_las_22_de_argentina
+):
+    manana = a_las_22_de_argentina + timedelta(days=1)
+
+    respuesta = entregar(client, fecha_hecho=manana.isoformat())
+
+    assert respuesta.status_code == 422
+    assert cantidad_de_actas() == 1
+
+
 def test_la_entrega_de_direccion_no_queda_para_revision(client, unidades_con_bienes):
     respuesta = entregar(client, 1, unidad_destino_id=2, bienes=[6])
 
