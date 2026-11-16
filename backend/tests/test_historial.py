@@ -25,7 +25,6 @@ USUARIOS = [
 
 HOY = hoy_en_argentina().isoformat()
 
-# Días antes de hoy, para no depender de la zona horaria de la base.
 AYER = (hoy_en_argentina() - timedelta(days=1)).isoformat()
 
 DESCRIPCION = "Refuerzo de armamento para la Unidad Operacional B"
