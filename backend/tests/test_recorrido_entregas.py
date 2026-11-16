@@ -1,11 +1,12 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlmodel import text
 
 from app.core.database import engine
+from app.core.fechas import hoy_en_argentina
 from app.core.seguridad import crear_token
 
 UNIDADES = [
@@ -29,9 +30,9 @@ BIENES = [
     (3, "ARMAMENTO", "Bersa", "TPR9", "BT-2"),
 ]
 
-HOY = date.today().isoformat()
+HOY = hoy_en_argentina().isoformat()
 
-AYER = (date.today() - timedelta(days=1)).isoformat()
+AYER = (hoy_en_argentina() - timedelta(days=1)).isoformat()
 
 ENTREGA = {
     "unidad_destino_id": 5,

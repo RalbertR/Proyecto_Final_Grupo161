@@ -1,9 +1,10 @@
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlmodel import text
 
 from app.core.database import engine
+from app.core.fechas import hoy_en_argentina
 from app.core.seguridad import crear_token
 
 UNIDADES = [
@@ -43,7 +44,7 @@ BIENES = [
     (8, "ARMAMENTO", "BT-5", 5, None, 4, False, "EN_SERVICIO"),
 ]
 
-HOY = date.today().isoformat()
+HOY = hoy_en_argentina().isoformat()
 
 DOTACION = {
     "oficial_id": 1,
@@ -343,7 +344,7 @@ def test_un_oficial_de_otra_unidad_o_inactivo_responde_422(
     [
         {"bienes": [1, 4]},
         {"numero_acta": "17/2026"},
-        {"fecha_hecho": (date.today() + timedelta(days=1)).isoformat()},
+        {"fecha_hecho": (hoy_en_argentina() + timedelta(days=1)).isoformat()},
         {"bienes": []},
     ],
     ids=["dos_areas", "acta_sin_formato", "fecha_posterior_a_hoy", "sin_bienes"],
