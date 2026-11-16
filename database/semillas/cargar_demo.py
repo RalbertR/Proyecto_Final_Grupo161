@@ -20,7 +20,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import date, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 BASE = os.environ.get("API_URL", "http://backend:8000/api").rstrip("/")
@@ -81,7 +81,7 @@ class Demo:
     def __init__(self):
         self.tokens = {}
         self.unidad_id = {}
-        self.hoy = date.today()
+        self.hoy = datetime.now(timezone(timedelta(hours=-3))).date()
         for clave, nombre in USUARIOS.items():
             _, sesion = llamar(
                 "POST",
