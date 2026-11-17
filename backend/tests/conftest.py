@@ -1,7 +1,10 @@
+from datetime import UTC, date, datetime
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, text
 
+from app.core import fechas
 from app.core.database import engine
 from app.main import create_app
 
@@ -51,3 +54,14 @@ def session():
 def client():
     with TestClient(create_app()) as client:
         yield client
+
+
+@pytest.fixture
+def a_las_22_de_argentina(monkeypatch):
+    class Reloj(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 11, 11, 1, 0, tzinfo=UTC).astimezone(tz)
+
+    monkeypatch.setattr(fechas, "datetime", Reloj)
+    return date(2026, 11, 10)

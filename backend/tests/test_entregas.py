@@ -1,10 +1,11 @@
 import threading
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlmodel import Session, text
 
 from app.core.database import engine
+from app.core.fechas import hoy_en_argentina
 from app.core.seguridad import crear_token
 
 UNIDADES = [
@@ -36,7 +37,7 @@ BIENES = [
     (8, "ARMAMENTO", "Bersa", "TPR9", "BT-5", 4, None, None, True),
 ]
 
-HOY = date.today().isoformat()
+HOY = hoy_en_argentina().isoformat()
 
 ENTREGA = {
     "unidad_destino_id": 5,
@@ -290,7 +291,7 @@ def test_armamento_y_un_movil_en_la_misma_entrega_responde_422(
     "cambios",
     [
         {"numero_acta": "16/2026"},
-        {"fecha_hecho": (date.today() + timedelta(days=1)).isoformat()},
+        {"fecha_hecho": (hoy_en_argentina() + timedelta(days=1)).isoformat()},
         {"unidad_destino_id": 4},
         {"unidad_destino_id": 99},
         {"bienes": []},
@@ -307,6 +308,17 @@ def test_una_entrega_con_datos_invalidos_responde_422(
     client, unidades_con_bienes, cambios
 ):
     respuesta = entregar(client, **cambios)
+
+    assert respuesta.status_code == 422
+    assert cantidad_de_actas() == 1
+
+
+def test_a_las_22_la_fecha_del_dia_siguiente_responde_422(
+    client, unidades_con_bienes, a_las_22_de_argentina
+):
+    manana = a_las_22_de_argentina + timedelta(days=1)
+
+    respuesta = entregar(client, fecha_hecho=manana.isoformat())
 
     assert respuesta.status_code == 422
     assert cantidad_de_actas() == 1

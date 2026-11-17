@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 from sqlmodel import SQLModel
 
+from app.core.fechas import hoy_en_argentina
 from app.oficiales.schema import OficialPublic
 from app.organizacion.schema import UnidadPublic
 from app.revision.schema import RevisionPublic
@@ -21,7 +22,7 @@ class DatosActa(BaseModel):
     @field_validator("fecha_hecho")
     @classmethod
     def no_posterior_a_hoy(cls, fecha_hecho: date) -> date:
-        if fecha_hecho > date.today():
+        if fecha_hecho > hoy_en_argentina():
             raise ValueError("La fecha del hecho no puede ser posterior a hoy")
         return fecha_hecho
 
@@ -132,7 +133,7 @@ class RectificacionCreate(BaseModel):
     @field_validator("fecha_hecho")
     @classmethod
     def no_posterior_a_hoy(cls, fecha_hecho: date) -> date:
-        if fecha_hecho > date.today():
+        if fecha_hecho > hoy_en_argentina():
             raise ValueError("La fecha del hecho no puede ser posterior a hoy")
         return fecha_hecho
 

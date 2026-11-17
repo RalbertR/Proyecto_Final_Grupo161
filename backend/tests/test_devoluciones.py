@@ -1,14 +1,14 @@
 import threading
-from datetime import date
 
 import pytest
 from sqlalchemy.exc import OperationalError
 from sqlmodel import Session, text
 
 from app.core.database import engine
+from app.core.fechas import hoy_en_argentina
 from app.core.seguridad import crear_token
 
-HOY = date.today().isoformat()
+HOY = hoy_en_argentina().isoformat()
 
 UNIDADES = [
     (1, "Dirección Logística", "DIRECCION", None),

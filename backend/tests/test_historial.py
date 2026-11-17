@@ -1,9 +1,10 @@
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlmodel import text
 
 from app.core.database import engine
+from app.core.fechas import hoy_en_argentina
 from app.core.seguridad import crear_token
 
 UNIDADES = [
@@ -22,10 +23,9 @@ USUARIOS = [
     (6, "aux.unidad_c", 6),
 ]
 
-HOY = date.today().isoformat()
+HOY = hoy_en_argentina().isoformat()
 
-# Días antes de hoy, para no depender de la zona horaria de la base.
-AYER = (date.today() - timedelta(days=1)).isoformat()
+AYER = (hoy_en_argentina() - timedelta(days=1)).isoformat()
 
 DESCRIPCION = "Refuerzo de armamento para la Unidad Operacional B"
 

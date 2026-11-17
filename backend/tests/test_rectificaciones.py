@@ -237,6 +237,17 @@ def test_una_correccion_invalida_responde_422(client, entrega_observada, cambios
     assert consultar("SELECT * FROM rectificacion") == []
 
 
+def test_a_las_22_una_correccion_con_el_dia_siguiente_responde_422(
+    client, entrega_observada, a_las_22_de_argentina
+):
+    manana = a_las_22_de_argentina + timedelta(days=1)
+
+    respuesta = rectificar(client, RECTIFICACION | {"fecha_hecho": manana.isoformat()})
+
+    assert respuesta.status_code == 422
+    assert consultar("SELECT * FROM rectificacion") == []
+
+
 def test_el_detalle_muestra_que_version_se_observo_y_cual_se_aprobo(
     client, entrega_observada
 ):

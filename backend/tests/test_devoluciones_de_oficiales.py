@@ -1,9 +1,10 @@
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlmodel import text
 
 from app.core.database import engine
+from app.core.fechas import hoy_en_argentina
 from app.core.seguridad import crear_token
 
 UNIDADES = [
@@ -43,7 +44,7 @@ BIENES = [
     (8, "ARMAMENTO", "BT-5", 5, 4, None),
 ]
 
-HOY = date.today().isoformat()
+HOY = hoy_en_argentina().isoformat()
 
 DEVOLUCION = {
     "oficial_id": 1,
@@ -361,7 +362,7 @@ def test_una_ubicacion_que_falta_o_es_ajena_responde_422_y_ningun_bien_cambia(
             ]
         },
         {"numero_acta": "18/2026"},
-        {"fecha_hecho": (date.today() + timedelta(days=1)).isoformat()},
+        {"fecha_hecho": (hoy_en_argentina() + timedelta(days=1)).isoformat()},
         {"ubicaciones": []},
     ],
     ids=["dos_areas", "acta_sin_formato", "fecha_posterior_a_hoy", "sin_bienes"],
