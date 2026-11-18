@@ -230,6 +230,7 @@ erDiagram
         INT bien_id PK, FK
         INT ubicacion_origen_id FK
         INT ubicacion_destino_id FK
+        ENUM estado_operativo
         INT orden
     }
     recepcion {
@@ -491,7 +492,7 @@ La tabla **movimiento** es la cabecera y representa una operación logística. S
 | anulado_por_id, fecha_anulacion | INT, DATETIME | FK a usuario y fecha. Opcionales, se completan si el acta se anula. |
 | motivo_anulacion | VARCHAR(500) | Obligatorio si el acta se anula |
 
-La tabla **movimiento_bien** es el detalle, con un renglón por cada bien del movimiento. Como el movimiento se recibe y se anula completo, el estado es el de la cabecera.
+La tabla **movimiento_bien** es el detalle, con un renglón por cada bien del movimiento. Como el movimiento se recibe y se anula completo, el estado es el de la cabecera. Cada renglón guarda el estado operativo que tenía el bien al registrarse, para que el acta muestre siempre lo que se firmó aunque el bien cambie después.
 
 | Columna | Tipo | Descripción |
 |---|---|---|

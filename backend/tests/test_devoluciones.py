@@ -367,6 +367,22 @@ def test_al_corregir_se_pueden_quitar_y_sumar_bienes(client, acta_devuelta):
     ) == [(1, False), (2, True), (3, True)]
 
 
+def test_el_bien_que_se_suma_al_corregir_guarda_su_estado_al_reenviar(
+    client, acta_devuelta
+):
+    with engine.begin() as conexion:
+        conexion.execute(
+            text("UPDATE bien SET estado_operativo = 'FUERA_DE_SERVICIO' WHERE id = 3")
+        )
+
+    acta = corregir(client).json()
+
+    assert [(r["bien_id"], r["estado_operativo"]) for r in acta["bienes"]] == [
+        (2, "EN_SERVICIO"),
+        (3, "FUERA_DE_SERVICIO"),
+    ]
+
+
 def test_al_corregir_se_puede_cambiar_el_destino(client, acta_devuelta):
     acta = corregir(client, CORREGIDA | {"unidad_destino_id": 6}).json()
 

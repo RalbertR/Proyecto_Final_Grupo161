@@ -176,7 +176,7 @@ UNIDADES_ACTUALES_DE_LOS_BIENES = text(
 RENGLONES = text(
     "SELECT mb.bien_id, b.tipo_bien, "
     "COALESCE(b.numero_serie, ml.patente) AS identificacion, b.marca, b.modelo, "
-    "b.estado_operativo, uo.nombre AS ubicacion_origen, "
+    "mb.estado_operativo, uo.nombre AS ubicacion_origen, "
     "ud.nombre AS ubicacion_destino "
     "FROM movimiento_bien mb "
     "JOIN bien b ON b.id = mb.bien_id "

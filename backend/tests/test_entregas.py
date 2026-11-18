@@ -231,6 +231,22 @@ def test_registra_la_entrega_pendiente_de_recepcion(client, unidades_con_bienes)
     assert acta == ACTA_REGISTRADA
 
 
+def test_cada_renglon_guarda_el_estado_del_bien_al_registrar_el_acta(
+    client, unidades_con_bienes
+):
+    with engine.begin() as conexion:
+        conexion.execute(
+            text("UPDATE bien SET estado_operativo = 'FUERA_DE_SERVICIO' WHERE id = 2")
+        )
+
+    acta = entregar(client).json()
+
+    assert [(r["bien_id"], r["estado_operativo"]) for r in acta["bienes"]] == [
+        (1, "EN_SERVICIO"),
+        (2, "FUERA_DE_SERVICIO"),
+    ]
+
+
 def test_con_la_entrega_pendiente_los_bienes_siguen_en_el_origen_y_marcados(
     client, unidades_con_bienes
 ):
