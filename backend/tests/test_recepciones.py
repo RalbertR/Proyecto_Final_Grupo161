@@ -192,19 +192,20 @@ def test_el_origen_no_tiene_actas_por_recibir(client, acta_pendiente):
     assert respuesta.json() == []
 
 
-def test_cada_renglon_trae_el_estado_operativo_del_bien(client, acta_pendiente):
+def test_el_acta_conserva_el_estado_del_bien_aunque_despues_cambie(
+    client, acta_pendiente
+):
+    assert recibir(client, ACEPTAR).status_code == 200
     with engine.begin() as conexion:
         conexion.execute(
             text("UPDATE bien SET estado_operativo = 'FUERA_DE_SERVICIO' WHERE id = 2")
         )
 
-    respuesta = client.get("/api/movimientos/por-recibir", headers=con_token(5))
+    acta = client.get("/api/movimientos/1", headers=con_token(5)).json()
 
-    assert [
-        renglon["estado_operativo"] for renglon in respuesta.json()[0]["bienes"]
-    ] == [
+    assert [renglon["estado_operativo"] for renglon in acta["bienes"]] == [
         "EN_SERVICIO",
-        "FUERA_DE_SERVICIO",
+        "EN_SERVICIO",
     ]
 
 
