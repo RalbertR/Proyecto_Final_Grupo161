@@ -80,7 +80,7 @@ export const PorRecibirPagina = () => {
       ) : actas.length === 0 ? (
         <p className="p-4 text-gray-600">No hay entregas para recibir</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full bg-white text-left text-sm">
             <thead className="border-b border-gray-500">
               <tr>

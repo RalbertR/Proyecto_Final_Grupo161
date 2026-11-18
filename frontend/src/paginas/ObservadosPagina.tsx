@@ -106,7 +106,7 @@ export const ObservadosPagina = () => {
     return (
       <>
         {actas.data.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full bg-white text-left text-sm">
               <Encabezado titulos={columnas} />
               <tbody>
@@ -148,7 +148,7 @@ export const ObservadosPagina = () => {
             <h2 id="titulo-cambios" className="text-lg font-semibold">
               Cambios de estado
             </h2>
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="w-full bg-white text-left text-sm">
                 <Encabezado titulos={columnasCambios} />
                 <tbody>
