@@ -16,7 +16,7 @@ Usuario `aux.unidad_a`.
 | A6 | Elegir una radio en depósito y tocar Asignar a oficial. | Solo aparecen los oficiales que no tienen una radio. Al asignar, la radio pasa a la dotación del oficial. |
 | A7 | Elegir un bien en dotación y tocar Registrar devolución. | La ubicación viene propuesta y el bien vuelve a depósito. |
 | A8 | En la página de un móvil, tocar Cambiar estado, completar las observaciones y adjuntar el informe técnico. | El móvil queda fuera de servicio y el cambio queda pendiente de revisión. |
-| A9 | En Devueltas, corregir un acta, cambiar el bien con novedad por otro y reenviar. | El acta vuelve a Por recibir del destino. |
+| A9 | En Devueltas, abrir el acta del equipo de comunicaciones que devolvió la Unidad Operacional C, cambiar el equipo con novedad por otro y reenviar. | El acta vuelve a Por recibir de C. |
 | A10 | Abrir por URL la página de un bien de otra unidad. | El sistema avisa que no tiene acceso a ese bien. |
 
 ## Unidad Operacional B
@@ -38,7 +38,7 @@ Usuario `aux.unidad_c`.
 |---|---|---|
 | C1 | Entrar. | El menú no tiene Revisión ni Sala de situación. |
 | C2 | Abrir por URL la página de Revisión. | Vuelve al inicio. |
-| C3 | Recibir el acta que reenvió A. | Los bienes pasan al inventario de C. |
+| C3 | En Por recibir, abrir el acta del equipo de comunicaciones que A reenvió en el paso A9, tildar el equipo como controlado y aceptar. | El equipo pasa al inventario de C. |
 | C4 | Abrir Inventario. | Se ven solo los bienes de C. |
 
 ## Unidad Regional Norte
