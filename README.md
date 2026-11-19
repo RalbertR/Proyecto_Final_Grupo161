@@ -15,7 +15,7 @@ La organización y todos los datos del proyecto son ficticios.
 - **Inventario por alcance.** Una Unidad Operacional ve solo sus bienes, una Regional los suyos y los de sus Operacionales, y la Dirección los de todas (RN-01).
 - **Entregas entre unidades.** Se registra el acta, el destino la acepta ubicando cada bien o la devuelve al origen con un motivo, y el origen la corrige y la reenvía o desiste.
 - **Dotación y devolución de oficiales.** Se asignan bienes a un oficial de la unidad y se registra cuando los devuelve.
-- **Revisión.** El superior inmediato revisa u observa lo que cargan sus unidades. Una corrección nunca pisa el original: queda como una versión nueva.
+- **Revisión.** El superior inmediato revisa u observa lo que cargan sus unidades. Una corrección no pisa el original: queda como una versión nueva. La excepción son los bienes y el destino de un acta devuelta, que todavía no se aplicó: se cambian sobre la misma acta y de los anteriores queda la devolución, con su motivo y los bienes con novedad.
 - **Actas escaneadas.** Se adjunta el PDF firmado a cada movimiento y la Regional lo ve al lado de los datos que revisa.
 - **Estado de servicio.** Un bien pasa a fuera de servicio con su informe técnico, o vuelve a servicio.
 - **Historial y control.** Cada bien tiene su historial y su línea de custodia, y la Regional y la Dirección tienen una sala de situación con las actas demoradas y el equipamiento fuera de servicio.
@@ -92,7 +92,7 @@ Las historias de usuario y las reglas de negocio están en [docs/historias_y_reg
 - [Documento de la versión 1.0](docs/version_1.0.md), con las limitaciones conocidas
 - [Recorrido de aceptación](docs/recorrido_de_aceptacion.md)
 - [Decisiones de arquitectura](docs/decisiones)
-- Versión presentada: tag [`v1.0.0`](https://github.com/RalbertR/Proyecto_Final_Grupo161/tree/v1.0.0)
+- Versión final: tag [`v1.0.1`](https://github.com/RalbertR/Proyecto_Final_Grupo161/tree/v1.0.1)
 
 ## Desarrollo local
 
@@ -217,7 +217,7 @@ pytest --cov=app --cov-report=term-missing
 
 La salida de este comando es la que se pega en cada PR.
 
-El frontend no tiene pruebas automáticas: la integración continua corre `pnpm lint` y `pnpm format:check` desde `frontend`, y las pantallas se prueban a mano contra los criterios de [docs/historias_y_reglas.md](docs/historias_y_reglas.md). Los linters del backend se corren con `pre-commit run --all-files`.
+El frontend no tiene pruebas automáticas: la integración continua corre `pnpm lint`, `pnpm format:check` y `pnpm build` desde `frontend`, y las pantallas se prueban a mano contra los criterios de [docs/historias_y_reglas.md](docs/historias_y_reglas.md). Los linters del backend se corren con `pre-commit run --all-files`.
 
 La base de prueba se crea de nuevo cada vez que arranca el contenedor. Cuando se agrega un script a `database/migraciones`, alcanza con `docker compose up -d --wait --force-recreate mysql_pruebas`. Para apagarla se usa `docker compose stop mysql_pruebas`, porque un `docker compose down` no la incluye.
 
@@ -301,6 +301,7 @@ Los scripts los aplica root, porque el usuario de la aplicación no puede cambia
 | `003_oficiales_y_cambios_de_estado.sql` | La unidad de un oficial solo cambia con un traslado, y las correcciones de un fuera de servicio llevan informe. |
 | `004_devolucion_de_actas.sql` | Devolución del acta al origen. |
 | `005_fechas_en_hora_argentina.sql` | El historial y la bandeja muestran el día de los cambios de estado en hora de Argentina. |
+| `006_estado_del_bien_en_el_acta.sql` | Cada renglón del acta guarda el estado de servicio que tenía el bien al registrarse. |
 
 1. Frenar el backend para que nadie escriba mientras cambia el esquema:
 
@@ -318,7 +319,7 @@ chmod 600 ~/respaldo_*.sql
 3. Aplicar cada script nuevo, uno por vez y en orden de número:
 
 ```bash
-docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" logistica_policial < /migraciones/005_fechas_en_hora_argentina.sql'
+docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" logistica_policial < /migraciones/006_estado_del_bien_en_el_acta.sql'
 ```
 
 4. Levantar el backend con el código nuevo con `docker compose up -d --build` y verificar en `https://<subdominio>/api/salud` que responda.

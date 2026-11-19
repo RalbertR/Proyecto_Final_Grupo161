@@ -79,7 +79,7 @@ ETIQUETAS = [
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Sistema Logístico Policial",
-        version="0.1.0",
+        version="1.0.1",
         description=DESCRIPCION,
         openapi_tags=ETIQUETAS,
         # Bajo /api para que nginx y el servidor de Vite lo dejen pasar.
