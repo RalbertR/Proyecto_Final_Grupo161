@@ -1,6 +1,8 @@
 # Sistema Logístico Policial, versión 1.0
 
-Este documento describe la versión publicada en https://logistica.nano-rodriguez.com, que corresponde al tag `v1.0.0` del repositorio. Cuenta qué hace, cómo está armada, qué cambió respecto del documento de diseño, cómo se probó y qué queda para la versión siguiente. Las historias y las reglas completas están en [historias_y_reglas.md](historias_y_reglas.md).
+Este documento describe la versión publicada en https://logistica.nano-rodriguez.com, que corresponde al tag `v1.0.1` del repositorio. Cuenta qué hace, cómo está armada, qué cambió respecto del documento de diseño, cómo se probó y qué queda para la versión siguiente. Las historias y las reglas completas están en [historias_y_reglas.md](historias_y_reglas.md).
+
+La 1.0.1 corrige tres fallas de la 1.0.0. La fecha del hecho se valida con el día de Argentina y no con el del servidor, cada renglón del acta guarda el estado de servicio que tenía el bien al registrarse y las páginas con tablas ya no se corren de costado en el celular.
 
 ## Qué hace
 
@@ -82,7 +84,7 @@ erDiagram
 ```
 
 - **La tenencia actual vive en el bien y la historia en los movimientos.** La tabla `bien` dice quién tiene cada bien ahora, con su unidad dueña y su ubicación o el oficial que lo tiene en dotación. El inventario sale de una consulta simple y el historial se arma con los movimientos y los cambios de estado.
-- **Un movimiento tiene un renglón por bien.** Los renglones guardan de dónde salió y adónde fue cada bien. La recepción guarda cada respuesta del destino y, si devuelve el acta, los bienes con novedad.
+- **Un movimiento tiene un renglón por bien.** Los renglones guardan de dónde salió y adónde fue cada bien, y el estado de servicio que tenía al registrarse, así el acta se reimprime igual aunque el bien cambie después. La recepción guarda cada respuesta del destino y, si devuelve el acta, los bienes con novedad.
 - **Las correcciones quedan como versiones.** Cada corrección guarda una versión nueva con su motivo, y cada revisión guarda la versión que vio el revisor. La excepción son los bienes y el destino de un acta devuelta, que todavía no se aplicó: se cambian sobre la misma acta y de los anteriores queda la devolución, con su motivo y los bienes con novedad (ADR 0010).
 - **Las reglas críticas también viven en la base.** Que un bien no esté en dos movimientos abiertos o que siempre tenga una tenencia válida lo controla la API con mensajes claros y lo vuelve a controlar la base con restricciones y triggers.
 - **Jerarquía estricta.** Una Operacional solo depende de una Regional y una Regional solo de la Dirección. Lo controla una clave foránea compuesta sobre el nivel de la unidad superior.
@@ -136,10 +138,12 @@ Las pruebas automáticas cubren la API y la base de datos. Corren con pytest con
 | La unidad de un oficial cambia solo con un traslado. | La base rechaza el cambio directo de un oficial con bienes. | `test_un_oficial_con_bienes_no_cambia_de_unidad_sin_traslado` |
 | Un bien no recibe dos cambios de estado a la vez. | Dos cambios simultáneos del mismo bien. Solo uno se aplica. | `test_dos_cambios_simultaneos_del_mismo_bien` |
 | Un PDF no se carga dos veces. | Dos cargas simultáneas del mismo archivo guardan un solo documento. | `test_dos_cargas_simultaneas_del_mismo_pdf_guardan_un_solo_documento` |
+| La fecha del hecho no puede ser posterior al día de Argentina. | A las 22 h de Argentina, que en el servidor ya es el día siguiente, una entrega con la fecha de mañana responde 422. | `test_a_las_22_la_fecha_del_dia_siguiente_responde_422` |
+| El acta muestra el estado que tenía cada bien al registrarse. | Después de recibir el acta un bien pasa a fuera de servicio, y el acta sigue mostrándolo en servicio. | `test_el_acta_conserva_el_estado_del_bien_aunque_despues_cambie` |
 
-La versión tiene 379 pruebas automáticas en verde y una cobertura del 99% del código de la API. Corren en GitHub Actions en cada pull request junto con los linters, y `main` no acepta un cambio si alguna falla. La sección Pruebas del [README](../README.md#pruebas) explica cómo repetirlas.
+La versión tiene 384 pruebas automáticas en verde y una cobertura del 99% del código de la API. Corren en GitHub Actions en cada pull request junto con los linters y la compilación del frontend, y `main` no acepta un cambio si alguna falla. La sección Pruebas del [README](../README.md#pruebas) explica cómo repetirlas.
 
-El frontend no tiene pruebas automáticas. Cada pantalla se probó en el navegador contra sus criterios de aceptación, y antes de publicar la versión se hizo el [recorrido de aceptación](recorrido_de_aceptacion.md) con cada usuario de demostración en el sistema publicado, en una computadora y en un celular. Aparecieron dos fallas. Las fechas de los cambios de estado registrados después de las 21 h figuraban con el día siguiente en el historial y en la bandeja, y se corrigió con el script `005_fechas_en_hora_argentina.sql` y su prueba. La otra, que en el celular algunas pantallas se corren de costado, quedó entre las limitaciones.
+El frontend no tiene pruebas automáticas. Cada pantalla se probó en el navegador contra sus criterios de aceptación, y antes de publicar la versión se hizo el [recorrido de aceptación](recorrido_de_aceptacion.md) con cada usuario de demostración en el sistema publicado, en una computadora y en un celular. Aparecieron dos fallas. Las fechas de los cambios de estado registrados después de las 21 h figuraban con el día siguiente en el historial y en la bandeja, y se corrigió con el script `005_fechas_en_hora_argentina.sql` y su prueba. La otra, que en el celular algunas pantallas se corrían de costado, se corrigió en la 1.0.1.
 
 ## Qué queda para la versión siguiente
 
@@ -157,9 +161,6 @@ Limitaciones conocidas de esta versión:
 
 - El PDF del acta no es obligatorio. Una entrega se puede recibir y revisar sin él y la revisión avisa que falta.
 - Al corregir un acta devuelta no queda cómo eran los renglones antes del reenvío. Quedan las devoluciones con su motivo y los bienes con novedad.
-- El acta impresa muestra el estado actual de cada bien y no el que tenía al registrarse.
 - Cerrar sesión borra el token del navegador, pero el token sigue valiendo hasta que vence.
 - Los PDFs no se reemplazan ni se borran.
-- En el celular, la página de Revisión y las ventanas para recibir un acta y para corregirla se pueden correr de costado hasta un espacio vacío. Se ven completas y las acciones funcionan. Está en el issue #85.
-- Entre las 21 y las 24 h, la fecha del hecho de un movimiento acepta el día siguiente, porque la API la compara con el día del servidor, que está en UTC.
 - El sistema corre en un solo servidor y su disponibilidad depende de ese equipo y de su conexión.
