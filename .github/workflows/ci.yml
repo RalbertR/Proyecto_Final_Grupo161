@@ -41,6 +41,8 @@ jobs:
         run: pnpm lint
       - if: hashFiles('frontend/package.json') != ''
         run: pnpm format:check
+      - if: hashFiles('frontend/package.json') != ''
+        run: pnpm build
 
   pytest:
     runs-on: ubuntu-latest
