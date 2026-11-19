@@ -15,7 +15,7 @@ La organización y todos los datos del proyecto son ficticios.
 - **Inventario por alcance.** Una Unidad Operacional ve solo sus bienes, una Regional los suyos y los de sus Operacionales, y la Dirección los de todas (RN-01).
 - **Entregas entre unidades.** Se registra el acta, el destino la acepta ubicando cada bien o la devuelve al origen con un motivo, y el origen la corrige y la reenvía o desiste.
 - **Dotación y devolución de oficiales.** Se asignan bienes a un oficial de la unidad y se registra cuando los devuelve.
-- **Revisión.** El superior inmediato revisa u observa lo que cargan sus unidades. Una corrección nunca pisa el original: queda como una versión nueva.
+- **Revisión.** El superior inmediato revisa u observa lo que cargan sus unidades. Una corrección no pisa el original: queda como una versión nueva. La excepción son los bienes y el destino de un acta devuelta, que todavía no se aplicó: se cambian sobre la misma acta y de los anteriores queda la devolución, con su motivo y los bienes con novedad.
 - **Actas escaneadas.** Se adjunta el PDF firmado a cada movimiento y la Regional lo ve al lado de los datos que revisa.
 - **Estado de servicio.** Un bien pasa a fuera de servicio con su informe técnico, o vuelve a servicio.
 - **Historial y control.** Cada bien tiene su historial y su línea de custodia, y la Regional y la Dirección tienen una sala de situación con las actas demoradas y el equipamiento fuera de servicio.

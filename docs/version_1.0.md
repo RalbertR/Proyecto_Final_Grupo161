@@ -83,7 +83,7 @@ erDiagram
 
 - **La tenencia actual vive en el bien y la historia en los movimientos.** La tabla `bien` dice quién tiene cada bien ahora, con su unidad dueña y su ubicación o el oficial que lo tiene en dotación. El inventario sale de una consulta simple y el historial se arma con los movimientos y los cambios de estado.
 - **Un movimiento tiene un renglón por bien.** Los renglones guardan de dónde salió y adónde fue cada bien. La recepción guarda cada respuesta del destino y, si devuelve el acta, los bienes con novedad.
-- **No se borra nada.** Cada corrección queda como una versión nueva con su motivo, y cada revisión guarda la versión que vio el revisor.
+- **Las correcciones quedan como versiones.** Cada corrección guarda una versión nueva con su motivo, y cada revisión guarda la versión que vio el revisor. La excepción son los bienes y el destino de un acta devuelta, que todavía no se aplicó: se cambian sobre la misma acta y de los anteriores queda la devolución, con su motivo y los bienes con novedad (ADR 0010).
 - **Las reglas críticas también viven en la base.** Que un bien no esté en dos movimientos abiertos o que siempre tenga una tenencia válida lo controla la API con mensajes claros y lo vuelve a controlar la base con restricciones y triggers.
 - **Jerarquía estricta.** Una Operacional solo depende de una Regional y una Regional solo de la Dirección. Lo controla una clave foránea compuesta sobre el nivel de la unidad superior.
 
